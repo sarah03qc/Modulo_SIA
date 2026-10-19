@@ -1,0 +1,13 @@
+---
+description: Aplicar al verificar entregas y antes de declarar una historia lista para revisión
+alwaysApply: false
+---
+# Quality gates
+
+Usar `docs/agent-workflow/quality-gates.md` y el skill run-quality-gates.
+Gate 1 precede implementación; Gate 2 exige evidencia de ejecución; Gate 3
+prepara revisión humana. Ningún agente acepta automáticamente una historia.
+Registrar cada check como PASS, FAIL, NOT_APPLICABLE o NOT_RUN con evidencia.
+NOT_APPLICABLE requiere motivo; NOT_RUN no es aprobación.
+Un bloqueo funcional crítico impide implementar la regla afectada.
+La comprobación estructural de infraestructura no demuestra cumplimiento del producto.

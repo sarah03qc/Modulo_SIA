@@ -1,0 +1,28 @@
+---
+description: Contexto global estable de SIA-CENCINAI
+alwaysApply: true
+---
+# SIA-CENCINAI
+
+Apoya la Atención Interdisciplinaria de CEN-CINAI y el trabajo profesional.
+El bootstrap actual solo configura agentes y workflow; no implementa producto.
+Actores generales: profesionales y usuarios institucionales según rol y ámbito;
+el catálogo concreto está pendiente de fuente validada.
+Ámbitos: Establecimiento → Oficina Local → Región → Nivel Nacional.
+Los establecimientos autorizados provienen del mecanismo institucional vigente;
+SIA no mantiene una asignación paralela. Estos lineamientos provienen de la
+solicitud de bootstrap; consultar `docs/agent-workflow/sources-and-validation.md`.
+
+Autoridad: fuente institucional confirmada → especificación funcional vigente
+→ decisiones aprobadas → implementación → suposiciones técnicas.
+No resolver contradicciones autoritativas por cuenta propia.
+Trazabilidad: proceso → flujo → instrumentos/variables → HU → RF → CU
+→ implementación → pruebas; conservar RN/RNF y evidencia cuando apliquen.
+
+Estados funcionales: CONFIRMADO, DRAFT, PROPOSED, NEEDS_VALIDATION,
+EXPLORATORIO, OUT_OF_SCOPE. CONFIRMADO exige evidencia; la ausencia o
+ambigüedad se registra NEEDS_VALIDATION, nunca como regla permanente.
+No inventar reglas ni sustituir juicio profesional, asignar prioridad definitiva,
+cerrar casos o cambiar estrategias sin regla explícita validada y autoridad humana.
+No usar datos sensibles reales, secretos ni credenciales en artefactos o servicios.
+Prototipos son referencias, no baseline técnico. Leer `AGENTS.md`.

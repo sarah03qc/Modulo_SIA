@@ -1,0 +1,62 @@
+---
+description: Apply when planning or executing software implementation, refactoring, bug fixes, migrations or technical changes
+alwaysApply: false
+---
+
+# Development Workflow
+
+Before significant implementation:
+
+1. State the objective.
+2. Identify relevant functional sources.
+3. Inspect existing related code and documentation.
+4. Identify dependencies.
+5. Identify expected files or modules to change.
+6. Identify risks.
+7. Identify unresolved decisions.
+8. Propose a concise implementation plan.
+
+Prefer:
+
+- small diffs;
+- focused commits;
+- isolated responsibilities;
+- reversible migrations;
+- explicit contracts;
+- automated tests;
+- minimal necessary changes.
+
+Avoid:
+
+- unrelated cleanup;
+- speculative features;
+- architecture rewrites;
+- changing public contracts without impact analysis;
+- hardcoding provisional business rules;
+- destructive operations.
+
+Do not execute destructive operations without explicit human approval, including:
+
+- DROP;
+- TRUNCATE;
+- irreversible migrations;
+- mass deletion;
+- destructive historical transformations;
+- broad permission changes;
+- production modifications.
+
+After implementation:
+
+1. summarize what changed;
+2. list modified files;
+3. report tests executed;
+4. report functional traceability;
+5. report security considerations when applicable;
+6. report unresolved issues;
+7. report out-of-scope findings.
+
+Do not declare work DONE unless applicable acceptance criteria and quality gates are satisfied.
+Follow docs/agent-workflow/workflow.md and docs/agent-workflow/quality-gates.md.
+One agent owns one concrete objective per iteration; coordinate cross-layer changes.
+
+

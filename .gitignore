@@ -1,0 +1,17 @@
+# Secretos y configuración local real
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+*.p12
+
+# Salidas locales; no excluir fuentes institucionales por extensión
+node_modules/
+__pycache__/
+*.pyc
+coverage/
+TestResults/
+.DS_Store
+Thumbs.db

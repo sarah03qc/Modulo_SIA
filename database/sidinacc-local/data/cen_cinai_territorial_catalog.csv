@@ -1,0 +1,662 @@
+region_id,region_name,office_local_id,office_local_name,establishment_id,establishment_name,source,validation_status,source_status
+1,Central Sur,103,Tibás,1010202,BARRIO CLARET DE S.J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,103,Tibás,1010205,BARRIO MEXICO DE S.J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,101,Hatillo,1010320,BARRIO CUBA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,101,Hatillo,1010321,CRISTO REY S.J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,104,Curridabat-Desamparados,1010502,QUESADA DURAN SAN JOSE,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,104,Curridabat-Desamparados,1010506,ZAPOTE DE SAN JOSE,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,103,Tibás,1010706,LA URUCA SAN JOSE,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,103,Tibás,1010903,PAVAS CENTRO SAN JOSE,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,103,Tibás,1010917,SANTA CATALINA PAVAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,103,Tibás,1010919,METROPOLIS FCA. SN PEDRO PAVAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,103,Tibás,1010920,LOMAS DE RIO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,INACTIVO
+1,Central Sur,101,Hatillo,1011007,SAGRADA FAMILIA DE S. J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,101,Hatillo,1011008,COLONIA 15 DE SETIEMBRE S.J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,101,Hatillo,1011009,25 DE JULIO HATILLO (AGUANTAF),Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,101,Hatillo,1011031,HATILLO NO 8 SAN JOSE,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,101,Hatillo,1011035,HATILLO NO 4 SAN JOSE,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,101,Hatillo,1011102,PASO ANCHO DE S. J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,101,Hatillo,1011107,LOPEZ MATEOS SAN JOSE,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,103,Tibás,1020102,ESCAZU DE SAN JOSE,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,103,Tibás,1020208,SAN ANTONIO DE ESCAZU S. J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,103,Tibás,1020302,ANONOS OESTE ESCAZU S.J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,CERRADO
+1,Central Sur,104,Curridabat-Desamparados,1030103,DESAMPARADOS DE S.J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,101,Hatillo,1030107,TORREMOLINOS DE DESAMP. S. J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,104,Curridabat-Desamparados,1030202,SAN MIGUEL DE DESAMPARADOS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,104,Curridabat-Desamparados,1030203,JERICO DE DESAMPARADOS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,105,Aserrí-Acosta,1030301,SAN JUAN DE DIOS DE DESAMPARADOS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,101,Hatillo,1030401,MAIQUETIA DE DESAMPARADOS S.J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,104,Curridabat-Desamparados,1030402,SAN RAFAEL ARRIBA DESAMPARADOS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,104,Curridabat-Desamparados,1030501,SAN ANTONIO DESAMP. S. J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,105,Aserrí-Acosta,1030602,BUSTAMANTE DE DESAMPARADOS S.J,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,105,Aserrí-Acosta,1030603,FRAILES DE DESAMPARADOS S.J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,901,Tejar del Guarco,1030803,SAN CRISTOBAL NORTE DESAMPARADOS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,901,Tejar del Guarco,1030804,LA LUCHA DESAMPARADOS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,901,Tejar del Guarco,1030807,SAN CRISTOBAL SUR DESAMP.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,105,Aserrí-Acosta,1030901,EL ROSARIO DE DESAMPARADOS S.J,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,104,Curridabat-Desamparados,1031001,SAN LORENZO DE DESAMPARADOS S.J,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,104,Curridabat-Desamparados,1031101,MAALOT DE DESAMPARADOS S.J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,101,Hatillo,1031104,CAI SAN RAFAEL ABAJO DESAMP.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,104,Curridabat-Desamparados,1031201,GRAVILIAS DE DESAMP. S. J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,102,Ciudad Colón,1040104,SANTIAGO DE PURISCAL - SAN JOSE,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,102,Ciudad Colón,1040206,SALITRALES DE PURISCAL S.J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,102,Ciudad Colón,1040208,CERBATANA DE PURISCAL S.J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,102,Ciudad Colón,1040301,BARBACOAS DE PURISCAL S.J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,102,Ciudad Colón,1040602,PEDERNAL DE PURISCAL-S. J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,102,Ciudad Colón,1040701,DESAMPARADITOS DE PURISCAL S.J,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,102,Ciudad Colón,1040901,LA GLORIA DE PURISCAL S.J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,102,Ciudad Colón,1040904,GAMALOTILLO DE PURISCAL,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,901,Tejar del Guarco,1050103,SAN MARCOS TARRAZU,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,901,Tejar del Guarco,1050202,SAN LORENZO TARRAZU,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,901,Tejar del Guarco,1050302,SAN CARLOS TARRAZU,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,901,Tejar del Guarco,1050303,SAN JERONIMO DE S.C. TARRA.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,105,Aserrí-Acosta,1060102,ASERRI DE S. J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,105,Aserrí-Acosta,1060103,POAS DE ASERRI S. J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,105,Aserrí-Acosta,1060301,VUELTA DE JORCO- ASERRI S.J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,105,Aserrí-Acosta,1060302,MONTE REDONDO DE ASERRI,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,105,Aserrí-Acosta,1060304,LA URUCA DE ASERRI S. J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,105,Aserrí-Acosta,1060402,SAN GABRIEL DE ASERRI S.J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,105,Aserrí-Acosta,1060404,LIMONAL S. GABRIEL ASERRI S.J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,105,Aserrí-Acosta,1060502,LA LEGUA DE ASERRI S. J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,105,Aserrí-Acosta,1060601,MONTERREY DE ASERRI S.J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,105,Aserrí-Acosta,1060701,SALITRILLOS DE ASERRI S. J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,102,Ciudad Colón,1070102,CIUDAD COLON DE MORA S.J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,102,Ciudad Colón,1070201,GUAYABO DE MORA S.J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,102,Ciudad Colón,1070301,TABARCIA DE MORA - S.J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,106,Guadalupe,1080104,CAI NUEVO DE GOICOECHEA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,106,Guadalupe,1080106,SAN ANTONIO GUADALUPE,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,106,Guadalupe,1080108,SANTA CECILIA DE GUADALUPE S.J,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,106,Guadalupe,1080301,CALLE BLANCOS GOICOECHEA S.J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,106,Guadalupe,1080501,CIUDADELA LA FACIO GOICOECHEA  (IPIS),Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,106,Guadalupe,1080503,CIUDADELA LA MORA GOICOE S.J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,106,Guadalupe,1080701,LOS CUADROS DE PURRAL  S. J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,102,Ciudad Colón,1090102,SANTA ANA SAN JOSE,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,102,Ciudad Colón,1090301,POZOS DE SANTA ANA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,102,Ciudad Colón,1090501,PIEDADES DE SANTA ANA S.J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,101,Hatillo,1100102,ALAJUELITA S.J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,101,Hatillo,1100401,CONCEPCION DE ALAJUELITA S.J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,106,Guadalupe,1110102,SAN ISIDRO DE CORONADO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,106,Guadalupe,1110301,DULCE NOMBRE DE CORONADO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,105,Aserrí-Acosta,1120103,SAN IGNACIO DE ACOSTA S. J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,105,Aserrí-Acosta,1120201,OCOCA DE ACOSTA S. J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,102,Ciudad Colón,1120301,PALMICHAL DE ACOSTA S. J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,105,Aserrí-Acosta,1120402,CANGREJAL DE ACOSTA S.J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,105,Aserrí-Acosta,1120505,SABANILLAS DE ACOSTA S. J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,103,Tibás,1130103,SAN JUAN DE TIBAS S. J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,103,Tibás,1130202,CINCO ESQUINAS TIBAS S.J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,103,Tibás,1130203,CINCO ESQUINAS TIBAS S.J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,103,Tibás,1130401,CIUDADELA LEON XIII TIBAS S.J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,106,Guadalupe,1140101,SAN VICENTE DE MORAVIA-S.J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,106,Guadalupe,1140301,LA TRINIDAD DE MORAVIA S.J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,106,Guadalupe,1140302,LOS SITIOS DE MORAVIA.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,106,Guadalupe,1150107,VARGAS ARAYA DE MTS. DE OCA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,106,Guadalupe,1150202,SABANILLAS DE MTES. DE OCA S.J,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,102,Ciudad Colón,1160102,SAN PABLO DE TURRUBARES S.J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,102,Ciudad Colón,1160105,SAN PEDRO TURRUBARES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,901,Tejar del Guarco,1170103,SANTA MARIA DOTA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,901,Tejar del Guarco,1170302,COPEY DE DOTA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,104,Curridabat-Desamparados,1180102,CURRIDABAT S.J.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,104,Curridabat-Desamparados,1180401,TIRRASES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,501,Pérez Zeledón 1,1190108,SAN ISIDRO DEL GENERAL,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,501,Pérez Zeledón 1,1190129,BARRIO SINAI DE P. Z.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,501,Pérez Zeledón 1,1190130,PAVONES DE PEREZ ZELEDON,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,501,Pérez Zeledón 1,1190131,SAN RAFAEL NORTE P. Z.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,501,Pérez Zeledón 1,1190132,LOMAS DE COCORI,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,501,Pérez Zeledón 1,1190202,GENERAL VIEJO DE P. Z.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,506,Pérez Zeledón 2,1190204,PEÑAS BLANCAS PEREZ ZELEDON,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,506,Pérez Zeledón 2,1190301,PALMARES DE PEREZ ZELEDON,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,501,Pérez Zeledón 1,1190303,DANIEL FLORES DE P. Z.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,506,Pérez Zeledón 2,1190304,LA REPUNTA DE PEREZ ZELEDON,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,506,Pérez Zeledón 2,1190305,SAN JUAN BOSCO DE P. Z.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,501,Pérez Zeledón 1,1190308,BARRIO LOS ANGELES DE DANIEL F,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,501,Pérez Zeledón 1,1190309,INVU EL CLAVEL P. Z.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,506,Pérez Zeledón 2,1190310,CONCEPCION  P. Z.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,506,Pérez Zeledón 2,1190311,MOLLEJONES DE P. Z.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,506,Pérez Zeledón 2,1190312,SAN ANTONIO DE P  Z.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,501,Pérez Zeledón 1,1190403,RIVAS DE P. Z.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,501,Pérez Zeledón 1,1190404,BUENA VISTA DE P. Z.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,CERRADO
+5,Brunca,501,Pérez Zeledón 1,1190405,HERRADURA DE P. Z.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,501,Pérez Zeledón 1,1190406,PUEBLO NUEVO DE RIVAS P. Z.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,501,Pérez Zeledón 1,1190407,MIRAVALLES DE P. Z.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,506,Pérez Zeledón 2,1190502,SAN PEDRO DE PEREZ ZELEDON,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,506,Pérez Zeledón 2,1190503,SAN RAFAEL DE SAN PEDRO P. Z.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,CERRADO
+5,Brunca,506,Pérez Zeledón 2,1190602,SAN RAFAEL DE PLATANARES P. Z.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,506,Pérez Zeledón 2,1190702,PEJIBAYE DE PEREZ ZELEDON,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,506,Pérez Zeledón 2,1190704,SAN MARTIN DE PEJIVALLE,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,506,Pérez Zeledón 2,1190705,SAN PABLO DE PEREZ ZELEDON,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,506,Pérez Zeledón 2,1190802,CAJON DE PEREZ ZELEDON,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,506,Pérez Zeledón 2,1190803,SAN PEDRITO DE CAJON P. Z.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,506,Pérez Zeledón 2,1190805,SAN FRANCISCO DE CAJON,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,506,Pérez Zeledón 2,1190806,QUIZARRA DE PEREZ ZELEDON,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,506,Pérez Zeledón 2,1190807,SANTA MARIA DE CAJON P.Z.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,506,Pérez Zeledón 2,1190808,SANTA TERESA DE CAJON P. Z.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,501,Pérez Zeledón 1,1190902,SAN CRISTOBAL DE P. Z.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,501,Pérez Zeledón 1,1191001,SAAVEGRE DE P. Z.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,501,Pérez Zeledón 1,1191002,SANTA ROSA DE P. Z.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,501,Pérez Zeledón 1,1191003,VILLA NUEVA DE P.Z.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,501,Pérez Zeledón 1,1191101,SAN RAMON NORTE DE P. Z.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,501,Pérez Zeledón 1,1191102,SANTO TOMAS DE P. Z.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,CERRADO
+5,Brunca,501,Pérez Zeledón 1,1191103,LOS ANGELES DE  P.Z. (PARAMO),Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,901,Tejar del Guarco,1200102,SAN PABLO LEON CORTES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,901,Tejar del Guarco,1200202,SN ANDRES LEON CORTES S. J,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,901,Tejar del Guarco,1200302,LLANO BONITO LEON CORTES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,901,Tejar del Guarco,1200401,SAN ISIDRO DE LEON CORTES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,901,Tejar del Guarco,1200501,SANTA CRUZ LEON CORTES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,901,Tejar del Guarco,1200601,SAN ANTONIO DE LEON CORTES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,603,Alajuela,2010105,EL ERIZO ALAJUELA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,603,Alajuela,2010106,PUEBLO NUEVO ALAJUELA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,603,Alajuela,2010201,TUETAL DE ALAJUELA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,604,Grecia,2010202,BARRIO SAN JOSE DE ALAJUELA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,603,Alajuela,2010302,CARRIZAL DE ALAJUELA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,603,Alajuela,2010304,PAVAS DE CARRIZAL,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,603,Alajuela,2010401,VILLA BONITA DE ALAJUELA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,603,Alajuela,2010402,CIRUELAS ALAJUELA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,603,Alajuela,2010501,LA GUACIMA ALAJ.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,603,Alajuela,2010602,BARRIO SAN MARTIN DE ALAJUELA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,603,Alajuela,2010603,ITIQUIS ALAJ.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,603,Alajuela,2010604,SAN ISIDRO DE ALAJUELA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,604,Grecia,2010605,LAGUNA DE SAN ISIDRO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,603,Alajuela,2010703,SABANILLA DE ALAJUELA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,604,Grecia,2010704,POASITO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,INACTIVO
+6,Central Norte,603,Alajuela,2010801,SAN RAFAEL DE OJO DE AGUA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,603,Alajuela,2010901,Bo. INVU LAS CAÑAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,603,Alajuela,2010902,RIO SEGUNDO ALAJUELA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,604,Grecia,2011102,TURRUCARES DE ALAJUELA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,604,Grecia,2011301,LA GARITA ALAJ.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,605,Sarapiquí,2011402,SAN MIGUEL DE SARAPIQUI,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,605,Sarapiquí,2011403,UJARRAS DE SARAPIQUI  CINCHONA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+8,Central Occidente,801,San Ramón,2020104,SAN RAMON DE ALAJUELA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+8,Central Occidente,801,San Ramón,2020111,SAN RAMON DE ALAJUELA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+8,Central Occidente,801,San Ramón,2020112,CENTRO DE DISTRIB. SAN RAMON,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+8,Central Occidente,801,San Ramón,2020302,SAN JUAN DE SAN RAMON,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+8,Central Occidente,801,San Ramón,2020502,PIEDADES SUR SAN RAMON,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+8,Central Occidente,801,San Ramón,2020608,LA UNION SAN RAMON,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+8,Central Occidente,801,San Ramón,2020803,BAJO LOS RODRIGUEZ S.R.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+8,Central Occidente,801,San Ramón,2020903,ALFARO DE SAN RAMON,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+8,Central Occidente,801,San Ramón,2021302,CHACHAGUA DE SAN RAMON,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+8,Central Occidente,801,San Ramón,2021304,ABANICO DE SAN ISIDRO DE P.B.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+8,Central Occidente,801,San Ramón,2021305,INVU SAN ISIDRO P.B.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+8,Central Occidente,801,San Ramón,2021306,SAN ISIDRO PEÑAS BLANCAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,604,Grecia,2030106,GRECIA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,604,Grecia,2030201,SAN ISIDRO DE GRECIA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,604,Grecia,2030502,TACARES DE GRECIA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,201,Ciudad Quesada,2030602,RIO CUARTO DE GRECIA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,201,Ciudad Quesada,2030603,SANTA RITA RIO CUARTO GRECIA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,201,Ciudad Quesada,2030609,SANTA ISABEL  RIO CUARTO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,201,Ciudad Quesada,2030610,SN RAFAEL RIO CUARTO GRECI,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,604,Grecia,2030701,PSR PUENTE PIEDRA GRECIA A.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,604,Grecia,2030801,PSR SAN JUAN DE GRECIA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+7,Pacífico Central,702,Orotina,2040102,SAN MATEO DE ALAJUELA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+7,Pacífico Central,702,Orotina,2040301,LABRADOR SAN MATEO ALAJ.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,604,Grecia,2050103,ATENAS DE ALAJUELA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,604,Grecia,2050201,EBAIS BARRIO JESUS ATENAS A.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,CERRADO
+6,Central Norte,604,Grecia,2050401,EBAIS SAN ISIDRO DE ATENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,CERRADO
+6,Central Norte,604,Grecia,2050403,EBAIS ALTOS NARANJO ATENAS A.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,CERRADO
+6,Central Norte,604,Grecia,2050701,SANTA EULALIA DE ATENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+8,Central Occidente,802,Naranjo,2060103,NARANJO ALAJUELA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+8,Central Occidente,802,Naranjo,2060104,PALMITOS DE NARANJO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+8,Central Occidente,802,Naranjo,2060107,CANDELARIA NARANJO ALAJ.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+8,Central Occidente,802,Naranjo,2060116,BARRIO CORAZON DE JESUS EL CRUCE,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+8,Central Occidente,802,Naranjo,2060117,CENTRO DE DISTRIB. NARANJO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+8,Central Occidente,802,Naranjo,2060301,SAN JUANILLO DE NARANJO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+8,Central Occidente,802,Naranjo,2060701,ROSARIO NARANJO ALAJ.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+8,Central Occidente,803,Palmares,2070203,RINCON DE ZARAGOZA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+8,Central Occidente,803,Palmares,2070302,BUENOS AIRES DE PALMARES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+8,Central Occidente,803,Palmares,2070602,ESQUIPULAS PALMARES ALAJ.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+8,Central Occidente,803,Palmares,2070702,LA GRANJA PALMARES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,604,Grecia,2080103,SAN PEDRO DE POAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,604,Grecia,2080301,SAN RAFAEL DE POAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,604,Grecia,2080401,CARRILLOS DE POAS ALAJ.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+7,Pacífico Central,702,Orotina,2090103,OROTINA ALAJUELA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+7,Pacífico Central,702,Orotina,2090201,MASTATE OROTINA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+7,Pacífico Central,702,Orotina,2090401,COYOLAR DE OROTINA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,201,Ciudad Quesada,2100106,CIUDAD QUESADA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,201,Ciudad Quesada,2100111,CIUDAD QUESADA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,201,Ciudad Quesada,2100118,BARRIO SAN MARTIN SAN CARLOS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,201,Ciudad Quesada,2100121,DULCE NOMBRE SAN CARLOS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,201,Ciudad Quesada,2100128,BARRIO LA CRUZ DE SAN CARLOS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,202,La Fortuna,2100202,MUELLE DE SAN CARLOS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,202,La Fortuna,2100203,PLATANAR DE SAN CARLOS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,202,La Fortuna,2100204,SANTA CLARA DE SAN CARLOS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,202,La Fortuna,2100205,FLORENCIA SAN CARLOS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,202,La Fortuna,2100206,EL PEJE DE FLORENCIA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,201,Ciudad Quesada,2100403,AGUAS ZARCAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,201,Ciudad Quesada,2100404,LOS CHILES AGUAS ZARCAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,201,Ciudad Quesada,2100503,VENECIA DE SAN CARLOS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,201,Ciudad Quesada,2100504,BUENOS AIRES DE VENECIA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,201,Ciudad Quesada,2100603,PITAL SAN CARLOS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,201,Ciudad Quesada,2100604,VERACRUZ DE PITAL,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,201,Ciudad Quesada,2100607,SAHINO DE PITAL,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,201,Ciudad Quesada,2100608,QUEBRADA GRANDE PITAL,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,201,Ciudad Quesada,2100609,EL PALMAR DE PITAL,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,201,Ciudad Quesada,2100610,SANTA ELENA  DE PITAL,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,202,La Fortuna,2100703,EL TANQUE LA FORTUNA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,202,La Fortuna,2100705,LA FORTUNA SAN CARLOS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,202,La Fortuna,2100709,"ZONAFLUCA, SAN CARLOS",Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,202,La Fortuna,2100710,LOS ANGELES DE FORTUNA S.C.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,202,La Fortuna,2100802,LA TIGRA SAN CARLOS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,202,La Fortuna,2100803,LA LUCHA DE LA TIGRA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,202,La Fortuna,2100804,EL FUTURO DE LA TIGRA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,202,La Fortuna,2100901,SAN FCO. DE LA PALMERA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,202,La Fortuna,2100902,LA  PALMERA DE S. C.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,202,La Fortuna,2101004,VENADO DE SAN CARLOS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,201,Ciudad Quesada,2101107,BOCA TAPADA DE CUTRIS ALAJ,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,203,Santa Rosa,2101111,SAN JOAQUIN CUTRIS  SAN CARLOS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,203,Santa Rosa,2101112,COOPEVEGA DE CUTRIS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,203,Santa Rosa,2101114,MORAVIA CUTRIS ALAJ.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,203,Santa Rosa,2101118,BOCA DE ARENAL SN CARLOS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,201,Ciudad Quesada,2101119,BOCA DEL RIO SAN CARLOS A,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,203,Santa Rosa,2101120,SAN PEDRO CUTRIS ALAJ.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,203,Santa Rosa,2101121,SAN MARCOS DE CUTRIS S. C.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,202,La Fortuna,2101202,SANTO DOMINGO DE MONTERREY S.C.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,203,Santa Rosa,2101302,SANTA ROSA DE POCOSOL,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,203,Santa Rosa,2101308,CARRIZAL POCOSOL ALAJ.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,203,Santa Rosa,2101309,EL CONCHO SN CARLOS ALAJ.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,203,Santa Rosa,2101310,SAN CRISTOBAL DE POCOSOL,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,203,Santa Rosa,2101311,EL PLOMO DE POCOSOL,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,203,Santa Rosa,2101312,JUANILAMA DE POCOSOL,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,203,Santa Rosa,2101313,TRES Y TRES DE LOS CHILES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+8,Central Occidente,802,Naranjo,2110103,ZARCERO DE ALAJUELA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+8,Central Occidente,802,Naranjo,2110201,LAGUNA DE ALFARO RUIZ,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+8,Central Occidente,802,Naranjo,2110302,TAPEZCO DE ALFARO RUIZ,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+8,Central Occidente,802,Naranjo,2110501,PALMIRA DE ALFARO RUIZ ALAJ,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+8,Central Occidente,802,Naranjo,2110701,SANTA ROSA DE ALFARO RUIZ,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+8,Central Occidente,803,Palmares,2120103,SARCHI NORTE DE VALVERDE VEGA 1,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+8,Central Occidente,803,Palmares,2120104,SARCHI NORTE  VALVERDE VEGA 2,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,CERRADO
+8,Central Occidente,803,Palmares,2120109,LA LUISA VALVERDE VEGA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+8,Central Occidente,803,Palmares,2120201,SARCHI S. DE VALVERDE VEGA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+8,Central Occidente,803,Palmares,2120402,SAN PEDRO VALVERDE VEGA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,305,Cañas,2130104,UPALA ALAJUELA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,305,Cañas,2130105,SANTA ROSA UPALA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,301,Liberia,2130203,SAN ISIDRO DE AGUAS CLARAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,305,Cañas,2130302,SAN JOSE UPALA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,305,Cañas,2130402,BIJAGUA DE UPALA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,305,Cañas,2130503,SANTA CLARA UPALA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,203,Santa Rosa,2140102,LOS CHILES ALAJUELA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,203,Santa Rosa,2140104,MEDIO QUESO LOS CHILE,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,203,Santa Rosa,2140109,EL PARQUE LOS CHILES ALAJ.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,203,Santa Rosa,2140113,COQUITAL LOS CHILES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,203,Santa Rosa,2140114,SANTA FE DE LOS CHILES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,203,Santa Rosa,2140115,LAS NUBES DE LOS CHILES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,203,Santa Rosa,2140116,CRISTO REY LOS CHILES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,203,Santa Rosa,2140117,LA VIRGEN DE LOS CHILES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,203,Santa Rosa,2140118,CUATRO ESQUINAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,203,Santa Rosa,2140203,CAÑO NEGRO LOS CHILES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,203,Santa Rosa,2140204,VERACRUZ DE LOS CHILES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,203,Santa Rosa,2140205,NUEVA ESPERANZA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,203,Santa Rosa,2140301,SAN JOSE AMPARO LOS CHILES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,203,Santa Rosa,2140302,COBANO LOS CHILES ALAJ.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,203,Santa Rosa,2140303,PAVON  LOS CHILES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,203,Santa Rosa,2140304,SAN FRANCISCO LOS CHILES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,203,Santa Rosa,2140305,EL GALLITO DE LOS CHILES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,203,Santa Rosa,2140401,EL PORVENIR LOS CHILES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,203,Santa Rosa,2140402,SAN JORGE LOS CHILES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,203,Santa Rosa,2140403,LA URRACA DE LOS CHILES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,203,Santa Rosa,2140404,SANTIAGO LIRIOS LOS CHILES ALAJUELA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,204,San Rafael de Guatuso,2150103,SAN RAFAEL DE GUATUSO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,204,San Rafael de Guatuso,2150105,PALENQUE MARGARITA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,204,San Rafael de Guatuso,2150204,LA KATIRA GUATUSO ALAJUELA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,204,San Rafael de Guatuso,2150209,RIO CELESTE GUATUSO ALAJUELA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+2,Huetar Norte,204,San Rafael de Guatuso,2150302,LA CABANGA DE COTE GUATUSO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,902,Cartago,3010301,CARTAGO CENTRO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,902,Cartago,3010401,SAN NICOLAS DE CARTAGO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,902,Cartago,3010402,LOYOLA DE SAN NICOLAS DE CARTAGO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,902,Cartago,3010501,AGUA CALIENTE SN FCO CARTAGO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,902,Cartago,3010503,LOURDES SAN FCO. CARTAGO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,902,Cartago,3010601,GUADALUPE CARTAGO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,902,Cartago,3010701,SAN JUAN DE TOBOSI SUR-CARTAGO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,902,Cartago,3010704,SAN JUAN DE TOBOSI NORTE-CARTAGO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,902,Cartago,3010705,CORRALILLO CARTAGO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,902,Cartago,3010706,EL ALUMBRE DE CORRALILLO CARTAGO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,104,Curridabat-Desamparados,3010708,LOMA LARGA DE CORRALILLO-CARTAGO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,902,Cartago,3010709,SAN ANTONIO DE CORRALILLO-CARTAGO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,902,Cartago,3010710,SANTA ELENA ARR. DE CORRALILLO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,902,Cartago,3010714,LLANO LOS ANGELES CORRALILLO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,903,Oreamuno,3010801,TIERRA BLANCA CTGO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,902,Cartago,3010901,DULCE NOMBRE CARTAGO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,902,Cartago,3010903,CABALLO BLANCO  CARTAGO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,902,Cartago,3011001,LLANO GRANDE CARTAGO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,902,Cartago,3011101,QUEBRADILLAS GPE. CARTAGO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,903,Oreamuno,3020104,PARAISO NO. 1 CARTAGO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,903,Oreamuno,3020112,EL SALVADOR DE CARTAGO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,903,Oreamuno,3020113,LLANOS DE SANTA LUCIA PARAISO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,903,Oreamuno,3020201,SANTIAGO PARAISO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,903,Oreamuno,3020302,OROSI PARAISO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,903,Oreamuno,3020303,PURISIL PARAISO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,903,Oreamuno,3020304,"PALOMO, OROSI",Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,903,Oreamuno,3020305,PUENTE NEGRO DE OROSI,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,903,Oreamuno,3020402,CACHI PARAISO CARTAGO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,902,Cartago,3030104,TRES RIOS DE LA UNION DE CARTAGO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,902,Cartago,3030401,LOS SAUCES TRES RIOS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,104,Curridabat-Desamparados,3030801,RIO AZUL DE LA UNION-CARTAGO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,903,Oreamuno,3040104,NARANJO JUAN VIÑAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,903,Oreamuno,3040105,JUAN VIÑAS JIMENEZ-CARTAGO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,903,Oreamuno,3040107,LA VICTORIA DE JUAN VIÑAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,903,Oreamuno,3040109,SAN MARTIN JUAN VIÑAS-CARTAGO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,904,Turrialba,3040203,SABANILLAS TUCURRIQUE,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,904,Turrialba,3040204,TUCURRIQUE TURRIALBA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,904,Turrialba,3040303,PEJIBAYE JIMENEZ,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,904,Turrialba,3050103,TURRIALBA CTGO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,904,Turrialba,3050105,LA MARGOT TURRIALBA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,904,Turrialba,3050118,SAN JUAN SUR TURRIALBA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,904,Turrialba,3050124,SAN JUAN NORTE TURRIALBA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,904,Turrialba,3050125,COLORADO TURRIALBA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,904,Turrialba,3050203,LA SUIZA TURRIALBA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,904,Turrialba,3050305,PERALTA DE TURRIALBA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,904,Turrialba,3050402,SANTA CRUZ DE TLBA.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,904,Turrialba,3050504,EL SAUCE SANTA TERESITA-TLBA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,904,Turrialba,3050506,STA TERESITA TURRIALBA CARTAGO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,904,Turrialba,3050507,GUAYABO TURRIALBA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,904,Turrialba,3050602,SITIO MATA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,904,Turrialba,3050603,JABILLOS DE TURRIALBA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,904,Turrialba,3050701,TUIS TURRIALBA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,904,Turrialba,3050802,PLATANILLO TURRIALBA TAYUTIC,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,904,Turrialba,3050810,PASO MARCOS DE PLATANILLO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,904,Turrialba,3050902,AQUIARES STA ROSA TURRIALBA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,904,Turrialba,3050903,SANTA ROSA TURRIALBA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,904,Turrialba,3051001,TRES EQUIS TURRIALBA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,904,Turrialba,3051101,EL MORA TURRIALBA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,904,Turrialba,3051102,AZUL TURRIALBA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,904,Turrialba,3051201,GRANO DE ORO DE TURRIALBA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,904,Turrialba,3051202,NIMARI TURRIALBA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,904,Turrialba,3051203,CHIRRIPO ABAJO TURRIALBA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,903,Oreamuno,3060102,PACAYAS DE ALVARADO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,903,Oreamuno,3060201,CERVANTES DE ALVARADO-CARTAGO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,903,Oreamuno,3060301,CAPELLADES DE ALVARADO-CARTAGO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,903,Oreamuno,3070102,SAN RAFAEL OREAMUNO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,903,Oreamuno,3070202,COT OREAMUNO CARTAGO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,903,Oreamuno,3070401,CIPRESES DE OREAMUNO-CARTAGO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,901,Tejar del Guarco,3080102,TEJAR DE GUARCO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,901,Tejar del Guarco,3080204,PALMITAL DE GUARCO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,901,Tejar del Guarco,3080206,EL EMPALME DE GUARCO-CARTAGO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,901,Tejar del Guarco,3080207,SAN ISIDRO GUARCO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,901,Tejar del Guarco,3080301,PURIRES DEL GUARCO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,601,Heredia,4010105,CIUDADELA BERNARDO BENAVIDES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,601,Heredia,4010106,BARRIO LOURDES DE HEREDIA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,601,Heredia,4010109,LOTES PERALTA H.  SAN JOSECITO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,601,Heredia,4010125,Bo. CORAZON DE JESUS HEREDIA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,601,Heredia,4010201,BARRIO LAS MERCEDES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,601,Heredia,4010302,GUARARI  HEREDIA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,601,Heredia,4010402,BARREAL DE HEREDIA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,601,Heredia,4010404,CIUDADELA IMAS SANTA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,601,Heredia,4010408,LA AURORA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,602,Flores,4010501,VARA BLANCA HEREDIA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,INACTIVO
+6,Central Norte,602,Flores,4020102,BARVA DE HEREDIA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,602,Flores,4020201,SAN PEDRO DE BARVA HEREDIA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,602,Flores,4020601,SAN JOSE DE LA MONTAÑA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,601,Heredia,4030103,SANTO DOMINGO DE HEREDIA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,601,Heredia,4030301,SAN MIGUEL DE STO.DOMINGO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+1,Central Sur,106,Guadalupe,4030402,PARACITO DE SANTO DO.-HER.,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,601,Heredia,4030501,SANTO TOMAS DE SANTO DOMINGO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,601,Heredia,4030601,SANTA ROSA DE SANTO DOMINGO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,602,Flores,4040103,SANTA BARBARA DE HEREDIA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,602,Flores,4040201,SAN PEDRO DE SANTA BARBARA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,602,Flores,4040401,BIRRI DE STA BARBARA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,602,Flores,4040502,SANTO DOMINGO DEL ROBLE HEREDIA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,602,Flores,4050103,SAN RAFAEL DE HEREDIA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,601,Heredia,4050201,BAJO LOS MOLINOS HEREDIA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,602,Flores,4060102,SAN ISIDRO HEREDIA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,602,Flores,4060401,SAN FRANCISCO DE SAN ISIDRO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,602,Flores,4070102,SAN ANTONIO DE BELEN HEREDIA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,602,Flores,4070201,LA RIVERA DE BELEN HEREDIA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,602,Flores,4080102,SAN JOAQUIN DE FLORES HEREDIA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,602,Flores,4090102,SAN PABLO DE HEREDIA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,605,Sarapiquí,4100110,LA GUARIA DE SARAPIQUI PUERTO VIEJO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,605,Sarapiquí,4100202,LA VIRGEN DE SARAPIQUI,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,605,Sarapiquí,4100304,COLONIA VICTORIA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,605,Sarapiquí,4100306,HORQUETAS DE SARAPIQUI,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+6,Central Norte,605,Sarapiquí,4100314,FINCA 2 LA UNION RIO FRIO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,301,Liberia,5010104,LIBERIA GUANACASTE,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,301,Liberia,5010105,Bo. SAN ROQUE LIBERIA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,301,Liberia,5010123,Bo. NAZARETH DE LIBERIA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,301,Liberia,5010202,CAÑAS DULCES LIBERIA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,301,Liberia,5010302,QUEBRADA GRANDE LIBERIA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,301,Liberia,5010402,GUARDIA DE LIBERIA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,303,Nicoya,5020108,NICOYA GUANACASTE,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,303,Nicoya,5020109,SAN MARTIN NICOYA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,303,Nicoya,5020112,LA VIRGINIA DE NICOYA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,303,Nicoya,5020113,CAIMITAL DE NICOYA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,303,Nicoya,5020114,CURIME DE NICOYA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,303,Nicoya,5020115,GAMALOTAL NICOYA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,303,Nicoya,5020125,NAMBI DE NICOYA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,303,Nicoya,5020129,SAN BLAS DE NICOYA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,303,Nicoya,5020202,PUEBLO VIEJO NICOYA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,CERRADO
+3,Chorotega,303,Nicoya,5020203,LA MANSION DE NICOYA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,303,Nicoya,5020204,LA VIGIA DE NICOYA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,303,Nicoya,5020205,SANTA ANA NICOYA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,303,Nicoya,5020301,SAN LAZARO NICOYA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,303,Nicoya,5020302,CORRALILLO DE NICOYA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,303,Nicoya,5020303,MORACIA DE NICOYA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,303,Nicoya,5020304,SAN ANTONIO NICOYA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,303,Nicoya,5020305,POZO DE AGUA NICOYA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,CERRADO
+3,Chorotega,303,Nicoya,5020307,SAN VICENTE NICOYA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,303,Nicoya,5020308,CAÑAL DE POZO DE AGUA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,CERRADO
+3,Chorotega,303,Nicoya,5020309,ROSARIO DE NICOYA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,303,Nicoya,5020402,ROBLAR DE NICOYA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,CERRADO
+3,Chorotega,303,Nicoya,5020403,QUEBRADA HONDA NICOYA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,303,Nicoya,5020404,COPAL DE NICOYA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,303,Nicoya,5020502,SAMARA DE NICOYA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,CERRADO
+3,Chorotega,303,Nicoya,5020602,BOCAS NOSARA NICOYA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,302,Santa Cruz,5030103,LAGUNILLA DE SANTA CRUZ,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,302,Santa Cruz,5030104,SANTA CRUZ GUANACASTE,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,302,Santa Cruz,5030106,ARADO SANTA CRUZ,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,302,Santa Cruz,5030107,SAN JUAN SANTA CRUZ,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,302,Santa Cruz,5030108,EL CACAO DE SANTA CRUZ,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,302,Santa Cruz,5030202,BOLSON DE SANTA CRUZ,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,302,Santa Cruz,5030203,ORTEGA DE SANTA CRUZ,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,302,Santa Cruz,5030306,27 DE ABRIL SANTA CRUZ,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,302,Santa Cruz,5030307,RIO SECO SANTA CRUZ,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,302,Santa Cruz,5030311,LA DELICIAS SANTA CRUZ,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,302,Santa Cruz,5030313,HATILLO DE SANTA CRUZ,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,302,Santa Cruz,5030315,PARAISO DE SANTA CRUZ,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,302,Santa Cruz,5030316,SAN JOSE DE LA MONTAÑA DE 27 D,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,CERRADO
+3,Chorotega,302,Santa Cruz,5030401,TEMPATE SANTA CRUZ,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,302,Santa Cruz,5030402,PORTEGOLPE SANTA CRUZ,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,302,Santa Cruz,5030404,HUACAS DE SANTA CRUZ,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,302,Santa Cruz,5030405,EL LLANO DE SANTA CRUZ,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,302,Santa Cruz,5030502,CARTAGENA SANTA CRUZ,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,302,Santa Cruz,5030503,EL EDEN DE SANTA CRUZ,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,302,Santa Cruz,5030603,OSTIONAL DE SANTA CRUZ,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,302,Santa Cruz,5030701,SANTA BARBARA DE SANTA CRUZ,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,302,Santa Cruz,5030702,"SAN PEDRO, SANTA CRUZ",Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,CERRADO
+3,Chorotega,302,Santa Cruz,5030801,MATAPALO DE SANTA CRUZ,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,302,Santa Cruz,5030901,VILLARREAL SANTA CRUZ,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,302,Santa Cruz,5030902,SANTA ROSA SANTA CRUZ,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,302,Santa Cruz,5030903,SAN JOSE PINILLA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,302,Santa Cruz,5030904,LA GARITA DE SANTA CRUZ,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,301,Liberia,5040103,BAGACES DE GUANACASTE,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,301,Liberia,5040202,LA FORTUNA DE BAGACES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,301,Liberia,5040302,GUAYABO DE BAGACES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,301,Liberia,5050104,FILADELFIA DE CARRILLO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,301,Liberia,5050201,PALMIRA DE CARRILLO GUANACASTE,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,CERRADO
+3,Chorotega,301,Liberia,5050303,PLAYAS DE COCO CARRILLO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,301,Liberia,5050304,SAN BLAS DE CARRILLO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,CERRADO
+3,Chorotega,301,Liberia,5050305,SARDINAL DE CARRILLO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,301,Liberia,5050401,BELEN DE CARRILLO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,301,Liberia,5050403,SANTA ANA BELEN,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,305,Cañas,5060106,CAÑAS GUANACASTE,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,305,Cañas,5060401,BEBEDERO DE CAÑAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,305,Cañas,5070104,LAS JUNTAS DE ABANGARES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,305,Cañas,5070401,SAN BUENAVENTURA DE COLORADO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,305,Cañas,5070402,COLORADO DE ABANGARES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,305,Cañas,5080103,TILARAN GUANACASTE,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,305,Cañas,5080202,QUEBRADA GRANDE TILARAN,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,305,Cañas,5080303,TRONADORA TILARAN,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,305,Cañas,5080501,LIBANO TILARAN,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,305,Cañas,5080602,TIERRAS MORENAS TILARAN,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,305,Cañas,5080703,ARENAL DE TILARAN,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,304,Nandayure,5090102,COLONIA CARMONA NANDAYURE,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,304,Nandayure,5090201,SANTA RITA NANDAYURE,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,304,Nandayure,5090302,SAN PEDRO DE NANDAYURE,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,304,Nandayure,5090402,PILAS DE CANJEL,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,304,Nandayure,5090404,SAN PABLO NANDAYURE,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,304,Nandayure,5090506,PSR EL PORVENIR C.AZUL NANDAYU,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,CERRADO
+3,Chorotega,304,Nandayure,5090507,"PSR LOS ANGELES, NANDAYURE",Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,CERRADO
+3,Chorotega,304,Nandayure,5090603,SAN FCO. NANDAYURE,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,304,Nandayure,5090604,PUEBLO NUEVO BEJUCO NANDAYURE,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,304,Nandayure,5090605,PILAS DE BEJUCO NANDAYURE,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,301,Liberia,5100202,SANTA CECILIA DE LA CRUZ,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,301,Liberia,5100301,LA GARITA DE LA CRUZ,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,INACTIVO
+3,Chorotega,301,Liberia,5100401,CUAJINIQUIL DE LA CRUZ,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,304,Nandayure,5110102,HOJANCHA DE GUANACASTE,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,304,Nandayure,5110105,MATAMBU DE HOJANCHA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,304,Nandayure,5110201,MONTE ROMO DE HOJANCHA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+3,Chorotega,304,Nandayure,5110401,HUACAS DE HOJANCHA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+7,Pacífico Central,701,Puntarenas,6010107,PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+7,Pacífico Central,701,Puntarenas,6010202,PITAHAYA DE PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+7,Pacífico Central,701,Puntarenas,6010203,SARDINAL DE PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+7,Pacífico Central,701,Puntarenas,6010302,CHOMES PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+7,Pacífico Central,703,Jicaral,6010405,JICARAL DE PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+7,Pacífico Central,703,Jicaral,6010406,LEPANTO DE PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+7,Pacífico Central,703,Jicaral,6010408,MONTAÑA GRANDE LEPANTO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+7,Pacífico Central,703,Jicaral,6010409,LA FRESCA DE JICARAL,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+7,Pacífico Central,703,Jicaral,6010410,DOMINICAS DE PUNTARENAS LEPANTO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+7,Pacífico Central,703,Jicaral,6010411,COROZAL DE LEPANTO PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+7,Pacífico Central,703,Jicaral,6010503,PAQUERA PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+7,Pacífico Central,703,Jicaral,6010505,RIO GRANDE PAQUERA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+7,Pacífico Central,701,Puntarenas,6010603,COSTA DE PAJAROS PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+7,Pacífico Central,701,Puntarenas,6010605,MANZANILLO PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+7,Pacífico Central,701,Puntarenas,6010609,ABANGARITOS DE PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+7,Pacífico Central,701,Puntarenas,6010801,BARRANCA PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+7,Pacífico Central,701,Puntarenas,6010803,LOS ALMENDROS DE BARRANCA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+7,Pacífico Central,701,Puntarenas,6010902,SANTA ELENA GUACIMAL,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,CERRADO
+7,Pacífico Central,703,Jicaral,6011103,COBANO PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+7,Pacífico Central,701,Puntarenas,6011203,Bo. 20 NOVIEMBRE PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+7,Pacífico Central,701,Puntarenas,6011208,FRAY CASIANO DE PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+7,Pacífico Central,701,Puntarenas,6011301,SAN ANTONIO DE ISLA CHIRA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+7,Pacífico Central,701,Puntarenas,6011501,EL ROBLE PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+7,Pacífico Central,701,Puntarenas,6011502,CINCO ESTRELLAS EL ROBLE,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+7,Pacífico Central,701,Puntarenas,6020103,ESPARZA PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+7,Pacífico Central,701,Puntarenas,6020110,MOJON DE ESPARZA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,502,Buenos Aires,6030101,RIO BRUJO DE BUENOS AIRES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,502,Buenos Aires,6030103,SALITRE B. A. PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,502,Buenos Aires,6030104,BUENOS AIRES DE PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,502,Buenos Aires,6030111,BOLAS DE B. A. PUNTS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,502,Buenos Aires,6030115,SANTA CRUZ DE BUENOS AIRES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,502,Buenos Aires,6030202,VOLCAN DE BUENOS AIRES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,502,Buenos Aires,6030204,EL PEJE DE BUENOS AIRES PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,502,Buenos Aires,6030307,POTRERO GRANDE,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,502,Buenos Aires,6030404,BORUCA DE BUENOS AIRES PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,506,Pérez Zeledón 2,6030501,CONCEPCION DE BUENOS AIRES PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,502,Buenos Aires,6030701,CHANGUENA BUENOS AIRES PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,502,Buenos Aires,6030901,SANTA MARTA DE BUENOS AIRES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+7,Pacífico Central,701,Puntarenas,6040103,MIRAMAR DE MONTE DE ORO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+7,Pacífico Central,701,Puntarenas,6040301,SAN ISIDRO DE MONTES DE ORO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,503,Osa-Palmar Norte,6050103,CIUDAD CORTES DE OSA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,503,Osa-Palmar Norte,6050108,CORONADO DE OSA PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,503,Osa-Palmar Norte,6050204,PALMAR NORTE DE  PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,503,Osa-Palmar Norte,6050208,"OLLA CERO DE OSA, PUNTARENAS",Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,503,Osa-Palmar Norte,6050302,SIERPE DE OSA PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+7,Pacífico Central,702,Orotina,6060104,CERRO DAMAS PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+7,Pacífico Central,702,Orotina,6060105,QUEPOS DE AGUIRRE PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+7,Pacífico Central,702,Orotina,6060202,MATAPALO DE AGUIRRE-PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+7,Pacífico Central,702,Orotina,6060203,SILENCIO DE AGUIRRE-PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+7,Pacífico Central,702,Orotina,6060304,LONDRES DE AGUIRRE.-PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,505,Golfito-Corredores,6070103,GOLFITO DE PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,505,Golfito-Corredores,6070204,PUERTO JIMENEZ DE GOLFITO PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,505,Golfito-Corredores,6070208,LA PALMA DE PUERTO JIMENEZ,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,505,Golfito-Corredores,6070303,RIO CLARO DE GOLFITO PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,504,San Vito,6080107,BAJO LOS REYES DE COTO BRUS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,504,San Vito,6080111,LA PINTADA DE COTO BRUS PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,504,San Vito,6080118,SAN VITO DE COTO BRUS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,504,San Vito,6080119,SAN JOAQUIN DE COTO BRUS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,504,San Vito,6080203,SABALITO DE COTO BRUS PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,504,San Vito,6080204,SAN MIGUEL DE SABALITO COTO BRUS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,504,San Vito,6080208,MELLIZAS DE COTO BRUS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,504,San Vito,6080209,SAN LUIS DE RIO NEGRO COTO BRUS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,504,San Vito,6080302,AGUA BUENA DE COTO BRUS PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,504,San Vito,6080303,SAN FCO. DE AGUA BUENA PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,504,San Vito,6080305,COOPA BUENA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,504,San Vito,6080404,SABANILLA DE LIMONCITO DE COTO BRUS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,504,San Vito,6080405,LA CASONA LIMONCITO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+7,Pacífico Central,702,Orotina,6090104,PARRITA DE PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,INACTIVO
+7,Pacífico Central,702,Orotina,6090108,ESTERILLOS O. PARRITA PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,505,Golfito-Corredores,6100103,CIUDAD NEILLY CORREDORES PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,505,Golfito-Corredores,6100204,LA CUESTA CORREDORES PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,505,Golfito-Corredores,6100302,Bo. SAN JORGE CANOAS LOS LOTES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+5,Brunca,505,Golfito-Corredores,6100401,LAUREL DE CORREDORES PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+7,Pacífico Central,702,Orotina,6110104,JACO PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+7,Pacífico Central,702,Orotina,6110201,TARCOLES DE PUNTARENAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+7,Pacífico Central,702,Orotina,6110202,QUEBRADA GANADO DE JACO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,401,Limón-Matina,7010108,CIENEGUITA BARRIO CRISTOBAL COLON,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,401,Limón-Matina,7010109,BARRIO LIMONCITO-LIMON,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,401,Limón-Matina,7010110,VILLA DEL MAR LIMON,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,401,Limón-Matina,7010201,LA COLONIA DEL VALLE LA ESTRELLA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,401,Limón-Matina,7010202,VALLE DE LAS ROSAS LIMON,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,401,Limón-Matina,7010203,CERERE DE VESTA LIMON,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,401,Limón-Matina,7010204,VESTA DE LIMON,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,401,Limón-Matina,7010205,SAN CLEMENTE LIMON,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,401,Limón-Matina,7010301,LIVERPOOL LIMON,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,401,Limón-Matina,7010401,LA BOMBA LIMON,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,401,Limón-Matina,7010402,BANANITO NORTE DE LIMON,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,402,Pococí 1,7020104,GUAPILES  POCOCI  LIMON,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,402,Pococí 1,7020106,SAN RAFAEL POCOCI,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,402,Pococí 1,7020109,TORO AMARILLO POCOCI,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,402,Pococí 1,7020202,JIMENEZ POCOCI LIMON,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,402,Pococí 1,7020304,LA RITA DE POCOCI,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,404,Pococí 2,7020305,TICABAN No. 1 POCOCI,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,404,Pococí 2,7020310,CAÑO SECO DE EL PORVENIR RITA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,404,Pococí 2,7020314,SAN GERARDO LA RITA GUAPILES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,404,Pococí 2,7020316,EL JARDIN DE POCOCI LIMON,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,404,Pococí 2,7020317,LAS PALMITAS DE RITA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,404,Pococí 2,7020318,SOTA 1 DE TICABAN,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,INACTIVO
+4,Huetar Caribe,402,Pococí 1,7020403,ROXANA DE POCOCI,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,402,Pococí 1,7020405,SAN ANTONIO DE ROXANA POCOCI,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,404,Pococí 2,7020408,LLANO BONITO LIMON,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,404,Pococí 2,7020500,EL PROGRESO POCOCI,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,404,Pococí 2,7020503,COLONIA CARIARI POCOCI LIMON,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,404,Pococí 2,7020505,LOS ANGELES CARIARI,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,404,Pococí 2,7020506,"CAMPO 5 EL SEMILLERO, CARIARI",Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,404,Pococí 2,7020507,ASTUA PIRIE,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,404,Pococí 2,7020512,LA ESPERANZA DE GUAPILES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,404,Pococí 2,7020602,BARRA COLORADO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,404,Pococí 2,7020604,BARRA DE TORTUGUERO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,403,Siquirres,7030102,SIQUIRRES LIMON,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,403,Siquirres,7030105,PUEBLO CIVIL SIQUIRRES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,403,Siquirres,7030107,BARRA PARISMINA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,403,Siquirres,7030116,COCAL DE SIQUIRRES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,403,Siquirres,7030119,SAN RAFAEL DE SIQUIRRES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,403,Siquirres,7030120,NUEVA VIRGINIA SIQUIRRES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,403,Siquirres,7030121,GUAYACAN DE SIQUIRRES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,403,Siquirres,7030202,PACUARITO SIQUIRRES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,403,Siquirres,7030204,CIMARRONES DE SIQUIRRES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,403,Siquirres,7030205,PERLITA DE SIQUIRRES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,403,Siquirres,7030206,SAN CARLOS SIQUIRRES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+9,Central Este,904,Turrialba,7030301,PASCUA DE SIQUIRRES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,403,Siquirres,7030303,LA FLORIDA DE SIQUIRRES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,403,Siquirres,7030403,HEREDIANA DE SIQUIRRES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,403,Siquirres,7030502,LA FRANCIA SIQUIRRES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,403,Siquirres,7030503,"EL CAIRO SIQUIRRES, LIMON",Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,403,Siquirres,7030601,LA ALEGRIA SIQUIRRES,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,403,Siquirres,7030602,"FINCA PORTON IBERIA,  LA ALEGRIA",Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,403,Siquirres,7030603,LOS  CEIBOS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,INACTIVO
+4,Huetar Caribe,405,Talamanca,7040103,SEPEKUE TALAMANCA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,405,Talamanca,7040105,SHIROLES TALAMANCA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,405,Talamanca,7040113,COROMA TALAMANCA LIMON,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,CERRADO
+4,Huetar Caribe,405,Talamanca,7040116,BRIBRI  TALAMANCA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,405,Talamanca,7040117,AMUBRI TALAMANCA LIMON,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,405,Talamanca,7040202,SIXAOLA TALAMANCA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,405,Talamanca,7040205,FINCA MARGARITA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,405,Talamanca,7040206,DAYTONIA TALAMANCA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,405,Talamanca,7040207,PARAISO DE TALAMANCA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,405,Talamanca,7040304,CAHUITA TALAMANCA LIMON,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,405,Talamanca,7040305,PUERTO VIEJO TALAMANCA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,401,Limón-Matina,7050102,MATINA LIMON,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,401,Limón-Matina,7050103,"B-LINE, MATINA",Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,401,Limón-Matina,7050104,CUATRO MILLAS MATINA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,CERRADO
+4,Huetar Caribe,401,Limón-Matina,7050108,CORINA DE MATINA LIMON,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,401,Limón-Matina,7050203,BATAAN MATINA LIMON,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,401,Limón-Matina,7050205,VEINTE Y OCHO MILLAS LIMON,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,401,Limón-Matina,7050206,SAHARA MATINA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,401,Limón-Matina,7050207,SANTA MARTA DE BATAAN,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,401,Limón-Matina,7050303,ESTRADA MATINA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,401,Limón-Matina,7050305,ZENT DE MATINA,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,401,Limón-Matina,7050306,CEN 15 MILLAS,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,INACTIVO
+4,Huetar Caribe,402,Pococí 1,7060103,GUACIMO LIMON,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,402,Pococí 1,7060104,PARISMINA GUACIMO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,CERRADO
+4,Huetar Caribe,402,Pococí 1,7060107,LA SELVA DE GUACIMO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,402,Pococí 1,7060108,SAN LUIS GUACIMO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,402,Pococí 1,7060302,POCORA GUACIMO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,402,Pococí 1,7060403,RIO JIMENEZ GUACIMO,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,402,Pococí 1,7060406,SANTA ROSA RIO JIMENEZ,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO
+4,Huetar Caribe,402,Pococí 1,7060501,VILLA FRANCA DUACARI,Listado-de-establecimientos.xlsx#ESTABL_ACTr,CONFIRMED,ACTIVO

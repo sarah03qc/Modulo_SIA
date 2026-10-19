@@ -1,0 +1,63 @@
+---
+description: Apply whenever work involves authentication, authorization, sensitive information, logs, external AI services, APIs, databases, exports or user data
+alwaysApply: false
+---
+
+# Security and Privacy
+
+Treat all CEN-CINAI information as potentially sensitive unless explicitly classified otherwise.
+
+Never place real sensitive data in:
+
+- source code;
+- test fixtures;
+- prompts to external services;
+- logs;
+- commits;
+- screenshots;
+- documentation examples;
+- public datasets.
+
+Sensitive information includes, but is not limited to:
+
+- real names;
+- identification numbers;
+- health information;
+- psychological information;
+- violence-related information;
+- complaints or reports;
+- family information;
+- confidential case information.
+
+Never commit:
+
+- API keys;
+- passwords;
+- tokens;
+- secrets;
+- production credentials;
+- real `.env` files;
+- production connection strings.
+
+Authorization must be enforced in the backend/service/data layer.
+
+Hiding interface elements is not sufficient authorization.
+
+Whenever functionality exposes or modifies data:
+
+1. identify the actor;
+2. identify institutional scope;
+3. identify read/write permissions;
+4. identify sensitive fields;
+5. validate server-side authorization;
+6. include negative permission tests when appropriate.
+
+Never weaken permissions merely to simplify implementation.
+
+Never use real sensitive institutional records for demos or automated tests.
+
+If access requirements are ambiguous, mark:
+
+`NEEDS_VALIDATION`
+
+and do not broaden access by default.

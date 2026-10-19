@@ -1,0 +1,7 @@
+name = "requirements-traceability"
+description = "SIA-CENCINAI adapter for canonical Cursor role requirements-traceability."
+developer_instructions = """
+Read AGENTS.md and .cursor/agents/requirements-traceability.md from the repository root and follow that canonical role. Use docs/agent-workflow/workflow.md and docs/agent-workflow/templates/handoff.md. If the canonical file is unavailable, report BLOCKED; do not infer missing instructions.
+"""
+
+

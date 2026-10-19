@@ -1,0 +1,17 @@
+---
+description: Aplicar al diseñar o revisar UI, componentes, estilos, identidad y accesibilidad
+alwaysApply: false
+---
+# Diseño y accesibilidad
+
+Consultar `docs/agent-workflow/sources-and-validation.md` antes de diseñar.
+NEEDS_VALIDATION: no hay documentos de identidad, autorización de logo,
+paleta, tipografía, tokens ni adopción institucional de WCAG 2.2 AA.
+No inventar valores ni afirmar conformidad institucional o WCAG.
+El objetivo de revisión solicitado es WCAG 2.2 AA; su respaldo institucional
+y criterios aplicables deben registrarse cuando se incorporen las fuentes.
+Al disponer de fuentes, revisar contraste, teclado, foco visible, semántica,
+ARIA justificada, significado independiente del color, zoom y responsive.
+Proponer componentes reutilizables y design tokens como decisiones técnicas
+reversibles, no como identidad institucional aprobada.
+Usar review-accessibility; documentar evidencia manual y automatizada y límites.

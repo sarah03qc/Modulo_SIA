@@ -1,0 +1,50 @@
+---
+description: Apply when analyzing, designing, implementing or testing functionality tied to SIA-CENCINAI requirements and institutional processes
+alwaysApply: false
+---
+
+# Functional Traceability
+
+For functional work, identify applicable references whenever available:
+
+- HU — Historia de Usuario
+- CU — Caso de Uso
+- RF — Requerimiento Funcional
+- RNF — Requerimiento No Funcional
+- RN — Regla de Negocio
+- institutional source
+- validation decision
+
+Maintain traceability between:
+
+institutional process
+→ functional requirement
+→ design
+→ implementation
+→ tests
+
+Before implementing functionality:
+
+1. identify the functional objective;
+2. locate the relevant authoritative source;
+3. identify applicable HU/RF/CU/RNF/RN;
+4. verify whether unresolved questions exist;
+5. mark unresolved functional behavior as `NEEDS_VALIDATION`.
+
+Do not:
+- convert proposals into confirmed requirements;
+- reinterpret institutional documents without noting the inference;
+- remove apparently redundant fields without evidence;
+- assume prototype behavior is validated merely because it exists.
+
+After implementation, report:
+
+- HU/RF/CU/RNF/RN addressed;
+- files changed;
+- tests that verify the behavior;
+- unresolved `NEEDS_VALIDATION` items;
+- any `OUT_OF_SCOPE` findings.
+Minimum chain: HU → RF → CU → implementation → tests.
+Use docs/agent-workflow/templates/task.md and docs/agent-workflow/templates/handoff.md.
+
+
