@@ -5,8 +5,12 @@
   Todos los PER_idPersona usan el formato SYN-<ESTID>-<NN> (siempre <= nvarchar(20)).
 
   Semilla fija: SIDINACC_SYNTHETIC_SEED = 20261019
-  Personas activas por establecimiento: 5 + (EST_id * 2654435761 + semilla) % 6  -> 5..10
+  Universo de poblacion: solo EST_inActivo = 1 AND ISNULL(BIT_eliminado, 0) = 0.
+  Los 31 establecimientos CERRADO/INACTIVO permanecen en RCS_ESTABLECIMIENTO
+  pero no reciben personas, familias, detalle historico ni servicios.
+  Personas activas por establecimiento ACTIVO: 5 + (EST_id * 2654435761 + semilla) % 6  -> 5..10
   Generacion set-based (tally 1..10); no hay INSERT manual por establecimiento.
+  Destinos historicos (LEAD/MIN) se calculan dentro del mismo universo activo.
 
   Escenarios documentados en DATASET_SUMMARY.md:
     SYN-1100102-01   identificacion exacta; Ana Campos Jimenez; 2 servicios 2026
@@ -118,7 +122,8 @@ FROM (
             MIN(e.EST_idEstablecimiento) OVER (PARTITION BY e.CAT_idOficinaLocal)
         ) AS hist_dest
     FROM dbo.RCS_ESTABLECIMIENTO e
-    WHERE ISNULL(e.BIT_eliminado, 0) = 0
+    WHERE e.EST_inActivo = 1
+      AND ISNULL(e.BIT_eliminado, 0) = 0
 ) x;
 
 DECLARE @slot TABLE (
@@ -374,7 +379,8 @@ BEGIN TRY
     IF EXISTS (
         SELECT 1
         FROM dbo.RCS_ESTABLECIMIENTO e
-        WHERE ISNULL(e.BIT_eliminado, 0) = 0
+        WHERE e.EST_inActivo = 1
+          AND ISNULL(e.BIT_eliminado, 0) = 0
           AND (
               SELECT COUNT(*)
               FROM dbo.CAF_PERSONA p
@@ -386,7 +392,25 @@ BEGIN TRY
               WHERE ISNULL(p.BIT_eliminado, 0) = 0
           ) NOT BETWEEN 5 AND 10
     )
-        THROW 50003, 'Hay establecimientos fuera del rango 5-10 personas activas 2026.', 1;
+        THROW 50003, 'Hay establecimientos ACTIVOS fuera del rango 5-10 personas activas 2026.', 1;
+
+    IF EXISTS (
+        SELECT 1
+        FROM dbo.RCS_ESTABLECIMIENTO e
+        WHERE e.EST_inActivo = 0
+          AND ISNULL(e.BIT_eliminado, 0) = 0
+          AND (
+              SELECT COUNT(*)
+              FROM dbo.CAF_PERSONA p
+              JOIN dbo.CAF_FAMILIA_DETALLE fd
+                ON fd.FAM_idFamilia = p.FAM_idFamilia
+               AND fd.RCS_idPeriodo = 2026
+               AND ISNULL(fd.BIT_eliminado, 0) = 0
+               AND fd.EST_idEstablecimientoActual = e.EST_idEstablecimiento
+              WHERE ISNULL(p.BIT_eliminado, 0) = 0
+          ) <> 0
+    )
+        THROW 50003, 'Hay establecimientos INACTIVOS/CERRADOS con personas activas 2026.', 1;
 
     COMMIT TRANSACTION;
     PRINT 'SIDINACC_LOCAL: poblacion sintetica aplicada (solo filas faltantes).';

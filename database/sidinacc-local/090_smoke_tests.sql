@@ -2,14 +2,15 @@
   SIDINACC_LOCAL - 090_smoke_tests.sql
   Smoke tests de la replica local con estructura territorial institucional
   y poblacion sintetica (T01-T14 adaptados; T15-T37 territoriales/poblacion;
-  T38-T40 conservan controles de rol, objetos extra y NULL no documentados).
+  T38-T40 conservan controles de rol, objetos extra y NULL no documentados;
+  T41: establecimientos inactivos/cerrados sin personas activas 2026).
 
   Constantes @expEstTotal / @expEstActive / @expEstChecksum las mantiene
   database/sidinacc-local/tools/generate_territorial_seed.py --check a partir
   del Excel oficial; no son un "639" hardcodeado.
 
   - Solo lectura: unicamente escribe en variables de tabla locales.
-  - THROW 50090 si alguna prueba falla; THROW 50091 si no se evaluaron 40 pruebas.
+  - THROW 50090 si alguna prueba falla; THROW 50091 si no se evaluaron 41 pruebas.
 */
 USE SIDINACC_LOCAL;
 GO
@@ -345,10 +346,13 @@ INSERT INTO @r VALUES ('T22', 'no existen establecimientos huerfanos',
     CONCAT('huerfanos=', @n1));
 
 /* T23 */
-SELECT @n1 = COUNT(*) FROM dbo.RCS_ESTABLECIMIENTO WHERE ISNULL(BIT_eliminado, 0) = 0;
+SELECT @n1 = COUNT(*)
+FROM dbo.RCS_ESTABLECIMIENTO
+WHERE EST_inActivo = 1 AND ISNULL(BIT_eliminado, 0) = 0;
 SELECT @n2 = COUNT(*)
 FROM dbo.RCS_ESTABLECIMIENTO E
-WHERE ISNULL(E.BIT_eliminado, 0) = 0
+WHERE E.EST_inActivo = 1
+  AND ISNULL(E.BIT_eliminado, 0) = 0
   AND (
       SELECT COUNT(*)
       FROM dbo.CAF_PERSONA P
@@ -370,12 +374,13 @@ FROM (
     JOIN dbo.CAF_PERSONA P
       ON P.FAM_idFamilia = FD.FAM_idFamilia
      AND ISNULL(P.BIT_eliminado, 0) = 0
-    WHERE ISNULL(E.BIT_eliminado, 0) = 0
+    WHERE E.EST_inActivo = 1
+      AND ISNULL(E.BIT_eliminado, 0) = 0
     GROUP BY E.EST_idEstablecimiento
 ) c;
-INSERT INTO @r VALUES ('T23', 'cada establecimiento tiene entre 5 y 10 personas ACTIVAS para 2026',
-    CASE WHEN @n1 = @n2 AND @n1 = @expEstTotal AND @n3 >= 5 AND @n4 <= 10 THEN 'PASS' ELSE 'FAIL' END,
-    CONCAT('est=', @n1, '; en_rango=', @n2, '; min=', @n3, '; max=', @n4));
+INSERT INTO @r VALUES ('T23', 'cada establecimiento ACTIVO tiene entre 5 y 10 personas ACTIVAS para 2026',
+    CASE WHEN @n1 = @n2 AND @n1 = @expEstActive AND @n3 >= 5 AND @n4 <= 10 THEN 'PASS' ELSE 'FAIL' END,
+    CONCAT('est_activos=', @n1, '; en_rango=', @n2, '; min=', @n3, '; max=', @n4));
 
 /* T24 */
 SELECT @n1 = COUNT(*) FROM dbo.CAF_PERSONA WHERE ISNULL(BIT_eliminado, 0) = 0;
@@ -595,10 +600,32 @@ INSERT INTO @r VALUES ('T40', 'PER_beneficiario y FAD_inActiva permanecen NULL',
     CASE WHEN @n1 = 0 AND @n2 = 0 THEN 'PASS' ELSE 'FAIL' END,
     CONCAT('PER_beneficiario_no_nulo=', @n1, '; FAD_inActiva_no_nulo=', @n2));
 
+/* T41 */
+SELECT @n1 = COUNT(*)
+FROM dbo.RCS_ESTABLECIMIENTO
+WHERE EST_inActivo = 0 AND ISNULL(BIT_eliminado, 0) = 0;
+SELECT @n2 = COUNT(*)
+FROM dbo.RCS_ESTABLECIMIENTO E
+WHERE E.EST_inActivo = 0
+  AND ISNULL(E.BIT_eliminado, 0) = 0
+  AND (
+      SELECT COUNT(*)
+      FROM dbo.CAF_PERSONA P
+      JOIN dbo.CAF_FAMILIA_DETALLE FD
+        ON FD.FAM_idFamilia = P.FAM_idFamilia
+       AND FD.RCS_idPeriodo = @periodId
+       AND ISNULL(FD.BIT_eliminado, 0) = 0
+       AND FD.EST_idEstablecimientoActual = E.EST_idEstablecimiento
+      WHERE ISNULL(P.BIT_eliminado, 0) = 0
+  ) = 0;
+INSERT INTO @r VALUES ('T41', 'cada establecimiento INACTIVO/CERRADO tiene 0 personas activas 2026',
+    CASE WHEN @n1 = (@expEstTotal - @expEstActive) AND @n1 = @n2 THEN 'PASS' ELSE 'FAIL' END,
+    CONCAT('est_inactivos=', @n1, '; esperados=', @expEstTotal - @expEstActive, '; con_cero_activas_2026=', @n2));
+
 SELECT * FROM @r ORDER BY test;
 
-IF (SELECT COUNT(*) FROM @r) <> 40
-    THROW 50091, 'SIDINACC_LOCAL smoke tests: se esperaban 40 pruebas evaluadas', 1;
+IF (SELECT COUNT(*) FROM @r) <> 41
+    THROW 50091, 'SIDINACC_LOCAL smoke tests: se esperaban 41 pruebas evaluadas', 1;
 
 IF EXISTS (SELECT 1 FROM @r WHERE resultado <> 'PASS')
 BEGIN
@@ -606,7 +633,7 @@ BEGIN
 END
 ELSE
 BEGIN
-    PRINT 'SIDINACC_LOCAL smoke tests PASSED (40/40)';
+    PRINT 'SIDINACC_LOCAL smoke tests PASSED (41/41)';
 END;
 GO
 

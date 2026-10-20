@@ -17,19 +17,30 @@ No se infirió Oficina Local por provincia, cantón, distrito ni proximidad.
 
 ## Territorial coverage
 
-Cifras de catálogo: 661 establecimientos únicos con código en `ESTABL_ACTr` (630 `ACTIVO`, 8 `INACTIVO`, 23 `CERRADO`). Personas activas proyectadas con la semilla `20261019` (runtime: ver sección Validation).
+Catálogo territorial (sin cambio): **661** establecimientos únicos en `ESTABL_ACTr`.
 
-| Región | Oficinas Locales | Establecimientos | Personas activas |
-| ---: | ---: | ---: | ---: |
-| 1 Central Sur | 6 | 92 | 671 |
-| 2 Huetar Norte | 4 | 76 | 569 |
-| 3 Chorotega | 5 | 102 | 780 |
-| 4 Huetar Caribe | 5 | 81 | 609 |
-| 5 Brunca | 6 | 78 | 604 |
-| 6 Central Norte | 5 | 69 | 496 |
-| 7 Pacífico Central | 3 | 43 | 312 |
-| 8 Central Occidente | 3 | 33 | 253 |
-| 9 Central Este | 4 | 87 | 652 |
+- 630 `ACTIVO` → `EST_inActivo = 1`
+- 31 `CERRADO`/`INACTIVO` → `EST_inActivo = 0` (8 `INACTIVO` + 23 `CERRADO`)
+
+La población sintética de 2026 se genera **solo** para establecimientos activos
+(`EST_inActivo = 1` y no eliminados). Los 31 inactivos/cerrados se conservan en
+`RCS_ESTABLECIMIENTO` con **0 personas activas en 2026**. No se simula histórico
+sobre ellos: no hay fecha institucional de cierre.
+
+Personas de la tabla siguiente: **PROJECTION** (fórmulas de `040` + semilla `20261019`).
+No son conteos leídos de SQL Server después de esta corrección.
+
+| Región | Oficinas Locales | Establecimientos (total) | Activos | Personas activas 2026 (PROJECTION) |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 Central Sur | 6 | 92 | 90 | 655 |
+| 2 Huetar Norte | 4 | 76 | 76 | 569 |
+| 3 Chorotega | 5 | 102 | 90 | 682 |
+| 4 Huetar Caribe | 5 | 81 | 75 | 557 |
+| 5 Brunca | 6 | 78 | 75 | 581 |
+| 6 Central Norte | 5 | 69 | 64 | 458 |
+| 7 Pacífico Central | 3 | 43 | 41 | 294 |
+| 8 Central Occidente | 3 | 33 | 32 | 247 |
+| 9 Central Este | 4 | 87 | 87 | 652 |
 
 Nombres de Región y Oficina Local: documento territorial (no los alias del Excel). Ejemplo: Excel `HUETAR ATLÁNTICA` / documento y seed `Huetar Caribe`.
 
@@ -37,30 +48,36 @@ Nombres de Región y Oficina Local: documento territorial (no los alias del Exce
 
 ## Totals
 
-Proyección determinista del seed (fórmulas de `040_seed_synthetic_population.sql`). Sustituir por conteos de SQL Server cuando exista runtime.
+**PROJECTION** determinista del seed corregido (solo establecimientos activos). Los conteos
+4952/4946 de la primera validación runtime corresponden al seed anterior (población también
+en inactivos) y quedan **obsoletos**. Sustituir estas cifras por SQL Server en la próxima
+recreación limpia de `SIDINACC_LOCAL`.
 
 Regions: 9
 Local Offices: 41
 Establishments: 661 (630 active, 31 inactive/closed)
-Families: 3653 (3647 con personas activas; 6 solo con la persona eliminada `n=99`)
-Synthetic persons: 4952
-Active persons: 4946
-Deleted synthetic persons: 6
-Service assignments: 5753
+Families: 3474 (3469 con personas activas; 5 solo con la persona eliminada `n=99`) — PROJECTION
+Synthetic persons: 4700 — PROJECTION
+Active persons: 4695 — PROJECTION
+Deleted synthetic persons: 5 — PROJECTION
+Service assignments: 5470 — PROJECTION
 
-Persons per establishment (activas, 2026):
+Persons per **active** establishment (activas, 2026) — PROJECTION:
 Min: 5
 Max: 10
-Mean: 7.483
+Mean: 7.452
 Median: 7
 
-Service mix (personas activas): 14.1 % sin servicio (696), 60.5 % con 1 (2992), 20.5 % con 2 (1013), 5.0 % con 3 (245).
+Persons per **inactive/closed** establishment (activas, 2026): **0** (regla del mock)
 
-Family size (personas activas): 2667 familias de 1, 661 de 2, 319 de 3.
+Service mix (personas activas, PROJECTION): 14.0 % sin servicio (657), 60.5 % con 1 (2840), 20.5 % con 2 (964), 5.0 % con 3 (234).
+
+Family size (personas activas, PROJECTION): 2541 familias de 1, 630 de 2, 298 de 3.
 
 ## Historical simulation
 
-Families with 2025 → 2026 location changes: 56 (~1.5 % de 3653)
+Families with 2025 → 2026 location changes: 50 (~1.4 % de 3474) — PROJECTION
+Los destinos históricos se eligen solo entre establecimientos **activos** de la misma OL.
 
 Cambio documentado para prueba manual:
 
@@ -87,7 +104,8 @@ El resto de cambios usa el siguiente establecimiento de la misma OL (cíclico). 
 - familia con cambio territorial: `SYN-1100102-03` (ver Historical simulation)
 - apellidos repetidos: el pool sintético reutiliza Rojas, Vargas, Mora, Campos, Jimenez, etc. en múltiples establecimientos
 
-IDs adicionales eliminados (también sintéticos): `SYN-1190130-99`, `SYN-2140404-99`, `SYN-5020308-99`, `SYN-6010406-99`, `SYN-7030503-99`.
+IDs adicionales eliminados (también sintéticos, PROJECTION): `SYN-1190130-99`, `SYN-2140404-99`, `SYN-6010406-99`, `SYN-7030503-99`.
+`SYN-5020308-99` ya no se genera: el establecimiento `5020308` está `CERRADO`.
 
 `CAF_SERVICIO` permanece como catálogo DEMO/SINTETICO (`Servicio Demo 1..3 (SINTETICO)`); no son nombres oficiales de modalidad CEN-CINAI.
 
@@ -98,16 +116,26 @@ Territorial catalog: PASS
 - códigos OL idénticos a los 41 del documento territorial
 - 0 filas `NEEDS_VALIDATION` en el catálogo derivado
 
-Referential integrity: PASS (por construcción del seed + T12/T13/T17/T19–T22/T27/T28/T36). Runtime: ver abajo.
+Referential integrity: por construcción del seed (T12/T13/T17/T19–T22/T27/T28/T36 lo
+verificarán en la próxima recreación). Esta corrección: **NOT_RUN**.
 
-Synthetic ID validation: PASS (formato `SYN-<7 dígitos>-<2 dígitos>`, longitud 14 ≤ 20). Runtime: T24–T26.
+Synthetic ID validation: formato `SYN-<7 dígitos>-<2 dígitos>`, longitud 14 ≤ 20, por
+construcción del seed (T24–T26). Esta corrección: **NOT_RUN**.
 
 PII review: PASS
 - Permitido y presente: nombres y códigos de Región, Oficina Local y establecimiento
 - Ausente: beneficiarios reales, cédulas, DIMEX, teléfonos personales, correos, direcciones particulares, información médica o expedientes
 - El generador territorial no lee las columnas `TELEFONO`, `FAX` ni `DIRECCION` del Excel
 
-Runtime validation: NOT_RUN (no había SQL Server disponible en el entorno de autoría al generar este resumen). Los totales de población son proyección de las fórmulas del seed, no conteos leídos de `SIDINACC_LOCAL`.
+Smoke tests (script `090`): **41** (T01–T41; se añadió T41: 0 personas activas 2026 en
+cada EST inactivo/cerrado). Runtime de esta corrección: **NOT_RUN**.
+
+Runtime validation:
+- Primera ejecución (seed anterior, población también en inactivos): **PASS**
+  (9 regiones / 41 OL / 661 EST; 630 activos; 31 inactivos/cerrados; 4952/4946 personas;
+  smoke **40/40**; idempotencia). Esos totales 4952/4946 quedan **obsoletos**.
+- Tras esta corrección semántica: **NOT_RUN**. Los seeds son insert-only; no se modificó
+  la instancia SQL existente. Hace falta recrear `SIDINACC_LOCAL` y volver a ejecutar 001→090.
 
 ## TODO-UTIC
 

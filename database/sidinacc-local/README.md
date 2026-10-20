@@ -180,8 +180,12 @@ ni ningún dato de personas reales.
 
 La población (personas, familias, fechas de nacimiento, servicios) es 100 % sintética.
 Todos los `PER_idPersona` usan `SYN-<ESTID>-<NN>` (T05/T25). Semilla fija:
-`SIDINACC_SYNTHETIC_SEED = 20261019`. Cada establecimiento recibe entre 5 y 10 personas activas
-en 2026 (T23). Detalle cuantitativo: `DATASET_SUMMARY.md`.
+`SIDINACC_SYNTHETIC_SEED = 20261019`. Solo los establecimientos **activos**
+(`EST_inActivo = 1` y no eliminados) reciben población sintética: 5–10 personas
+activas en 2026 (T23). Los 31 inactivos/cerrados se conservan en el catálogo
+territorial con 0 personas activas en 2026 (T41). Detalle cuantitativo:
+`DATASET_SUMMARY.md` (totales de personas, familias y servicios = **PROJECTION**,
+no conteos runtime de esta corrección).
 
 **Jerarquía institucional** (`030_seed_institutional_structure.sql`):
 
@@ -300,9 +304,11 @@ No hay contraseñas, cadenas de conexión ni archivos `.env` reales en el reposi
 ## 16. Smoke tests (`090_smoke_tests.sql`)
 
 T01–T14 cubren catálogos no territoriales, búsqueda y escenarios sintéticos. T15–T37 cubren
-la jerarquía territorial real y la población. T38–T40 conservan rol de solo lectura, ausencia
-de objetos extra y `NULL` no documentados. Ámbito nacional (establecimientos activos y no
-eliminados) y período 2026, salvo las pruebas que inspeccionan 2025.
+la jerarquía territorial real y la población (T23 solo sobre EST **activos**). T38–T40
+conservan rol de solo lectura, ausencia de objetos extra y `NULL` no documentados. T41
+verifica 0 personas activas en 2026 en cada EST inactivo/cerrado. Ámbito nacional
+(establecimientos activos y no eliminados) y período 2026, salvo las pruebas que
+inspeccionan 2025.
 
 | Test | Verifica |
 | --- | --- |
@@ -328,7 +334,7 @@ eliminados) y período 2026, salvo las pruebas que inspeccionan 2025.
 | T20 | Cada establecimiento resuelve hasta una Región. |
 | T21 | No hay establecimientos duplicados por código. |
 | T22 | No hay establecimientos huérfanos. |
-| T23 | Cada establecimiento tiene entre 5 y 10 personas activas en 2026. |
+| T23 | Cada establecimiento **ACTIVO** tiene entre 5 y 10 personas activas en 2026. |
 | T24 | Todas las personas activas tienen `PER_idPersona` sintético. |
 | T25 | Formato `SYN-<ESTID>-<NN>` y longitud ≤ 20. |
 | T26 | No hay `PER_idPersona` duplicados. |
@@ -346,11 +352,13 @@ eliminados) y período 2026, salvo las pruebas que inspeccionan 2025.
 | T38 | `sia_sidinacc_reader` solo lee. |
 | T39 | Sin vistas, procedimientos, funciones ni triggers de usuario. |
 | T40 | `PER_beneficiario` y `FAD_inActiva` permanecen `NULL`. |
+| T41 | Cada establecimiento **INACTIVO/CERRADO** tiene 0 personas activas en 2026. |
 
 Reporte: el script devuelve un result set (`test`, `descripcion`, `resultado`, `detalle`). Si alguna
-prueba no es `PASS` lanza `THROW 50090`; si no se evaluaron exactamente 40 pruebas lanza
+prueba no es `PASS` lanza `THROW 50090`; si no se evaluaron exactamente 41 pruebas lanza
 `THROW 50091`. Con `sqlcmd -b` ambos producen un código de salida distinto de cero. En éxito
-imprime `SIDINACC_LOCAL smoke tests PASSED (40/40)`.
+imprime `SIDINACC_LOCAL smoke tests PASSED (41/41)`. Ese `41/41` es el contrato del script,
+no un resultado runtime de esta corrección (ver §18).
 
 Las pruebas de ámbito por usuario (Establecimiento, multiestablecimiento, OL, Regional) pertenecen
 al futuro adapter, porque la autorización local vive fuera de la BD (spec §16).
@@ -368,6 +376,9 @@ el catálogo territorial derivado, el generador y este README.
 
 ## 18. Estado de validación
 
-- Ejecución en runtime: **NOT_RUN** al momento de redactar este README (no había SQL Server
-  disponible en el entorno de autoría). No se afirma que los scripts ni los smoke tests hayan pasado.
-- La evidencia de ejecución (versión de SQL Server, intercalación, salida de 090) se registrará cuando se ejecuten.
+- Primera ejecución runtime (seed anterior): **PASS** 40/40, 661 establecimientos, población
+  también en inactivos. Los totales 4952/4946 de esa corrida quedan **obsoletos**.
+- Tras restringir la población a `EST_inActivo = 1` (el script ahora evalúa **41** pruebas;
+  se añadió T41): **NOT_RUN**. No se modificó la instancia SQL existente. Los seeds no
+  borran filas ya insertadas; hace falta recrear `SIDINACC_LOCAL` y volver a ejecutar
+  los seis scripts.
