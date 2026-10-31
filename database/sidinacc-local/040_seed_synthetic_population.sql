@@ -20,6 +20,23 @@
     SYN-1010320-01 / SYN-1010321-01   Lucia Mora Campos / Campo (misma OL 101)
     SYN-1010202-01 / SYN-1190108-01   Mateo Vargas Rojas (Regiones 1 y 5)
 
+  Contexto del menor (no son clientes/beneficiarias; no tienen familia ni servicios):
+    SYN-1100102-81 madre de 01; encargada en 2026 (relacion Madre)
+    SYN-1100102-82 padre de 01; encargado solo en el registro 2025
+    SYN-1100102-83 / 84  madre y padre de 02; encargado = padre
+    SYN-1100102-85 / 86  madre y padre de 03; encargado = 87 (Persona encargada)
+    SYN-1100102-88 madre y encargada de 04; padre no registrado
+
+  Direccion y telefonos son del detalle familiar del periodo, no del encargado.
+  Familia 110010201 (persona 01) 2026: Calle Sintetica 12, telefonos 88881101 / 88881102.
+  Familia 110010203 (persona 03) 2026 y 2025 tienen direccion y telefono distintos;
+  2025 no tiene telefono alternativo. No se copia un periodo sobre el otro.
+
+  Evaluaciones (codigos tinyint MOCK_ONLY, no catalogo productivo ni ANT_id):
+    9 = posible senal demo; 1 = resultado normal / sin senal.
+    Persona 01: 2026-03-15 senal, 2026-08-20 normal, 2025-11-02 historica.
+    Persona 02: 2026-01-10 con BIT_eliminado = 1.
+
   - Solo inserta filas faltantes (INSERT ... WHERE NOT EXISTS); nunca sobrescribe.
   - IDs deterministas mediante IDENTITY_INSERT.
   - Requiere 010, 020 y 030.
@@ -50,8 +67,18 @@ IF OBJECT_ID(N'dbo.CAF_FAMILIA', N'U') IS NULL
    OR OBJECT_ID(N'dbo.CAF_CAT_TIPO_CLIENTE', N'U') IS NULL
    OR OBJECT_ID(N'dbo.CAF_CAT_REGION', N'U') IS NULL
    OR OBJECT_ID(N'dbo.CAF_CAT_OFICINA_LOCAL', N'U') IS NULL
+   OR OBJECT_ID(N'dbo.CAF_MENOR', N'U') IS NULL
+   OR OBJECT_ID(N'dbo.CAF_EVALUACION_MENOR', N'U') IS NULL
+   OR OBJECT_ID(N'dbo.CAF_INDICADOR_ANTROPOMETRICO', N'U') IS NULL
 BEGIN
     THROW 50002, 'Faltan tablas de SIDINACC_LOCAL. Ejecute primero 010_schema_core.sql', 1;
+END;
+
+IF COL_LENGTH(N'dbo.CAF_FAMILIA_DETALLE', N'FAD_direccion') IS NULL
+   OR COL_LENGTH(N'dbo.CAF_FAMILIA_DETALLE', N'FAD_telefonoUno') IS NULL
+   OR COL_LENGTH(N'dbo.CAF_FAMILIA_DETALLE', N'FAD_telefonoDos') IS NULL
+BEGIN
+    THROW 50002, 'CAF_FAMILIA_DETALLE no tiene direccion o telefonos. Ejecute 010 o recree SIDINACC_LOCAL.', 1;
 END;
 
 IF (SELECT COUNT(*) FROM dbo.RCS_PERIODO WHERE RCS_idPeriodo IN (2025, 2026)) <> 2
@@ -277,11 +304,33 @@ BEGIN TRY
 
     SET IDENTITY_INSERT dbo.CAF_FAMILIA_DETALLE ON;
     INSERT INTO dbo.CAF_FAMILIA_DETALLE (
-        FAD_idFamiliaDetalle, FAM_idFamilia, FAD_inActiva,
-        EST_idEstablecimientoActual, RCS_idPeriodo, BIT_eliminado)
+        FAD_idFamiliaDetalle, FAM_idFamilia, FAD_direccion, FAD_telefonoUno, FAD_telefonoDos,
+        FAD_inActiva, EST_idEstablecimientoActual, RCS_idPeriodo, BIT_eliminado)
     SELECT
         x.FAD_idFamiliaDetalle,
         x.FAM_idFamilia,
+        CASE
+            WHEN x.FAM_idFamilia = 110010201 AND x.RCS_idPeriodo = 2026 THEN 'Calle Sintetica 12 casa demo'
+            WHEN x.FAM_idFamilia = 110010203 AND x.RCS_idPeriodo = 2026 THEN 'Calle Sintetica 30 casa demo 2026'
+            WHEN x.FAM_idFamilia = 110010203 AND x.RCS_idPeriodo = 2025 THEN 'Calle Sintetica 4 casa demo 2025'
+            ELSE 'DEMO-' + CONVERT(varchar(4), CONVERT(int, x.RCS_idPeriodo))
+                 + '-FAM-' + CONVERT(varchar(12), x.FAM_idFamilia)
+        END,
+        CAST(CASE
+            WHEN x.FAM_idFamilia = 110010201 AND x.RCS_idPeriodo = 2026 THEN 88881101
+            WHEN x.FAM_idFamilia = 110010203 AND x.RCS_idPeriodo = 2026 THEN 88883301
+            WHEN x.FAM_idFamilia = 110010203 AND x.RCS_idPeriodo = 2025 THEN 88882201
+            WHEN x.RCS_idPeriodo = 2025 THEN 81000000 + (x.FAM_idFamilia % 1000000)
+            ELSE 82000000 + (x.FAM_idFamilia % 1000000)
+        END AS numeric(18,0)),
+        CASE
+            WHEN x.FAM_idFamilia = 110010201 AND x.RCS_idPeriodo = 2026 THEN CAST(88881102 AS numeric(18,0))
+            WHEN x.FAM_idFamilia = 110010203 AND x.RCS_idPeriodo = 2026 THEN CAST(88883302 AS numeric(18,0))
+            WHEN x.FAM_idFamilia = 110010203 AND x.RCS_idPeriodo = 2025 THEN CAST(NULL AS numeric(18,0))
+            WHEN x.FAM_idFamilia % 5 = 0 THEN CAST(NULL AS numeric(18,0))
+            WHEN x.RCS_idPeriodo = 2025 THEN CAST(71000000 + (x.FAM_idFamilia % 1000000) AS numeric(18,0))
+            ELSE CAST(72000000 + (x.FAM_idFamilia % 1000000) AS numeric(18,0))
+        END,
         CAST(NULL AS bit),
         x.EST_idEstablecimientoActual,
         x.RCS_idPeriodo,
@@ -372,9 +421,86 @@ BEGIN TRY
       );
     SET IDENTITY_INSERT dbo.CAF_SERVICIO_CLIENTE OFF;
 
+    /* Personas de contexto (madre/padre/encargado). No son clientes:
+       sin familia, sin detalle, sin servicios. No entran en la busqueda de beneficiarias. */
+    SET IDENTITY_INSERT dbo.CAF_PERSONA ON;
+    INSERT INTO dbo.CAF_PERSONA (
+        PER_idPersona, PER_beneficiario, PER_apellidoUno, PER_apellidoDos, PER_nombre,
+        PER_fechaNacimiento, FAM_idFamilia, CAT_idSexo, BIT_eliminado, RCS_idPersona)
+    SELECT
+        v.PER_idPersona, CAST(NULL AS varchar(2)), v.PER_apellidoUno, v.PER_apellidoDos, v.PER_nombre,
+        v.PER_fechaNacimiento, CAST(NULL AS int), v.CAT_idSexo, CAST(0 AS bit), v.RCS_idPersona
+    FROM (VALUES
+        (N'SYN-1100102-81', 'Solano',  'Campos',  'Rosa',    DATETIMEFROMPARTS(1988, 4, 12, 0, 0, 0, 0), 2, 90000081),
+        (N'SYN-1100102-82', 'Solano',  'Rojas',   'Luis',    DATETIMEFROMPARTS(1986, 7, 3, 0, 0, 0, 0),  1, 90000082),
+        (N'SYN-1100102-83', 'Mora',    'Herrera', 'Elena',   DATETIMEFROMPARTS(1990, 2, 18, 0, 0, 0, 0), 2, 90000083),
+        (N'SYN-1100102-84', 'Mora',    'Delgado', 'Pedro',   DATETIMEFROMPARTS(1985, 11, 9, 0, 0, 0, 0), 1, 90000084),
+        (N'SYN-1100102-85', 'Quesada', 'Solano',  'Carmen',  DATETIMEFROMPARTS(1987, 5, 21, 0, 0, 0, 0), 2, 90000085),
+        (N'SYN-1100102-86', 'Quesada', 'Navarro', 'Jorge',   DATETIMEFROMPARTS(1984, 9, 14, 0, 0, 0, 0), 1, 90000086),
+        (N'SYN-1100102-87', 'Aguilar', 'Molina',  'Teresa',  DATETIMEFROMPARTS(1979, 12, 1, 0, 0, 0, 0), 2, 90000087),
+        (N'SYN-1100102-88', 'Chaves',  'Pineda',  'Laura',   DATETIMEFROMPARTS(1992, 3, 27, 0, 0, 0, 0), 2, 90000088)
+    ) v (PER_idPersona, PER_apellidoUno, PER_apellidoDos, PER_nombre, PER_fechaNacimiento, CAT_idSexo, RCS_idPersona)
+    WHERE NOT EXISTS (SELECT 1 FROM dbo.CAF_PERSONA t WHERE t.PER_idPersona = v.PER_idPersona);
+    SET IDENTITY_INSERT dbo.CAF_PERSONA OFF;
+
+    INSERT INTO dbo.CAF_MENOR (
+        MEN_idRegistroMenor, PER_idPersona, MEN_idMadre, MEN_idPadre, MEN_idEncargado,
+        RCS_idPeriodo, BIT_eliminado)
+    SELECT
+        v.MEN_idRegistroMenor, v.PER_idPersona, v.MEN_idMadre, v.MEN_idPadre, v.MEN_idEncargado,
+        v.RCS_idPeriodo, v.BIT_eliminado
+    FROM (VALUES
+        (1, N'SYN-1100102-01', N'SYN-1100102-81', N'SYN-1100102-82', N'SYN-1100102-81', CAST(2026 AS numeric(18,0)), CAST(0 AS bit)),
+        (2, N'SYN-1100102-01', N'SYN-1100102-81', N'SYN-1100102-82', N'SYN-1100102-82', CAST(2025 AS numeric(18,0)), CAST(0 AS bit)),
+        (3, N'SYN-1100102-02', N'SYN-1100102-83', N'SYN-1100102-84', N'SYN-1100102-84', CAST(2026 AS numeric(18,0)), CAST(0 AS bit)),
+        (4, N'SYN-1100102-03', N'SYN-1100102-85', N'SYN-1100102-86', N'SYN-1100102-87', CAST(2026 AS numeric(18,0)), CAST(0 AS bit)),
+        (5, N'SYN-1100102-04', N'SYN-1100102-88', CAST(NULL AS nvarchar(20)), N'SYN-1100102-88', CAST(2026 AS numeric(18,0)), CAST(0 AS bit))
+    ) v (MEN_idRegistroMenor, PER_idPersona, MEN_idMadre, MEN_idPadre, MEN_idEncargado, RCS_idPeriodo, BIT_eliminado)
+    WHERE NOT EXISTS (SELECT 1 FROM dbo.CAF_MENOR t WHERE t.MEN_idRegistroMenor = v.MEN_idRegistroMenor);
+
+    /* MOCK_ONLY. No es el catalogo antropometrico institucional. ANT_id no se enlaza a los estados. */
+    INSERT INTO dbo.CAF_INDICADOR_ANTROPOMETRICO (
+        ANT_id, ANT_area, ANT_clasificacion, ANT_nomenclatura, BIT_eliminado)
+    SELECT v.ANT_id, v.ANT_area, v.ANT_clasificacion, v.ANT_nomenclatura, v.BIT_eliminado
+    FROM (VALUES
+        (9001, 'PE', N'MOCK_ONLY senal demo',  N'DEMO-S', CAST(0 AS bit)),
+        (9002, 'PE', N'MOCK_ONLY normal',      N'DEMO-N', CAST(0 AS bit))
+    ) v (ANT_id, ANT_area, ANT_clasificacion, ANT_nomenclatura, BIT_eliminado)
+    WHERE NOT EXISTS (SELECT 1 FROM dbo.CAF_INDICADOR_ANTROPOMETRICO t WHERE t.ANT_id = v.ANT_id);
+
+    /* Codigo 9 = senal demo MOCK_ONLY. Codigo 1 = normal. No equivale a ANT_id ni al catalogo real. */
+    INSERT INTO dbo.CAF_EVALUACION_MENOR (
+        EVM_idEvaluacionMenor, PER_idPersona, EVM_fechaEvaluacion, RCS_idPeriodo,
+        EVM_estadoNutricionalPe, EVM_estadoNutricionalPt, EVM_estadoNutricionalTe, EVM_estadoNutricionalImc,
+        BIT_eliminado)
+    SELECT
+        v.EVM_idEvaluacionMenor, v.PER_idPersona, v.EVM_fechaEvaluacion, v.RCS_idPeriodo,
+        v.EVM_estadoNutricionalPe, v.EVM_estadoNutricionalPt, v.EVM_estadoNutricionalTe, v.EVM_estadoNutricionalImc,
+        v.BIT_eliminado
+    FROM (VALUES
+        (1, N'SYN-1100102-01', DATETIMEFROMPARTS(2026, 3, 15, 0, 0, 0, 0), CAST(2026 AS numeric(18,0)), CAST(9 AS tinyint), CAST(1 AS tinyint), CAST(1 AS tinyint), CAST(1 AS tinyint), CAST(0 AS bit)),
+        (2, N'SYN-1100102-01', DATETIMEFROMPARTS(2026, 8, 20, 0, 0, 0, 0), CAST(2026 AS numeric(18,0)), CAST(1 AS tinyint), CAST(1 AS tinyint), CAST(1 AS tinyint), CAST(1 AS tinyint), CAST(0 AS bit)),
+        (3, N'SYN-1100102-01', DATETIMEFROMPARTS(2025, 11, 2, 0, 0, 0, 0), CAST(2025 AS numeric(18,0)), CAST(1 AS tinyint), CAST(1 AS tinyint), CAST(1 AS tinyint), CAST(1 AS tinyint), CAST(0 AS bit)),
+        (4, N'SYN-1100102-02', DATETIMEFROMPARTS(2026, 1, 10, 0, 0, 0, 0), CAST(2026 AS numeric(18,0)), CAST(9 AS tinyint), CAST(9 AS tinyint), CAST(1 AS tinyint), CAST(1 AS tinyint), CAST(1 AS bit))
+    ) v (
+        EVM_idEvaluacionMenor, PER_idPersona, EVM_fechaEvaluacion, RCS_idPeriodo,
+        EVM_estadoNutricionalPe, EVM_estadoNutricionalPt, EVM_estadoNutricionalTe, EVM_estadoNutricionalImc,
+        BIT_eliminado)
+    WHERE NOT EXISTS (
+        SELECT 1 FROM dbo.CAF_EVALUACION_MENOR t WHERE t.EVM_idEvaluacionMenor = v.EVM_idEvaluacionMenor
+    );
+
     /* Verificacion de cardinalidad e integridad del seed sintetico. */
-    IF (SELECT COUNT(*) FROM dbo.CAF_PERSONA) <> (SELECT COUNT(*) FROM @per)
+    IF (SELECT COUNT(*) FROM dbo.CAF_PERSONA) <> (SELECT COUNT(*) FROM @per) + 8
         THROW 50003, 'La cantidad de personas no coincide con el seed sintetico (posible residuo DEMO). Recree SIDINACC_LOCAL manualmente.', 1;
+
+    IF EXISTS (
+        SELECT 1
+        FROM dbo.CAF_FAMILIA_DETALLE
+        WHERE FAD_idFamiliaDetalle = 110010201
+          AND (FAD_direccion IS NULL OR FAD_telefonoUno IS NULL)
+    )
+        THROW 50003, 'El detalle familiar 110010201 ya existia sin direccion o telefono. Los seeds no actualizan filas; recree SIDINACC_LOCAL.', 1;
 
     IF EXISTS (
         SELECT 1

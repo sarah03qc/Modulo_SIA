@@ -1,17 +1,22 @@
 /*
   SIDINACC_LOCAL - 010_schema_core.sql
   DDL minimo de compatibilidad (proyeccion consumida por SIA, no tablas completas).
-  Referencia: docs/architecture/SIDINACC_LOCAL_REPLICA_SPEC.md secciones 5.2 a 5.13 y 14.
+  Referencia base: docs/architecture/SIDINACC_LOCAL_REPLICA_SPEC.md secciones 5.2 a 5.13 y 14.
+  Ampliacion de superficie (menor, direccion/contacto familiar, evaluacion nutricional,
+  indicador antropometrico): tipos y nulabilidad tomados de
+  docs/architecture/SIDINACC_CAH_DATABASE_ANALYSIS.md (fichas A.25, A.27, A.29, A.30).
+  NEEDS_VALIDATION: la spec v0.1 aun excluye CAF_MENOR, CAF_EVALUACION_MENOR y
+  CAF_INDICADOR_ANTROPOMETRICO y no declara FAD_direccion / FAD_telefonoUno / FAD_telefonoDos.
+  Esta ampliacion no reescribe esa spec. No es DDL productivo.
 
-  - Idempotente: cada CREATE esta protegido. No elimina ni modifica la estructura de tablas
-    existentes; en cada ejecucion reaplica el DENY del rol de lectura y agrega membresias de
-    rol solo si faltan (operaciones idempotentes).
-  - Las guardas de existencia (OBJECT_ID / sys.indexes) NO verifican la forma de una tabla o
-    indice preexistente. TODO: si la estructura difiere de la spec, recrearla manualmente
-    con aprobacion humana (este script nunca lo hace).
-  - Las 12 tablas, columnas, tipos, nulabilidad, PK, FK, UQ, DEFAULT e indices
-    reproducen exactamente la especificacion v0.1. No agregar nada fuera de ella.
+  - Idempotente: cada CREATE esta protegido. No elimina tablas.
+  - Si CAF_FAMILIA_DETALLE ya existe, solo agrega las columnas de direccion y telefono
+    cuando faltan (ALTER ADD, nullable). No reescribe filas.
+  - Las guardas de existencia NO verifican el resto de la forma de una tabla preexistente.
+    Si la PK o los indices difieren, recrear SIDINACC_LOCAL manualmente.
   - TODO-UTIC: sustituir tipos y estructura cuando UTIC entregue el DDL institucional real.
+  - No se crean tablas EDIN II / EVADE. No se incluye MEN_rezagoDesarrollo.
+  - No se almacenan datos propios de Atencion Interdisciplinaria.
 */
 USE SIDINACC_LOCAL;
 GO
@@ -130,12 +135,17 @@ GO
 /* ---------------------------------------------------------------------------
    5.8 CAF_FAMILIA_DETALLE
    Fuente preferida del establecimiento actual por periodo (spec seccion 6).
+   FAD_direccion, FAD_telefonoUno y FAD_telefonoDos: ficha CAH (analisis A.27).
+   Son contexto familiar del periodo, no telefonos personales exclusivos del encargado.
    --------------------------------------------------------------------------- */
 IF OBJECT_ID(N'dbo.CAF_FAMILIA_DETALLE', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.CAF_FAMILIA_DETALLE (
         FAD_idFamiliaDetalle        int IDENTITY(1,1) NOT NULL PRIMARY KEY,
         FAM_idFamilia               int NOT NULL,
+        FAD_direccion               varchar(100) NULL,
+        FAD_telefonoUno             numeric(18,0) NULL,
+        FAD_telefonoDos             numeric(18,0) NULL,
         FAD_inActiva                bit NULL,
         EST_idEstablecimientoActual int NULL,
         RCS_idPeriodo               numeric(18,0) NOT NULL,
@@ -168,6 +178,22 @@ BEGIN
         BIT_eliminado
     );
 END
+GO
+
+/* Columnas aditivas si la tabla ya existia sin direccion/telefono. No actualiza filas. */
+IF OBJECT_ID(N'dbo.CAF_FAMILIA_DETALLE', N'U') IS NOT NULL
+   AND COL_LENGTH(N'dbo.CAF_FAMILIA_DETALLE', N'FAD_direccion') IS NULL
+    ALTER TABLE dbo.CAF_FAMILIA_DETALLE ADD FAD_direccion varchar(100) NULL;
+GO
+
+IF OBJECT_ID(N'dbo.CAF_FAMILIA_DETALLE', N'U') IS NOT NULL
+   AND COL_LENGTH(N'dbo.CAF_FAMILIA_DETALLE', N'FAD_telefonoUno') IS NULL
+    ALTER TABLE dbo.CAF_FAMILIA_DETALLE ADD FAD_telefonoUno numeric(18,0) NULL;
+GO
+
+IF OBJECT_ID(N'dbo.CAF_FAMILIA_DETALLE', N'U') IS NOT NULL
+   AND COL_LENGTH(N'dbo.CAF_FAMILIA_DETALLE', N'FAD_telefonoDos') IS NULL
+    ALTER TABLE dbo.CAF_FAMILIA_DETALLE ADD FAD_telefonoDos numeric(18,0) NULL;
 GO
 
 /* ---------------------------------------------------------------------------
@@ -316,6 +342,127 @@ BEGIN
         RCS_idPeriodo,
         SEC_mes,
         BIT_eliminado
+    );
+END
+GO
+
+/* ---------------------------------------------------------------------------
+   CAF_MENOR
+   Proyeccion minima para resolver madre, padre, encargado y periodo.
+   Tipos: ficha CAH (analisis A.30). No se copian poblacion, condicion de nacer,
+   referencia CAH, rezago ni auditoria: SIA no los consume en esta superficie.
+   MEN_rezagoDesarrollo NO se incluye y NO equivale a EDIN II ni a EVADE.
+   FK_LOCAL_*: constraint local de la replica. La ficha marca Fk hacia persona y
+   periodo, pero no desambigua un nombre fisico por columna. No se usan nombres
+   institucionales de FK.
+   --------------------------------------------------------------------------- */
+IF OBJECT_ID(N'dbo.CAF_MENOR', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.CAF_MENOR (
+        MEN_idRegistroMenor int NOT NULL PRIMARY KEY, -- TODO-UTIC: la ficha lo marca identity; el mock asigna el id
+        PER_idPersona       nvarchar(20) NOT NULL,
+        MEN_idMadre         nvarchar(20) NULL,
+        MEN_idPadre         nvarchar(20) NULL,
+        MEN_idEncargado     nvarchar(20) NOT NULL,
+        RCS_idPeriodo       numeric(18,0) NOT NULL,
+        BIT_eliminado       bit NULL,
+
+        CONSTRAINT FK_LOCAL_MENOR_PERSONA
+            FOREIGN KEY (PER_idPersona)
+            REFERENCES dbo.CAF_PERSONA (PER_idPersona),
+
+        CONSTRAINT FK_LOCAL_MENOR_MADRE
+            FOREIGN KEY (MEN_idMadre)
+            REFERENCES dbo.CAF_PERSONA (PER_idPersona),
+
+        CONSTRAINT FK_LOCAL_MENOR_PADRE
+            FOREIGN KEY (MEN_idPadre)
+            REFERENCES dbo.CAF_PERSONA (PER_idPersona),
+
+        CONSTRAINT FK_LOCAL_MENOR_ENCARGADO
+            FOREIGN KEY (MEN_idEncargado)
+            REFERENCES dbo.CAF_PERSONA (PER_idPersona),
+
+        CONSTRAINT FK_LOCAL_MENOR_PERIODO
+            FOREIGN KEY (RCS_idPeriodo)
+            REFERENCES dbo.RCS_PERIODO (RCS_idPeriodo)
+    );
+END
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes
+               WHERE name = N'IX_CAF_MENOR_PersonaPeriodo'
+                 AND object_id = OBJECT_ID(N'dbo.CAF_MENOR'))
+BEGIN
+    CREATE INDEX IX_CAF_MENOR_PersonaPeriodo
+    ON dbo.CAF_MENOR (
+        PER_idPersona,
+        RCS_idPeriodo
+    );
+END
+GO
+
+/* ---------------------------------------------------------------------------
+   CAF_EVALUACION_MENOR
+   Resultados nutricionales ya registrados. SIA no recalcula PE/PT/TE/IMC.
+   PROVISIONAL_KEY / TODO-UTIC:
+   La ficha (analisis A.25) marca PER_idPersona como PK y EVM_idEvaluacionMenor
+   como identity no-PK. Esa PK no admite varias evaluaciones por persona.
+   La replica usa EVM_idEvaluacionMenor como PK local solo para el mock.
+   NEEDS_VALIDATION: SIDINACC_LOCAL_REPLICA_SPEC.md v0.1 no documenta esta decision.
+   No hay FK hacia CAF_INDICADOR_ANTROPOMETRICO: la ficha no la demuestra.
+   No se replican peso, talla, edad ni auditoria.
+   --------------------------------------------------------------------------- */
+IF OBJECT_ID(N'dbo.CAF_EVALUACION_MENOR', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.CAF_EVALUACION_MENOR (
+        EVM_idEvaluacionMenor    int NOT NULL PRIMARY KEY, -- PROVISIONAL_KEY / TODO-UTIC
+        PER_idPersona            nvarchar(20) NOT NULL,
+        EVM_fechaEvaluacion      datetime NOT NULL,
+        RCS_idPeriodo            numeric(18,0) NOT NULL,
+        EVM_estadoNutricionalPe  tinyint NULL,
+        EVM_estadoNutricionalPt  tinyint NULL,
+        EVM_estadoNutricionalTe  tinyint NULL,
+        EVM_estadoNutricionalImc tinyint NULL,
+        BIT_eliminado            bit NULL,
+
+        CONSTRAINT FK_LOCAL_EVM_PERSONA
+            FOREIGN KEY (PER_idPersona)
+            REFERENCES dbo.CAF_PERSONA (PER_idPersona),
+
+        CONSTRAINT FK_LOCAL_EVM_PERIODO
+            FOREIGN KEY (RCS_idPeriodo)
+            REFERENCES dbo.RCS_PERIODO (RCS_idPeriodo)
+    );
+END
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes
+               WHERE name = N'IX_CAF_EVALUACION_MENOR_PersonaPeriodoFecha'
+                 AND object_id = OBJECT_ID(N'dbo.CAF_EVALUACION_MENOR'))
+BEGIN
+    CREATE INDEX IX_CAF_EVALUACION_MENOR_PersonaPeriodoFecha
+    ON dbo.CAF_EVALUACION_MENOR (
+        PER_idPersona,
+        RCS_idPeriodo,
+        EVM_fechaEvaluacion
+    );
+END
+GO
+
+/* ---------------------------------------------------------------------------
+   CAF_INDICADOR_ANTROPOMETRICO
+   Catalogo de area / clasificacion / nomenclatura (analisis A.29).
+   La ficha no declara FK. El seed es MOCK_ONLY, no catalogo oficial.
+   --------------------------------------------------------------------------- */
+IF OBJECT_ID(N'dbo.CAF_INDICADOR_ANTROPOMETRICO', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.CAF_INDICADOR_ANTROPOMETRICO (
+        ANT_id             int NOT NULL PRIMARY KEY, -- TODO-UTIC: la ficha lo marca identity
+        ANT_area           char(3) NULL,
+        ANT_clasificacion  nvarchar(50) NULL,
+        ANT_nomenclatura   nchar(6) NULL,
+        BIT_eliminado      bit NULL
     );
 END
 GO

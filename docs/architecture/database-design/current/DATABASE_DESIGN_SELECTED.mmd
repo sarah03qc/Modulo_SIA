@@ -1,0 +1,425 @@
+%% ER logico de SIA-CENCINAI. Equivale a DATABASE_DESIGN_SELECTED.dbml.
+%% No representa tablas de SIDINACC ni de SIDINACC_LOCAL.
+%% La linea de tiempo y la reporteria son lecturas, no entidades.
+
+erDiagram
+  referencia {
+    bigint referencia_id PK
+    nvarchar persona_institucional_id
+    date fecha_referencia
+    nvarchar estado
+    bigint via_atencion_item_id FK
+    bigint origen_item_id FK
+    nvarchar consecutivo
+    int region_id
+    int oficina_local_id
+    int establecimiento_id
+    datetime2 enviada_en
+    bigint lote_migracion_id FK
+  }
+  referencia_motivo {
+    bigint referencia_motivo_id PK
+    bigint referencia_id FK
+    bigint item_id FK
+    nvarchar etiqueta_snapshot
+    nvarchar especificacion
+  }
+  referencia_servicio_snapshot {
+    bigint referencia_servicio_id PK
+    bigint referencia_id FK
+    int servicio_institucional_id
+    nvarchar descripcion_snapshot
+  }
+  referencia_salida {
+    bigint referencia_salida_id PK
+    bigint referencia_id FK
+    nvarchar tipo_salida
+    datetime2 generada_en
+  }
+  consecutivo_referencia {
+    int establecimiento_id PK
+    int anio PK
+    int ultimo_valor
+  }
+  vinculo_deteccion_referencia {
+    bigint vinculo_deteccion_id PK
+    bigint referencia_id FK
+    nvarchar sistema_fuente
+    nvarchar clave_resultado
+  }
+  sesion_interdisciplinaria {
+    bigint sesion_id PK
+    int oficina_local_id
+    date fecha_sesion
+    time hora_inicio
+    time hora_fin
+    nvarchar estado
+  }
+  sesion_disciplina {
+    bigint sesion_disciplina_id PK
+    bigint sesion_id FK
+    bigint item_id FK
+    nvarchar etiqueta_snapshot
+  }
+  sesion_asunto {
+    bigint sesion_asunto_id PK
+    bigint sesion_id FK
+    bigint referencia_id FK
+    bigint caso_id FK
+  }
+  valoracion_situacional {
+    bigint valoracion_id PK
+    bigint sesion_id FK
+    bigint version_instrumento_id FK
+    bigint referencia_id FK
+    bigint caso_id FK
+    bigint riesgo_nivel_id FK
+    bigint proteccion_nivel_id FK
+  }
+  valoracion_categoria_respuesta {
+    bigint valoracion_categoria_id PK
+    bigint valoracion_id FK
+    bigint categoria_id FK
+    nvarchar respuesta
+  }
+  valoracion_factor {
+    bigint valoracion_factor_id PK
+    bigint valoracion_id FK
+    bigint factor_id FK
+    nvarchar etiqueta_snapshot
+  }
+  resolucion_ai {
+    bigint resolucion_id PK
+    bigint referencia_id FK
+    bigint sesion_id FK
+    bigint valoracion_id FK
+    nvarchar decision
+    nvarchar justificacion
+  }
+  caso_ai {
+    bigint caso_id PK
+    nvarchar persona_institucional_id
+    bigint referencia_origen_id FK
+    bigint resolucion_id FK
+    bigint sesion_apertura_id FK
+    bigint caso_predecesor_id FK
+    bigint decision_vigente_id FK
+    bigint plan_vigente_id FK
+    bigint lote_migracion_id FK
+    nvarchar base_apertura
+    int region_id
+    int oficina_local_id
+    int establecimiento_id
+    nvarchar estado
+    date fecha_apertura
+  }
+  caso_decision_profesional {
+    bigint decision_id PK
+    bigint caso_id FK
+    bigint valoracion_id FK
+    bigint decision_origen_id FK
+    bigint riesgo_nivel_id FK
+    bigint proteccion_nivel_id FK
+    bigint prioridad_nivel_id FK
+    bigint version_matriz_id FK
+  }
+  caso_estado_evento {
+    bigint caso_estado_evento_id PK
+    bigint caso_id FK
+    bigint motivo_item_id FK
+    nvarchar tipo_evento
+    date fecha_hecho
+  }
+  plan_atencion_version {
+    bigint plan_version_id PK
+    bigint caso_id FK
+    bigint frecuencia_item_id FK
+    bigint plan_origen_id FK
+    int numero_version
+  }
+  plan_proposito {
+    bigint plan_proposito_id PK
+    bigint plan_version_id FK
+    nvarchar texto
+  }
+  plan_estrategia {
+    bigint plan_estrategia_id PK
+    bigint plan_version_id FK
+    bigint item_id FK
+  }
+  plan_disciplina {
+    bigint plan_disciplina_id PK
+    bigint plan_version_id FK
+    bigint item_id FK
+  }
+  atencion_individual {
+    bigint atencion_individual_id PK
+    bigint caso_id FK
+    bigint disciplina_item_id FK
+    bigint estrategia_item_id FK
+    bigint lote_migracion_id FK
+    int oficina_local_id
+    date fecha_atencion
+  }
+  atencion_grupal {
+    bigint atencion_grupal_id PK
+    bigint tipo_item_id FK
+    bigint lote_migracion_id FK
+    int oficina_local_id
+    int establecimiento_id
+    date fecha_atencion
+  }
+  atencion_grupal_disciplina {
+    bigint atencion_grupal_disciplina_id PK
+    bigint atencion_grupal_id FK
+    bigint item_id FK
+  }
+  atencion_grupal_profesional {
+    bigint atencion_grupal_profesional_id PK
+    bigint atencion_grupal_id FK
+    nvarchar actor_id
+  }
+  atencion_grupal_participante {
+    bigint participante_id PK
+    bigint atencion_grupal_id FK
+    bigint caso_id FK
+    nvarchar persona_institucional_id
+    bit asistio
+  }
+  caso_documento {
+    bigint caso_documento_id PK
+    bigint caso_id FK
+    bigint tipo_item_id FK
+    nvarchar localizador_archivo
+  }
+  coordinacion_interinstitucional {
+    bigint coordinacion_id PK
+    bigint caso_id FK
+    bigint institucion_item_id FK
+    date fecha_coordinacion
+  }
+  coordinacion_estado_evento {
+    bigint coordinacion_estado_evento_id PK
+    bigint coordinacion_id FK
+    bigint estado_item_id FK
+  }
+  caso_reporte {
+    bigint caso_reporte_id PK
+    bigint caso_id FK
+    bigint tipo_item_id FK
+    date fecha_reporte
+  }
+  caso_traslado {
+    bigint traslado_id PK
+    bigint caso_origen_id FK
+    bigint caso_destino_id FK
+    bigint motivo_item_id FK
+    int oficina_destino_id
+    nvarchar estado
+    date fecha_traslado
+  }
+  actividad_programada {
+    bigint actividad_id PK
+    bigint tipo_item_id FK
+    int oficina_local_id
+    int establecimiento_id
+    date fecha_prevista
+    nvarchar estado
+  }
+  actividad_programada_sujeto {
+    bigint actividad_sujeto_id PK
+    bigint actividad_id FK
+    bigint caso_id FK
+    nvarchar persona_institucional_id
+  }
+  actividad_programada_transicion {
+    bigint actividad_transicion_id PK
+    bigint actividad_id FK
+    bigint motivo_item_id FK
+    nvarchar estado_nuevo
+  }
+  conjunto_catalogo {
+    bigint conjunto_id PK
+    nvarchar tipo_catalogo
+    bit es_vigente
+  }
+  item_catalogo {
+    bigint item_id PK
+    bigint item_padre_id FK
+    nvarchar tipo_catalogo
+    nvarchar codigo
+    nvarchar etiqueta
+  }
+  conjunto_catalogo_item {
+    bigint conjunto_id PK
+    bigint item_id PK
+    int orden
+  }
+  version_instrumento {
+    bigint version_instrumento_id PK
+    nvarchar etiqueta
+    bit es_vigente
+  }
+  categoria_instrumento {
+    bigint categoria_id PK
+    bigint version_instrumento_id FK
+    nvarchar ambito
+    nvarchar clase_factor
+    bit es_requerida
+  }
+  factor_instrumento {
+    bigint factor_id PK
+    bigint categoria_id FK
+    nvarchar codigo
+    nvarchar etiqueta
+  }
+  nivel_escala {
+    bigint nivel_id PK
+    nvarchar tipo_escala
+    nvarchar codigo
+  }
+  version_matriz_prioridad {
+    bigint version_matriz_id PK
+    nvarchar etiqueta
+    bit es_vigente
+  }
+  celda_matriz_prioridad {
+    bigint celda_id PK
+    bigint version_matriz_id FK
+    bigint riesgo_nivel_id FK
+    bigint proteccion_nivel_id FK
+    bigint prioridad_nivel_id FK
+  }
+  conjunto_rango_edad {
+    bigint conjunto_rango_id PK
+    nvarchar nombre
+    bit es_vigente
+  }
+  rango_edad {
+    bigint rango_edad_id PK
+    bigint conjunto_rango_id FK
+    int edad_minima_inclusiva
+    int edad_maxima_inclusiva
+  }
+  borrador_captura {
+    bigint borrador_id PK
+    nvarchar tipo_borrador
+    nvarchar actor_id
+    bigint sesion_id FK
+    bigint referencia_id FK
+    bigint caso_id FK
+  }
+  lote_migracion {
+    bigint lote_id PK
+    nvarchar fuente
+    nvarchar estado
+  }
+  incidencia_migracion {
+    bigint incidencia_id PK
+    bigint lote_id FK
+    nvarchar severidad
+  }
+
+  referencia ||--o{ referencia_motivo : motivos
+  referencia ||--o{ referencia_servicio_snapshot : servicios
+  referencia ||--o{ referencia_salida : impresiones
+  referencia ||--o| vinculo_deteccion_referencia : deteccion
+  item_catalogo ||--o{ referencia : via_atencion
+  item_catalogo ||--o{ referencia : origen_referencia
+  lote_migracion |o--o{ referencia : migra_referencia
+
+  sesion_interdisciplinaria ||--o{ sesion_disciplina : disciplinas
+  sesion_interdisciplinaria ||--o{ sesion_asunto : asuntos
+  item_catalogo ||--o{ sesion_disciplina : disciplina_sesion
+  referencia |o--o{ sesion_asunto : asunto_referencia
+  caso_ai |o--o{ sesion_asunto : asunto_caso
+
+  sesion_interdisciplinaria ||--o{ valoracion_situacional : valora
+  version_instrumento ||--o{ valoracion_situacional : instrumento
+  referencia |o--o{ valoracion_situacional : de_referencia
+  caso_ai |o--o{ valoracion_situacional : de_caso
+  nivel_escala ||--o{ valoracion_situacional : riesgo_valoracion
+  nivel_escala ||--o{ valoracion_situacional : proteccion_valoracion
+  valoracion_situacional ||--o{ valoracion_categoria_respuesta : respuestas
+  categoria_instrumento ||--o{ valoracion_categoria_respuesta : categoria
+  valoracion_situacional ||--o{ valoracion_factor : factores
+  factor_instrumento ||--o{ valoracion_factor : factor
+
+  referencia ||--o| resolucion_ai : resuelve
+  sesion_interdisciplinaria ||--o{ resolucion_ai : en_sesion_resolucion
+  valoracion_situacional ||--o| resolucion_ai : sustenta
+
+  referencia |o--o{ caso_ai : origen
+  resolucion_ai |o--o| caso_ai : admite
+  sesion_interdisciplinaria |o--o{ caso_ai : apertura
+  caso_ai |o--o{ caso_ai : predecesor
+  caso_decision_profesional |o--o| caso_ai : decision_vigente
+  plan_atencion_version |o--o| caso_ai : plan_vigente
+  lote_migracion |o--o{ caso_ai : migra_caso
+
+  caso_ai ||--o{ caso_decision_profesional : decisiones
+  valoracion_situacional |o--o{ caso_decision_profesional : evidencia
+  caso_decision_profesional |o--o{ caso_decision_profesional : decision_citada
+  nivel_escala ||--o{ caso_decision_profesional : riesgo_decision
+  nivel_escala ||--o{ caso_decision_profesional : proteccion_decision
+  nivel_escala ||--o{ caso_decision_profesional : prioridad_decision
+  version_matriz_prioridad ||--o{ caso_decision_profesional : matriz
+  caso_ai ||--o{ caso_estado_evento : estados
+  item_catalogo |o--o{ caso_estado_evento : motivo_cierre
+
+  caso_ai ||--o{ plan_atencion_version : planes
+  item_catalogo ||--o{ plan_atencion_version : frecuencia
+  plan_atencion_version |o--o{ plan_atencion_version : plan_citado
+  plan_atencion_version ||--o{ plan_proposito : propositos
+  plan_atencion_version ||--o{ plan_estrategia : estrategias
+  plan_atencion_version ||--o{ plan_disciplina : disciplinas_plan
+  item_catalogo ||--o{ plan_estrategia : estrategia
+  item_catalogo ||--o{ plan_disciplina : disciplina_plan
+
+  caso_ai ||--o{ atencion_individual : individuales
+  item_catalogo ||--o{ atencion_individual : disciplina_atencion
+  item_catalogo ||--o{ atencion_individual : estrategia_atencion
+  lote_migracion |o--o{ atencion_individual : migra_individual
+  item_catalogo ||--o{ atencion_grupal : tipo_grupal
+  lote_migracion |o--o{ atencion_grupal : migra_grupal
+  atencion_grupal ||--o{ atencion_grupal_disciplina : disciplinas_grupal
+  atencion_grupal ||--o{ atencion_grupal_profesional : profesionales
+  atencion_grupal ||--|{ atencion_grupal_participante : participantes
+  item_catalogo ||--o{ atencion_grupal_disciplina : disciplina_grupal
+  caso_ai |o--o{ atencion_grupal_participante : en_historial
+
+  caso_ai ||--o{ caso_documento : documentos
+  item_catalogo ||--o{ caso_documento : tipo_documento
+  caso_ai ||--o{ coordinacion_interinstitucional : coordinaciones
+  item_catalogo |o--o{ coordinacion_interinstitucional : institucion
+  coordinacion_interinstitucional ||--o{ coordinacion_estado_evento : estados_coordinacion
+  item_catalogo ||--o{ coordinacion_estado_evento : estado_coordinacion
+  caso_ai ||--o{ caso_reporte : reportes
+  item_catalogo ||--o{ caso_reporte : tipo_reporte
+
+  caso_ai ||--o| caso_traslado : origen_traslado
+  caso_ai |o--o| caso_traslado : destino_traslado
+  item_catalogo ||--o{ caso_traslado : motivo_traslado
+
+  item_catalogo ||--o{ actividad_programada : tipo_actividad
+  actividad_programada ||--o{ actividad_programada_sujeto : sujetos
+  actividad_programada ||--o{ actividad_programada_transicion : transiciones
+  caso_ai |o--o{ actividad_programada_sujeto : caso_programado
+  item_catalogo |o--o{ actividad_programada_transicion : motivo_cambio
+
+  item_catalogo |o--o{ item_catalogo : padre
+  conjunto_catalogo ||--o{ conjunto_catalogo_item : publica
+  item_catalogo ||--o{ conjunto_catalogo_item : miembro
+
+  version_instrumento ||--o{ categoria_instrumento : categorias
+  categoria_instrumento ||--o{ factor_instrumento : factores_instrumento
+  version_matriz_prioridad ||--o{ celda_matriz_prioridad : celdas
+  nivel_escala ||--o{ celda_matriz_prioridad : riesgo_celda
+  nivel_escala ||--o{ celda_matriz_prioridad : proteccion_celda
+  nivel_escala ||--o{ celda_matriz_prioridad : prioridad_celda
+  conjunto_rango_edad ||--o{ rango_edad : rangos
+
+  sesion_interdisciplinaria |o--o{ borrador_captura : borrador_sesion
+  referencia |o--o{ borrador_captura : borrador_referencia
+  caso_ai |o--o{ borrador_captura : borrador_caso
+  lote_migracion ||--o{ incidencia_migracion : incidencias

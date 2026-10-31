@@ -15,15 +15,23 @@ Representa una **fuente institucional simulada de solo lectura** para desarrollo
 
 NO es:
 
-- SIDINACC completo (no replica las 57 tablas del manual, solo 12 proyecciones mínimas);
+- SIDINACC completo (no replica las 57 tablas del manual, solo 15 proyecciones mínimas);
 - la base `SIA_CENCINAI` (persistencia propia de A.I.; bases separadas);
 - una fuente de autorización institucional: la relación usuario → perfil → establecimientos
   autorizados vive **fuera** de esta BD (spec §7);
 - un contenedor de lógica: no hay procedimientos almacenados, triggers, jobs, vistas ni funciones.
 
-## 3. Tablas incluidas (12)
+## 3. Tablas incluidas (15)
 
-Agrupadas según spec §20. Todas en esquema `dbo`, definidas en `010_schema_core.sql`.
+Doce provienen de spec §20. Tres más (`CAF_MENOR`, `CAF_EVALUACION_MENOR`,
+`CAF_INDICADOR_ANTROPOMETRICO`) y las columnas `FAD_direccion`, `FAD_telefonoUno`
+y `FAD_telefonoDos` amplían la superficie que SIA consulta hoy. Sus tipos salen de
+las fichas del análisis CAH, no de un DDL productivo.
+
+`NEEDS_VALIDATION`: `docs/architecture/SIDINACC_LOCAL_REPLICA_SPEC.md` v0.1 todavía
+excluye esas tres tablas y no declara dirección ni teléfonos. No se reescribió la spec.
+
+Todas en esquema `dbo`, definidas en `010_schema_core.sql`.
 
 | Grupo | Tabla | Rol |
 | --- | --- | --- |
@@ -39,17 +47,25 @@ Agrupadas según spec §20. Todas en esquema `dbo`, definidas en `010_schema_cor
 | SERVICIOS | `CAF_SERVICIO` | Descripción del servicio/modalidad. |
 | SERVICIOS | `CAF_CAT_TIPO_CLIENTE` | Tipo de cliente del servicio. |
 | SERVICIOS | `CAF_SERVICIO_CLIENTE` | Servicios de una persona por período/mes. |
+| CONTEXTO DEL MENOR | `CAF_MENOR` | Madre, padre, encargado y período. Sin `MEN_rezagoDesarrollo`. |
+| VIGILANCIA | `CAF_EVALUACION_MENOR` | Resultados PE/PT/TE/IMC ya registrados. PK local `EVM_idEvaluacionMenor` (`PROVISIONAL_KEY` / `TODO-UTIC`). |
+| VIGILANCIA | `CAF_INDICADOR_ANTROPOMETRICO` | Catálogo de área/clasificación/nomenclatura. Seed `MOCK_ONLY`. Sin FK desde los estados. |
+
+`CAF_FAMILIA_DETALLE` también guarda `FAD_direccion`, `FAD_telefonoUno` y `FAD_telefonoDos`.
+Son datos del contexto familiar del período, no teléfonos personales exclusivos del encargado.
 
 ## 4. Tablas y objetos excluidos
 
-De spec §3.2: `CAF_EVALUACION_MENOR`, `CAF_INDICADOR_ANTROPOMETRICO`, `CAF_MENOR`,
-`CAF_NACIONALIDAD` y demás catálogos demográficos, `RCS_PROVINCIA`/`RCS_CANTON`/`RCS_DISTRITO`/`RCS_POBLADO`,
+Siguen fuera: `CAF_NACIONALIDAD` y demás catálogos demográficos, `RCS_PROVINCIA`/`RCS_CANTON`/`RCS_DISTRITO`/`RCS_POBLADO`,
 `CAF_DETALLE_TRASLADO`/`CAF_GENERACION_CLAVE`/`CAF_CAT_TIPO_TRASLADO`, `CAF_PAR_PRIORIDAD`,
 `CAF_CAT_REFERENCIA`, `CAF_SALUD`, tablas PMS, `RCS_TOKEN`, triggers, jobs y SP de mantenimiento.
 
-Además, no se crean: tablas de A.I. (pertenecen a `SIA_CENCINAI`), tablas inventadas de
-usuario/establecimiento, auditoría institucional ni vistas. T14 y T37 verifican las 12 tablas
-permitidas; T39 verifica la ausencia de vistas, procedimientos, funciones y triggers.
+No se crean tablas EDIN II ni EVADE, ni se usa `MEN_rezagoDesarrollo` como sustituto.
+No se crean columnas `REG_codigoReferencia`, `OFL_codigoReferencia` ni `EST_codigoReferencia`.
+No se crean tablas de A.I. (pertenecen a `SIA_CENCINAI`), tablas inventadas de
+usuario/establecimiento, auditoría institucional ni vistas. No hay snapshot de referencia
+dentro de esta base. T14 y T37 verifican las 15 tablas permitidas; T39 verifica la ausencia
+de vistas, procedimientos, funciones y triggers; T57 verifica EDIN/EVADE, rezago y códigos territoriales.
 
 ## 5. Relaciones sin FK física
 
@@ -204,6 +220,11 @@ no conteos runtime de esta corrección).
 | `SYN-1100102-99` | `BIT_eliminado = 1`; no cuenta en el rango 5–10. |
 | `SYN-1010320-01` / `SYN-1010321-01` | Lucia Mora Campos / Campo, misma OL Hatillo (101). |
 | `SYN-1010202-01` / `SYN-1190108-01` | Mateo Vargas Rojas en Central Sur y Brunca. |
+| `SYN-1100102-81` … `88` | Madre, padre o encargado. Existen en `CAF_PERSONA` y no son clientes: sin familia, sin servicios y fuera de la búsqueda de beneficiarias. |
+| `SYN-1100102-01` | 2026 encargada = madre (`Madre`). 2025 encargado = padre. |
+| `SYN-1100102-02` | 2026 encargado = padre (`Padre`). |
+| `SYN-1100102-03` | 2026 encargado distinto (`Persona encargada`). |
+| `SYN-1100102-04` | 2026 encargada = madre y padre no registrado. |
 
 ## 10. Período configurado y regla de ubicación
 
@@ -325,7 +346,7 @@ inspeccionan 2025.
 | T11 | `SYN-1100102-02` existe, se resuelve y no tiene servicios 2026. |
 | T12 | Servicio-cliente y persona-detalle sin huérfanos. |
 | T13 | Todo EST resuelve OL y Región; EST de persona-detalle existen. |
-| T14 | Exactamente las 12 tablas permitidas. |
+| T14 | Exactamente las 15 tablas permitidas. |
 | T15 | Exactamente las 9 Regiones esperadas. |
 | T16 | Exactamente las 41 Oficinas Locales esperadas. |
 | T17 | Cada OL referencia una Región válida. |
@@ -338,7 +359,7 @@ inspeccionan 2025.
 | T24 | Todas las personas activas tienen `PER_idPersona` sintético. |
 | T25 | Formato `SYN-<ESTID>-<NN>` y longitud ≤ 20. |
 | T26 | No hay `PER_idPersona` duplicados. |
-| T27 | Todas las personas activas tienen familia válida. |
+| T27 | Los clientes activos tienen familia válida. Madre, padre y encargado pueden existir sin familia y sin ser clientes. |
 | T28 | Todas las familias usadas en 2026 tienen `CAF_FAMILIA_DETALLE` válido. |
 | T29 | Todas las Regiones tienen población sintética. |
 | T30 | Todas las Oficinas Locales tienen población sintética. |
@@ -348,17 +369,36 @@ inspeccionan 2025.
 | T34 | Al menos una persona `BIT_eliminado = 1`. |
 | T35 | La persona eliminada no entra en el rango 5–10. |
 | T36 | Todos los servicios referencian persona, servicio, tipo y período válidos. |
-| T37 | No hay tablas fuera de las 12 permitidas. |
+| T37 | No hay tablas fuera de las 15 permitidas. |
 | T38 | `sia_sidinacc_reader` solo lee. |
 | T39 | Sin vistas, procedimientos, funciones ni triggers de usuario. |
 | T40 | `PER_beneficiario` y `FAD_inActiva` permanecen `NULL`. |
 | T41 | Cada establecimiento **INACTIVO/CERRADO** tiene 0 personas activas en 2026. |
+| T42 | `CAF_MENOR` asocia persona y encargado. |
+| T43 | Encargado = madre en 2026 se lee `Madre` y no usa el encargado de 2025. |
+| T44 | Encargado = padre se lee `Padre`. |
+| T45 | Encargado distinto se lee `Persona encargada`. |
+| T46 | Padre ausente: la encargada madre sigue siendo `Madre`. |
+| T47 | Perfil 2026: dirección familiar y jerarquía territorial. |
+| T48 | Teléfono principal del detalle familiar del período. |
+| T49 | Teléfono alternativo presente y un período sin alternativo. |
+| T50 | 2026 no reutiliza dirección ni teléfono de 2025. |
+| T51 | Varias evaluaciones activas de la misma persona. |
+| T52 | Se conserva la fecha de evaluación. |
+| T53 | Se conservan evaluaciones 2025 y 2026 con su período. |
+| T54 | Evaluación con `BIT_eliminado` no está activa. |
+| T55 | Código sintético 9 puede producir señal demo `MOCK_ONLY`. |
+| T56 | Código sintético 1 no produce señal. |
+| T57 | Sin tablas EDIN/EVADE, sin `MEN_rezagoDesarrollo`, sin códigos territoriales inventados. |
+| T58 | Madre, padre y encargado no salen en la búsqueda de beneficiarias. |
+| T59 | Indicadores `MOCK_ONLY` y sin FK desde los estados nutricionales. |
+| T60 | Índices de menor y de evaluación. |
+| T61 | PK local provisional: `EVM_idEvaluacionMenor`. |
 
 Reporte: el script devuelve un result set (`test`, `descripcion`, `resultado`, `detalle`). Si alguna
-prueba no es `PASS` lanza `THROW 50090`; si no se evaluaron exactamente 41 pruebas lanza
+prueba no es `PASS` lanza `THROW 50090`; si no se evaluaron exactamente 61 pruebas lanza
 `THROW 50091`. Con `sqlcmd -b` ambos producen un código de salida distinto de cero. En éxito
-imprime `SIDINACC_LOCAL smoke tests PASSED (41/41)`. Ese `41/41` es el contrato del script,
-no un resultado runtime de esta corrección (ver §18).
+imprime `SIDINACC_LOCAL smoke tests PASSED (61/61)`. Ese `61/61` es el contrato del script.
 
 Las pruebas de ámbito por usuario (Establecimiento, multiestablecimiento, OL, Regional) pertenecen
 al futuro adapter, porque la autorización local vive fuera de la BD (spec §16).
@@ -376,9 +416,7 @@ el catálogo territorial derivado, el generador y este README.
 
 ## 18. Estado de validación
 
-- Primera ejecución runtime (seed anterior): **PASS** 40/40, 661 establecimientos, población
-  también en inactivos. Los totales 4952/4946 de esa corrida quedan **obsoletos**.
-- Tras restringir la población a `EST_inActivo = 1` (el script ahora evalúa **41** pruebas;
-  se añadió T41): **NOT_RUN**. No se modificó la instancia SQL existente. Los seeds no
-  borran filas ya insertadas; hace falta recrear `SIDINACC_LOCAL` y volver a ejecutar
-  los seis scripts.
+- Primera ejecución runtime (seed anterior): **PASS** 40/40. Los totales 4952/4946 de esa corrida quedan **obsoletos**.
+- Recreación local de `SIDINACC_LOCAL` con la superficie de menor, contacto familiar y evaluaciones: **PASS** 61/61.
+  Conteos de esa corrida: 661 establecimientos (630 activos, 31 inactivos/cerrados); 4708 personas sintéticas
+  (4703 no eliminadas, de las cuales 8 son solo contexto de madre/padre/encargado; 5 eliminadas).

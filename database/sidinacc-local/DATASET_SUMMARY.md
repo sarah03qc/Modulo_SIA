@@ -102,6 +102,10 @@ El resto de cambios usa el siguiente establecimiento de la misma OL (cíclico). 
 - persona multiservicio: `SYN-1100102-01` (servicios sintéticos 1 y 2 en 2026)
 - persona eliminada: `SYN-1100102-99` (`BIT_eliminado = 1`; no cuenta en el 5–10)
 - familia con cambio territorial: `SYN-1100102-03` (ver Historical simulation)
+- contexto del menor, fuera del conteo de clientes: `SYN-1100102-81` a `SYN-1100102-88` (madre, padre o encargado; sin familia ni servicios)
+- dirección y teléfonos sintéticos en `CAF_FAMILIA_DETALLE`; 2025 y 2026 de la familia `110010203` no se copian entre sí
+- evaluaciones sintéticas de `SYN-1100102-01` (2025 y dos fechas 2026) y una eliminada de `SYN-1100102-02`
+- indicadores `ANT_id` 9001/9002 marcados `MOCK_ONLY`; el código tinyint `9` es señal demo y `1` es normal. No son catálogo productivo ni `ANT_id`
 - apellidos repetidos: el pool sintético reutiliza Rojas, Vargas, Mora, Campos, Jimenez, etc. en múltiples establecimientos
 
 IDs adicionales eliminados (también sintéticos, PROJECTION): `SYN-1190130-99`, `SYN-2140404-99`, `SYN-6010406-99`, `SYN-7030503-99`.
@@ -124,18 +128,18 @@ construcción del seed (T24–T26). Esta corrección: **NOT_RUN**.
 
 PII review: PASS
 - Permitido y presente: nombres y códigos de Región, Oficina Local y establecimiento
-- Ausente: beneficiarios reales, cédulas, DIMEX, teléfonos personales, correos, direcciones particulares, información médica o expedientes
+- Presente y sintético: dirección y teléfonos de `CAF_FAMILIA_DETALLE` (contexto familiar de demostración, no datos reales)
+- Ausente: beneficiarios reales, cédulas, DIMEX, correos, información médica o expedientes reales
 - El generador territorial no lee las columnas `TELEFONO`, `FAX` ni `DIRECCION` del Excel
 
-Smoke tests (script `090`): **41** (T01–T41; se añadió T41: 0 personas activas 2026 en
-cada EST inactivo/cerrado). Runtime de esta corrección: **NOT_RUN**.
+Smoke tests (script `090`): **61** (T01–T61). Runtime de la recreación local: **PASS** 61/61.
+Personas sintéticas en esa corrida: 4708 (4703 no eliminadas, incluidas 8 de solo contexto; 5 eliminadas).
 
 Runtime validation:
 - Primera ejecución (seed anterior, población también en inactivos): **PASS**
   (9 regiones / 41 OL / 661 EST; 630 activos; 31 inactivos/cerrados; 4952/4946 personas;
-  smoke **40/40**; idempotencia). Esos totales 4952/4946 quedan **obsoletos**.
-- Tras esta corrección semántica: **NOT_RUN**. Los seeds son insert-only; no se modificó
-  la instancia SQL existente. Hace falta recrear `SIDINACC_LOCAL` y volver a ejecutar 001→090.
+  smoke **40/40**). Esos totales 4952/4946 quedan **obsoletos**.
+- Recreación de `SIDINACC_LOCAL` tras la ampliación: **PASS** 61/61.
 
 ## TODO-UTIC
 

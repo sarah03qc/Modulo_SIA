@@ -3,14 +3,15 @@
   Smoke tests de la replica local con estructura territorial institucional
   y poblacion sintetica (T01-T14 adaptados; T15-T37 territoriales/poblacion;
   T38-T40 conservan controles de rol, objetos extra y NULL no documentados;
-  T41: establecimientos inactivos/cerrados sin personas activas 2026).
+  T41: establecimientos inactivos/cerrados sin personas activas 2026;
+  T42-T61: menor, direccion/contacto familiar, evaluaciones y ausencia de EDIN/EVADE).
 
   Constantes @expEstTotal / @expEstActive / @expEstChecksum las mantiene
   database/sidinacc-local/tools/generate_territorial_seed.py --check a partir
   del Excel oficial; no son un "639" hardcodeado.
 
   - Solo lectura: unicamente escribe en variables de tabla locales.
-  - THROW 50090 si alguna prueba falla; THROW 50091 si no se evaluaron 41 pruebas.
+  - THROW 50090 si alguna prueba falla; THROW 50091 si no se evaluaron 61 pruebas.
 */
 USE SIDINACC_LOCAL;
 GO
@@ -244,7 +245,8 @@ DECLARE @allowed TABLE (name sysname);
 INSERT INTO @allowed VALUES
     (N'CAF_CAT_REGION'), (N'CAF_CAT_OFICINA_LOCAL'), (N'RCS_ESTABLECIMIENTO'), (N'RCS_PERIODO'),
     (N'CAF_CAT_SEXO'), (N'CAF_FAMILIA'), (N'CAF_FAMILIA_DETALLE'), (N'CAF_PERSONA'),
-    (N'CAF_PERSONA_DETALLE'), (N'CAF_SERVICIO'), (N'CAF_CAT_TIPO_CLIENTE'), (N'CAF_SERVICIO_CLIENTE');
+    (N'CAF_PERSONA_DETALLE'), (N'CAF_SERVICIO'), (N'CAF_CAT_TIPO_CLIENTE'), (N'CAF_SERVICIO_CLIENTE'),
+    (N'CAF_MENOR'), (N'CAF_EVALUACION_MENOR'), (N'CAF_INDICADOR_ANTROPOMETRICO');
 SELECT @n1 = COUNT(*), @s1 = STRING_AGG(CONVERT(varchar(260), SCHEMA_NAME(t.schema_id) + N'.' + t.name), ', ')
 FROM sys.tables t
 WHERE t.is_ms_shipped = 0
@@ -255,7 +257,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sys.tables t
                   WHERE t.is_ms_shipped = 0
                     AND SCHEMA_NAME(t.schema_id) = N'dbo'
                     AND t.name = a.name);
-INSERT INTO @r VALUES ('T14', 'tablas de usuario = exactamente las 12 permitidas',
+INSERT INTO @r VALUES ('T14', 'tablas de usuario = exactamente las 15 permitidas',
     CASE WHEN @n1 = 0 AND @n2 = 0 THEN 'PASS' ELSE 'FAIL' END,
     LEFT(CONCAT('extras=', @n1, '; faltantes=', @n2, '; lista_extras=', COALESCE(@s1, '(ninguna)')), 400));
 
@@ -406,15 +408,28 @@ INSERT INTO @r VALUES ('T26', 'no hay PER_idPersona duplicados',
     CASE WHEN @n1 = @n2 AND @n1 > 0 THEN 'PASS' ELSE 'FAIL' END,
     CONCAT('filas=', @n1, '; distintos=', @n2));
 
-/* T27 */
+/* T27: cliente = persona activa con familia. Madre/padre/encargado pueden existir sin familia. */
 SELECT @n1 = COUNT(*)
 FROM dbo.CAF_PERSONA P
 LEFT JOIN dbo.CAF_FAMILIA F ON F.FAM_idFamilia = P.FAM_idFamilia
 WHERE ISNULL(P.BIT_eliminado, 0) = 0
-  AND (P.FAM_idFamilia IS NULL OR F.FAM_idFamilia IS NULL);
-INSERT INTO @r VALUES ('T27', 'todas las personas activas poseen familia valida',
-    CASE WHEN @n1 = 0 THEN 'PASS' ELSE 'FAIL' END,
-    CONCAT('activas_sin_familia=', @n1));
+  AND P.FAM_idFamilia IS NOT NULL
+  AND F.FAM_idFamilia IS NULL;
+SELECT @n2 = COUNT(*)
+FROM dbo.CAF_PERSONA P
+WHERE ISNULL(P.BIT_eliminado, 0) = 0
+  AND P.FAM_idFamilia IS NULL
+  AND (
+      EXISTS (SELECT 1 FROM dbo.CAF_SERVICIO_CLIENTE SC WHERE SC.PER_idPersona = P.PER_idPersona)
+      OR EXISTS (SELECT 1 FROM dbo.CAF_PERSONA_DETALLE PD WHERE PD.PER_idPersona = P.PER_idPersona)
+      OR EXISTS (
+          SELECT 1 FROM dbo.CAF_MENOR M
+          WHERE M.PER_idPersona = P.PER_idPersona
+            AND ISNULL(M.BIT_eliminado, 0) = 0)
+  );
+INSERT INTO @r VALUES ('T27', 'clientes activos poseen familia; el contexto sin familia no es cliente',
+    CASE WHEN @n1 = 0 AND @n2 = 0 THEN 'PASS' ELSE 'FAIL' END,
+    CONCAT('clientes_sin_familia=', @n1, '; contexto_contaminado=', @n2));
 
 /* T28 */
 SELECT @n1 = COUNT(DISTINCT P.FAM_idFamilia)
@@ -533,7 +548,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sys.tables t
                   WHERE t.is_ms_shipped = 0
                     AND SCHEMA_NAME(t.schema_id) = N'dbo'
                     AND t.name = a.name);
-INSERT INTO @r VALUES ('T37', 'no existen tablas adicionales fuera de las 12 permitidas',
+INSERT INTO @r VALUES ('T37', 'no existen tablas adicionales fuera de las 15 permitidas',
     CASE WHEN @n1 = 0 AND @n2 = 0 THEN 'PASS' ELSE 'FAIL' END,
     CONCAT('extras=', @n1, '; faltantes=', @n2));
 
@@ -622,10 +637,340 @@ INSERT INTO @r VALUES ('T41', 'cada establecimiento INACTIVO/CERRADO tiene 0 per
     CASE WHEN @n1 = (@expEstTotal - @expEstActive) AND @n1 = @n2 THEN 'PASS' ELSE 'FAIL' END,
     CONCAT('est_inactivos=', @n1, '; esperados=', @expEstTotal - @expEstActive, '; con_cero_activas_2026=', @n2));
 
+/* Relacion estructural. No inventa otros parentescos.
+   Madre si encargado = madre; Padre si encargado = padre; si no, Persona encargada. */
+DECLARE @rel nvarchar(40);
+
+/* T42 */
+SELECT @n1 = COUNT(*)
+FROM dbo.CAF_MENOR M
+JOIN dbo.CAF_PERSONA N ON N.PER_idPersona = M.PER_idPersona
+JOIN dbo.CAF_PERSONA E ON E.PER_idPersona = M.MEN_idEncargado
+WHERE M.PER_idPersona = N'SYN-1100102-01'
+  AND M.RCS_idPeriodo = @periodId
+  AND ISNULL(M.BIT_eliminado, 0) = 0
+  AND E.PER_idPersona = N'SYN-1100102-81'
+  AND E.PER_nombre = 'Rosa'
+  AND E.PER_apellidoUno = 'Solano';
+INSERT INTO @r VALUES ('T42', 'CAF_MENOR asocia a la persona con su encargado en CAF_PERSONA',
+    CASE WHEN @n1 = 1 THEN 'PASS' ELSE 'FAIL' END,
+    CONCAT('vinculos_2026=', @n1));
+
+/* T43 */
+SELECT @rel = CASE
+        WHEN M.MEN_idEncargado = M.MEN_idMadre THEN N'Madre'
+        WHEN M.MEN_idEncargado = M.MEN_idPadre THEN N'Padre'
+        ELSE N'Persona encargada'
+    END
+FROM dbo.CAF_MENOR M
+WHERE M.PER_idPersona = N'SYN-1100102-01'
+  AND M.RCS_idPeriodo = 2026
+  AND ISNULL(M.BIT_eliminado, 0) = 0;
+SELECT @n1 = COUNT(*)
+FROM dbo.CAF_MENOR
+WHERE PER_idPersona = N'SYN-1100102-01'
+  AND RCS_idPeriodo = 2025
+  AND MEN_idEncargado = N'SYN-1100102-82'
+  AND ISNULL(BIT_eliminado, 0) = 0;
+INSERT INTO @r VALUES ('T43', 'encargado = madre en 2026 se lee Madre y no el encargado de 2025',
+    CASE WHEN @rel = N'Madre' AND @n1 = 1 THEN 'PASS' ELSE 'FAIL' END,
+    CONCAT('relacion_2026=', COALESCE(@rel, N'(ninguna)'), '; fila_2025_padre=', @n1));
+
+/* T44 */
+SELECT @rel = CASE
+        WHEN M.MEN_idEncargado = M.MEN_idMadre THEN N'Madre'
+        WHEN M.MEN_idEncargado = M.MEN_idPadre THEN N'Padre'
+        ELSE N'Persona encargada'
+    END
+FROM dbo.CAF_MENOR M
+WHERE M.PER_idPersona = N'SYN-1100102-02'
+  AND M.RCS_idPeriodo = 2026
+  AND ISNULL(M.BIT_eliminado, 0) = 0;
+INSERT INTO @r VALUES ('T44', 'encargado = padre se lee Padre',
+    CASE WHEN @rel = N'Padre' THEN 'PASS' ELSE 'FAIL' END,
+    CONCAT('relacion=', COALESCE(@rel, N'(ninguna)')));
+
+/* T45 */
+SELECT @rel = CASE
+        WHEN M.MEN_idEncargado = M.MEN_idMadre THEN N'Madre'
+        WHEN M.MEN_idEncargado = M.MEN_idPadre THEN N'Padre'
+        ELSE N'Persona encargada'
+    END
+FROM dbo.CAF_MENOR M
+WHERE M.PER_idPersona = N'SYN-1100102-03'
+  AND M.RCS_idPeriodo = 2026
+  AND ISNULL(M.BIT_eliminado, 0) = 0
+  AND M.MEN_idEncargado = N'SYN-1100102-87'
+  AND M.MEN_idEncargado <> M.MEN_idMadre
+  AND M.MEN_idEncargado <> M.MEN_idPadre;
+INSERT INTO @r VALUES ('T45', 'encargado distinto de madre y padre se lee Persona encargada',
+    CASE WHEN @rel = N'Persona encargada' THEN 'PASS' ELSE 'FAIL' END,
+    CONCAT('relacion=', COALESCE(@rel, N'(ninguna)')));
+
+/* T46 */
+SELECT @rel = CASE
+        WHEN M.MEN_idEncargado = M.MEN_idMadre THEN N'Madre'
+        WHEN M.MEN_idEncargado = M.MEN_idPadre THEN N'Padre'
+        ELSE N'Persona encargada'
+    END,
+    @n1 = CASE WHEN M.MEN_idPadre IS NULL THEN 1 ELSE 0 END
+FROM dbo.CAF_MENOR M
+WHERE M.PER_idPersona = N'SYN-1100102-04'
+  AND M.RCS_idPeriodo = 2026
+  AND ISNULL(M.BIT_eliminado, 0) = 0;
+INSERT INTO @r VALUES ('T46', 'si el padre no esta registrado, el encargado madre sigue siendo Madre',
+    CASE WHEN @rel = N'Madre' AND @n1 = 1 THEN 'PASS' ELSE 'FAIL' END,
+    CONCAT('relacion=', COALESCE(@rel, N'(ninguna)'), '; padre_ausente=', @n1));
+
+/* T47 perfil: persona, menor, encargado, familia, establecimiento, OL, region y direccion del periodo. */
+SELECT @n1 = COUNT(*)
+FROM dbo.CAF_PERSONA P
+JOIN dbo.CAF_MENOR M
+  ON M.PER_idPersona = P.PER_idPersona
+ AND M.RCS_idPeriodo = @periodId
+ AND ISNULL(M.BIT_eliminado, 0) = 0
+JOIN dbo.CAF_PERSONA ENC ON ENC.PER_idPersona = M.MEN_idEncargado
+JOIN dbo.CAF_FAMILIA_DETALLE FD
+  ON FD.FAM_idFamilia = P.FAM_idFamilia
+ AND FD.RCS_idPeriodo = @periodId
+ AND ISNULL(FD.BIT_eliminado, 0) = 0
+JOIN dbo.RCS_ESTABLECIMIENTO E ON E.EST_idEstablecimiento = FD.EST_idEstablecimientoActual
+JOIN dbo.CAF_CAT_OFICINA_LOCAL OL ON OL.CAT_idOficinaLocal = E.CAT_idOficinaLocal
+JOIN dbo.CAF_CAT_REGION R ON R.CAT_idRegion = OL.CAT_idRegion
+WHERE P.PER_idPersona = N'SYN-1100102-01'
+  AND ENC.PER_idPersona = N'SYN-1100102-81'
+  AND FD.FAD_direccion = 'Calle Sintetica 12 casa demo'
+  AND E.EST_idEstablecimiento = 1100102
+  AND OL.CAT_idOficinaLocal = 101
+  AND R.CAT_idRegion = 1;
+INSERT INTO @r VALUES ('T47', 'el perfil 2026 resuelve direccion familiar y jerarquia territorial',
+    CASE WHEN @n1 = 1 THEN 'PASS' ELSE 'FAIL' END,
+    CONCAT('perfiles=', @n1));
+
+/* T48 */
+SELECT @n1 = COUNT(*)
+FROM dbo.CAF_PERSONA P
+JOIN dbo.CAF_FAMILIA_DETALLE FD
+  ON FD.FAM_idFamilia = P.FAM_idFamilia
+ AND FD.RCS_idPeriodo = @periodId
+ AND ISNULL(FD.BIT_eliminado, 0) = 0
+WHERE P.PER_idPersona = N'SYN-1100102-01'
+  AND FD.FAD_telefonoUno = 88881101;
+INSERT INTO @r VALUES ('T48', 'el contacto principal sale del detalle familiar del periodo',
+    CASE WHEN @n1 = 1 THEN 'PASS' ELSE 'FAIL' END,
+    CONCAT('coincidencias=', @n1));
+
+/* T49 */
+SELECT @n1 = COUNT(*)
+FROM dbo.CAF_FAMILIA_DETALLE
+WHERE FAM_idFamilia = 110010201
+  AND RCS_idPeriodo = 2026
+  AND FAD_telefonoDos = 88881102
+  AND ISNULL(BIT_eliminado, 0) = 0;
+SELECT @n2 = COUNT(*)
+FROM dbo.CAF_FAMILIA_DETALLE
+WHERE FAM_idFamilia = 110010203
+  AND RCS_idPeriodo = 2025
+  AND FAD_telefonoDos IS NULL
+  AND ISNULL(BIT_eliminado, 0) = 0;
+INSERT INTO @r VALUES ('T49', 'hay telefono alternativo y tambien un periodo sin telefono alternativo',
+    CASE WHEN @n1 = 1 AND @n2 = 1 THEN 'PASS' ELSE 'FAIL' END,
+    CONCAT('alternativo_2026=', @n1, '; ausente_2025=', @n2));
+
+/* T50 */
+SELECT @n1 = COUNT(*)
+FROM dbo.CAF_FAMILIA_DETALLE a
+JOIN dbo.CAF_FAMILIA_DETALLE b
+  ON b.FAM_idFamilia = a.FAM_idFamilia
+ AND b.RCS_idPeriodo = 2025
+ AND ISNULL(b.BIT_eliminado, 0) = 0
+WHERE a.FAM_idFamilia = 110010203
+  AND a.RCS_idPeriodo = 2026
+  AND ISNULL(a.BIT_eliminado, 0) = 0
+  AND a.FAD_direccion = 'Calle Sintetica 30 casa demo 2026'
+  AND b.FAD_direccion = 'Calle Sintetica 4 casa demo 2025'
+  AND a.FAD_direccion <> b.FAD_direccion
+  AND a.FAD_telefonoUno = 88883301
+  AND b.FAD_telefonoUno = 88882201
+  AND a.FAD_telefonoUno <> b.FAD_telefonoUno;
+SELECT @n2 = COUNT(*)
+FROM dbo.CAF_FAMILIA_DETALLE
+WHERE FAM_idFamilia = 110010203
+  AND RCS_idPeriodo = 2026
+  AND (FAD_direccion = 'Calle Sintetica 4 casa demo 2025' OR FAD_telefonoUno = 88882201);
+INSERT INTO @r VALUES ('T50', '2026 no reutiliza direccion ni telefono del detalle 2025',
+    CASE WHEN @n1 = 1 AND @n2 = 0 THEN 'PASS' ELSE 'FAIL' END,
+    CONCAT('periodos_distintos=', @n1, '; contaminacion_2026=', @n2));
+
+/* T51 */
+SELECT @n1 = COUNT(*)
+FROM dbo.CAF_EVALUACION_MENOR
+WHERE PER_idPersona = N'SYN-1100102-01'
+  AND ISNULL(BIT_eliminado, 0) = 0;
+SELECT @n2 = COUNT(DISTINCT EVM_fechaEvaluacion)
+FROM dbo.CAF_EVALUACION_MENOR
+WHERE PER_idPersona = N'SYN-1100102-01'
+  AND ISNULL(BIT_eliminado, 0) = 0;
+INSERT INTO @r VALUES ('T51', 'una persona puede tener varias evaluaciones activas en fechas distintas',
+    CASE WHEN @n1 >= 2 AND @n2 >= 2 THEN 'PASS' ELSE 'FAIL' END,
+    CONCAT('activas=', @n1, '; fechas=', @n2));
+
+/* T52 */
+SELECT @n1 = COUNT(*)
+FROM dbo.CAF_EVALUACION_MENOR
+WHERE EVM_idEvaluacionMenor = 1
+  AND PER_idPersona = N'SYN-1100102-01'
+  AND EVM_fechaEvaluacion = DATETIMEFROMPARTS(2026, 3, 15, 0, 0, 0, 0);
+INSERT INTO @r VALUES ('T52', 'se conserva la fecha de evaluacion',
+    CASE WHEN @n1 = 1 THEN 'PASS' ELSE 'FAIL' END,
+    CONCAT('coincidencias=', @n1));
+
+/* T53 */
+SELECT @n1 = COUNT(*)
+FROM dbo.CAF_EVALUACION_MENOR
+WHERE PER_idPersona = N'SYN-1100102-01'
+  AND EVM_fechaEvaluacion = DATETIMEFROMPARTS(2026, 3, 15, 0, 0, 0, 0)
+  AND RCS_idPeriodo = 2026
+  AND ISNULL(BIT_eliminado, 0) = 0;
+SELECT @n2 = COUNT(*)
+FROM dbo.CAF_EVALUACION_MENOR
+WHERE PER_idPersona = N'SYN-1100102-01'
+  AND EVM_fechaEvaluacion = DATETIMEFROMPARTS(2025, 11, 2, 0, 0, 0, 0)
+  AND RCS_idPeriodo = 2025
+  AND ISNULL(BIT_eliminado, 0) = 0;
+INSERT INTO @r VALUES ('T53', 'se conservan evaluaciones de 2026 y de 2025 con su periodo',
+    CASE WHEN @n1 = 1 AND @n2 = 1 THEN 'PASS' ELSE 'FAIL' END,
+    CONCAT('eval_2026=', @n1, '; eval_2025=', @n2));
+
+/* T54 */
+SELECT @n1 = COUNT(*)
+FROM dbo.CAF_EVALUACION_MENOR
+WHERE EVM_idEvaluacionMenor = 4
+  AND BIT_eliminado = 1;
+SELECT @n2 = COUNT(*)
+FROM dbo.CAF_EVALUACION_MENOR
+WHERE PER_idPersona = N'SYN-1100102-02'
+  AND ISNULL(BIT_eliminado, 0) = 0;
+INSERT INTO @r VALUES ('T54', 'una evaluacion eliminada no se considera activa',
+    CASE WHEN @n1 = 1 AND @n2 = 0 THEN 'PASS' ELSE 'FAIL' END,
+    CONCAT('eliminada=', @n1, '; activas_persona_02=', @n2));
+
+/* MOCK_ONLY: tinyint 9 = senal demo sintetica; tinyint 1 = normal. No es ANT_id ni catalogo productivo. */
+/* T55 */
+SELECT @n1 = COUNT(*)
+FROM dbo.CAF_EVALUACION_MENOR
+WHERE ISNULL(BIT_eliminado, 0) = 0
+  AND EVM_estadoNutricionalPe = 9;
+SELECT @n2 = COUNT(*)
+FROM dbo.CAF_EVALUACION_MENOR
+WHERE BIT_eliminado = 1
+  AND EVM_estadoNutricionalPe = 9;
+INSERT INTO @r VALUES ('T55', 'el codigo sintetico 9 activo puede producir senal demo MOCK_ONLY',
+    CASE WHEN @n1 = 1 AND @n2 = 1 THEN 'PASS' ELSE 'FAIL' END,
+    CONCAT('senal_activa=', @n1, '; senal_eliminada_no_activa=', @n2));
+
+/* T56 */
+SELECT @n1 = COUNT(*)
+FROM dbo.CAF_EVALUACION_MENOR
+WHERE PER_idPersona = N'SYN-1100102-01'
+  AND EVM_fechaEvaluacion = DATETIMEFROMPARTS(2026, 8, 20, 0, 0, 0, 0)
+  AND ISNULL(BIT_eliminado, 0) = 0
+  AND EVM_estadoNutricionalPe = 1
+  AND EVM_estadoNutricionalPt = 1
+  AND EVM_estadoNutricionalTe = 1
+  AND EVM_estadoNutricionalImc = 1;
+INSERT INTO @r VALUES ('T56', 'el codigo sintetico 1 no produce senal demo',
+    CASE WHEN @n1 = 1 THEN 'PASS' ELSE 'FAIL' END,
+    CONCAT('evaluaciones_normales=', @n1));
+
+/* T57 */
+SELECT @n1 = COUNT(*)
+FROM sys.tables
+WHERE name LIKE N'%EDIN%'
+   OR name LIKE N'%EVADE%'
+   OR name IN (N'CAF_EDIN', N'CAF_EVADE', N'CAF_RESULTADO_EDIN', N'CAF_RESULTADO_EVADE');
+SELECT @n2 = CASE WHEN COL_LENGTH(N'dbo.CAF_MENOR', N'MEN_rezagoDesarrollo') IS NULL THEN 0 ELSE 1 END;
+SELECT @n3 = COUNT(*)
+FROM sys.columns
+WHERE name IN (N'REG_codigoReferencia', N'OFL_codigoReferencia', N'EST_codigoReferencia');
+INSERT INTO @r VALUES ('T57', 'no hay tablas EDIN/EVADE, ni rezago como sustituto, ni codigos territoriales inventados',
+    CASE WHEN @n1 = 0 AND @n2 = 0 AND @n3 = 0 THEN 'PASS' ELSE 'FAIL' END,
+    CONCAT('tablas_edin_evade=', @n1, '; columna_rezago=', @n2, '; columnas_codigo=', @n3));
+
+/* T58 */
+SELECT @n1 = COUNT(*)
+FROM dbo.CAF_PERSONA
+WHERE PER_idPersona IN (
+    N'SYN-1100102-81', N'SYN-1100102-82', N'SYN-1100102-83', N'SYN-1100102-84',
+    N'SYN-1100102-85', N'SYN-1100102-86', N'SYN-1100102-87', N'SYN-1100102-88');
+SELECT @n2 = COUNT(*)
+FROM @resolved
+WHERE PER_idPersona IN (
+    N'SYN-1100102-81', N'SYN-1100102-82', N'SYN-1100102-83', N'SYN-1100102-84',
+    N'SYN-1100102-85', N'SYN-1100102-86', N'SYN-1100102-87', N'SYN-1100102-88');
+SELECT @n3 = COUNT(*)
+FROM dbo.CAF_SERVICIO_CLIENTE
+WHERE PER_idPersona IN (
+    N'SYN-1100102-81', N'SYN-1100102-82', N'SYN-1100102-83', N'SYN-1100102-84',
+    N'SYN-1100102-85', N'SYN-1100102-86', N'SYN-1100102-87', N'SYN-1100102-88');
+INSERT INTO @r VALUES ('T58', 'madre, padre y encargado no aparecen como beneficiarios solo por estar en CAF_PERSONA',
+    CASE WHEN @n1 = 8 AND @n2 = 0 AND @n3 = 0 THEN 'PASS' ELSE 'FAIL' END,
+    CONCAT('personas_contexto=', @n1, '; en_busqueda=', @n2, '; con_servicios=', @n3));
+
+/* T59 */
+SELECT @n1 = COUNT(*)
+FROM dbo.CAF_INDICADOR_ANTROPOMETRICO
+WHERE BIT_eliminado = 0
+  AND ANT_clasificacion LIKE N'MOCK_ONLY%'
+  AND ANT_id IN (9001, 9002);
+SELECT @n2 = COUNT(*)
+FROM sys.foreign_keys fk
+WHERE fk.parent_object_id = OBJECT_ID(N'dbo.CAF_EVALUACION_MENOR')
+  AND fk.referenced_object_id = OBJECT_ID(N'dbo.CAF_INDICADOR_ANTROPOMETRICO');
+INSERT INTO @r VALUES ('T59', 'el indicador es MOCK_ONLY y no hay FK desde los estados nutricionales',
+    CASE WHEN @n1 = 2 AND @n2 = 0 THEN 'PASS' ELSE 'FAIL' END,
+    CONCAT('indicadores_mock=', @n1, '; fk_estado_ant=', @n2));
+
+/* T60 */
+SELECT @n1 = COUNT(*)
+FROM sys.indexes
+WHERE name = N'IX_CAF_MENOR_PersonaPeriodo'
+  AND object_id = OBJECT_ID(N'dbo.CAF_MENOR');
+SELECT @n2 = COUNT(*)
+FROM sys.indexes
+WHERE name = N'IX_CAF_EVALUACION_MENOR_PersonaPeriodoFecha'
+  AND object_id = OBJECT_ID(N'dbo.CAF_EVALUACION_MENOR');
+INSERT INTO @r VALUES ('T60', 'existen los indices de menor y de evaluacion por persona, periodo y fecha',
+    CASE WHEN @n1 = 1 AND @n2 = 1 THEN 'PASS' ELSE 'FAIL' END,
+    CONCAT('idx_menor=', @n1, '; idx_evaluacion=', @n2));
+
+/* T61 PROVISIONAL_KEY / TODO-UTIC */
+SELECT @n1 = COUNT(*)
+FROM sys.indexes i
+JOIN sys.index_columns ic
+  ON ic.object_id = i.object_id
+ AND ic.index_id = i.index_id
+JOIN sys.columns c
+  ON c.object_id = ic.object_id
+ AND c.column_id = ic.column_id
+WHERE i.object_id = OBJECT_ID(N'dbo.CAF_EVALUACION_MENOR')
+  AND i.is_primary_key = 1
+  AND c.name = N'EVM_idEvaluacionMenor';
+SELECT @n2 = COUNT(*)
+FROM sys.index_columns ic
+JOIN sys.indexes i
+  ON i.object_id = ic.object_id
+ AND i.index_id = ic.index_id
+WHERE i.object_id = OBJECT_ID(N'dbo.CAF_EVALUACION_MENOR')
+  AND i.is_primary_key = 1;
+INSERT INTO @r VALUES ('T61', 'la PK local provisional de la evaluacion es EVM_idEvaluacionMenor',
+    CASE WHEN @n1 = 1 AND @n2 = 1 THEN 'PASS' ELSE 'FAIL' END,
+    CONCAT('pk_evm=', @n1, '; columnas_pk=', @n2));
+
 SELECT * FROM @r ORDER BY test;
 
-IF (SELECT COUNT(*) FROM @r) <> 41
-    THROW 50091, 'SIDINACC_LOCAL smoke tests: se esperaban 41 pruebas evaluadas', 1;
+IF (SELECT COUNT(*) FROM @r) <> 61
+    THROW 50091, 'SIDINACC_LOCAL smoke tests: se esperaban 61 pruebas evaluadas', 1;
 
 IF EXISTS (SELECT 1 FROM @r WHERE resultado <> 'PASS')
 BEGIN
@@ -633,7 +978,7 @@ BEGIN
 END
 ELSE
 BEGIN
-    PRINT 'SIDINACC_LOCAL smoke tests PASSED (41/41)';
+    PRINT 'SIDINACC_LOCAL smoke tests PASSED (61/61)';
 END;
 GO
 
