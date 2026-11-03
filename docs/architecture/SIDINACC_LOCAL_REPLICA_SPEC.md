@@ -1,107 +1,120 @@
-# Replicación de BD relevante a SIA\-CENCINAI
+# SIDINACC_LOCAL_REPLICA_SPEC.md
 
-# SIDINACC\_LOCAL\_REPLICA\_SPEC.md
+# Especificación técnica de la réplica institucional mínima — SIA-CENCINAI
 
 **Proyecto:** SIA-CENCINAI  
 **Documento:** Especificación técnica ejecutable de la réplica local de SIDINACC/CAH  
 **Uso:** fuente de verdad para Cursor durante la implementación local  
-**Estado:** v0.1 — desarrollo / pendiente de validación contra DDL real de UTIC  
-**Fecha:** octubre 2026
+**Versión documental:** 0.2  
+**Fecha de revisión:** 03/11/2026  
+**Estado:** especificación de la réplica local implementada, pendiente de validación frente al DDL y la integración real de UTIC  
+**Alcance funcional de contraste:** SIA-CENCINAI v0.7  
+**Base local:** `SIDINACC_LOCAL` (solo lectura desde SIA)
 
 ---
 
 ## 1. Objetivo
 
-Construir `SIDINACC_LOCAL`, una réplica **mínima y deliberadamente parcial** de la base institucional SIDINACC/CAH que contenga **exactamente la superficie de datos que SIA-CENCINAI necesita consumir en la primera implementación**.
+Definir y mantener `SIDINACC_LOCAL` como una **réplica institucional mínima y deliberadamente parcial** para desarrollar SIA-CENCINAI sin depender todavía del acceso al ambiente real de SIDINACC/CAH. El contrato se actualiza desde la propuesta inicial de 12 tablas hacia las **15 tablas ya presentes** en los scripts del repositorio, sin reconstruir ni ampliar indiscriminadamente la base.
 
-No se pretende clonar SIDINACC completo. La réplica debe reproducir nombres institucionales, relaciones y semántica de los objetos que SIA consume, usando exclusivamente datos sintéticos, de forma que el código pueda desarrollarse ahora y luego sustituir el origen local por la integración institucional real sin reescribir la lógica de negocio.
+La réplica es una **proyección compatible, no un clon exacto**: nombres institucionales relevantes, relaciones demostradas, tipos provisionales donde el manual es ambiguo, y datos de personas 100 % sintéticos. Sirve para pruebas de integración y puede sustituirse posteriormente por un lector institucional validado.
 
-```
-SIDINACC_LOCAL                    SIA_CENCINAI
-(datos institucionales mock)      (datos propios de A.I.)
-          │                               ▲
-          │ solo lectura                  │ lectura/escritura
-          ▼                               │
-   SidinaccReader / Adapter ───────────────┘
+```text
+SIDINACC_LOCAL (simulación de lectura)        SIA_CENCINAI (futuro dominio A.I.)
+              |                                      ^
+              | solo lectura                         | operaciones A.I.
+              v                                      |
+  SidinaccReader + InstitutionalAuthProvider -------+
+       contratos desacoplados
 ```
 
 ### Regla arquitectónica
 
-- `SIDINACC_LOCAL` = fuente maestra institucional simulada.
-- `SIA_CENCINAI` = persistencia propia de Atención Interdisciplinaria.
-- SIA **NO** debe modificar `SIDINACC_LOCAL`.
-- SIA **NO** debe copiar innecesariamente datos maestros a su propia BD.
-- La unión entre ambos dominios se hace mediante identificadores institucionales.
-- El código de dominio de SIA no debe conocer tablas `CAF_*` ni `RCS_*`; debe consumir un adaptador.
+- `SIDINACC_LOCAL` aporta identidad, territorio vigente por período, familia, persona encargada, servicios y una proyección de antecedentes nutricionales **solo para simulación/consulta autorizada**.
+- `SIA_CENCINAI` será titular de referencias A.I., casos, sesiones, revaloraciones, prioridad A.I., planes, atenciones, programación, cierres, posibles referencias e informes. El diseño de esa base se revisará por separado contra v0.7.
+- SIA **no escribe** en `SIDINACC_LOCAL`, no crea allí tablas propias de A.I. y evita duplicar datos maestros salvo snapshots históricos explícitos.
+- El dominio SIA no accede directamente a objetos `CAF_*`/`RCS_*`; consume adaptadores y contratos autorizados.
+- Roles institucionales, ámbitos y establecimientos autorizados se obtienen por un proveedor de autorización separado, **no** mediante una tabla institucional inventada en la réplica.
+- La supresión de la pantalla general de Personas/Clientes **no suprime** búsquedas contextuales ni relaciones de identidad.
 
----
+### Alcance de esta revisión
 
-## 2. Fuentes utilizadas
+Esta versión **no ejecuta SQL**, no afirma haber validado el servidor local ni redefine el diseño de `SIA_CENCINAI`. Registra lo documentado en GitHub, lo respaldado por los manuales y lo pendiente de comprobación con UTIC.
 
-Esta especificación se deriva de:
+## 2. Fuentes utilizadas, autoridad y diferencias conocidas
 
-1. **Manual Técnico — Módulo Caracterización del Ambiente del Hogar (CAH)**, DNCC-DI-UTIC-M-00X-2021, con registro de cambio de 06/06/2023.
-2. Análisis técnico filtrado de SIDINACC/CAH elaborado para el proyecto SIA-CENCINAI en Confluence.
-3. Especificación funcional vigente de SIA-CENCINAI, principalmente:
-    - búsqueda de cliente/beneficiaria;
-    - reutilización de datos maestros;
-    - perfil básico;
-    - jerarquía Región → Oficina Local → Establecimiento;
-    - servicios/modalidades disponibles;
-    - restricciones por ámbito;
-    - establecimientos autorizados;
-    - futura reutilización de vigilancia/tamizaje.
+1. **Fuente institucional histórica:** *Manual Técnico — Módulo Caracterización del Ambiente del Hogar (CAH)*, DNCC-DI-UTIC-M-00X-2021, registro 06/06/2023, especialmente fichas, vistas y SP.
+2. **Manual de Usuario CAH:** edición revisada el 09/01/2026; contexto de personas, expedientes, servicios, búsqueda, período y traslados de expedientes CAH.
+3. **Análisis técnico del CAH:** `docs/architecture/SIDINACC_CAH_DATABASE_ANALYSIS.md` y documento fuente equivalente de Confluence.
+4. **Especificación funcional vigente de SIA:** `docs/functional/FUNCTIONAL_SPEC_v0.7.md` y `USE_CASES_v0.7.md`; acuerdos con Alina del 02/11/2026.
+5. **Realidad implementada en el repositorio:** `database/sidinacc-local/010_schema_core.sql`, semillas `020`, `030`, `040`, `090_smoke_tests.sql`, `README.md`, `DATASET_SUMMARY.md` y catálogo territorial CSV.
 
-### Regla de fidelidad ante inconsistencias del manual
+### Jerarquía de evidencia
 
-El manual contiene diferencias entre fichas de tabla, diagramas y SQL ejecutable. Para esta réplica se usa el siguiente orden:
+- Para describir **lo que efectivamente define la réplica local**, prevalecen los scripts SQL versionados y sus anotaciones, frente a la especificación v0.1 desactualizada.
+- Para afirmar **lo que existe realmente en SIDINACC institucional**, las fichas, vistas y SP de los manuales solo son evidencia documental histórica, **no** un DDL certificado vigente en 2026.
+- La documentación v0.7 define el comportamiento propio de SIA, sin autorizar la creación de nuevas columnas o tablas ficticias en CAH.
+- Ante ambigüedad en manuales: SQL de vistas/SP documentados → ficha de tabla → ER, con `PROVISIONAL_TYPE`, `PROVISIONAL_KEY`, `LOCAL_COMPATIBILITY_DECISION` o `TODO-UTIC`, según corresponda.
+- La fuente territorial pública aporta nombres, códigos y relaciones de establecimientos para el *seed*; **no** se importan datos reales de personas.
 
-1. **SQL de vistas/SP documentado**, cuando demuestra cómo se usa realmente un campo.
-2. **Ficha de tabla** para nombre, tipo, nulabilidad, PK/FK e Identity.
-3. **Diagrama ER** como evidencia de existencia/relación.
-4. Si el tipo exacto no puede determinarse, se marca `PROVISIONAL_TYPE` y se deberá sustituir cuando UTIC facilite el DDL real o acceso a `INFORMATION_SCHEMA`.
+### Desfase corregido
 
-No corregir silenciosamente discrepancias institucionales.
+La antigua v0.1 decía que `CAF_MENOR`, `CAF_EVALUACION_MENOR` y `CAF_INDICADOR_ANTROPOMETRICO` estaban excluidas y que `CAF_FAMILIA_DETALLE` no incluía contacto/dirección. Esto ya no describe `010_schema_core.sql`. **La v0.2 las incorpora como extensiones efectivamente implementadas, sin declararlas integraciones productivas.**
 
----
+## 3. Alcance y catálogo real de las 15 tablas
 
-## 3. Alcance final
+### 3.1 Tablas incluidas en `SIDINACC_LOCAL`
 
-### 3.1 Objetos que SÍ se crean en `SIDINACC_LOCAL`
+| # | Tabla | Datos útiles para SIA | Decisión / fuente |
+|---:|---|---|---|
+| 1 | `CAF_PERSONA` | Identidad (`PER_idPersona`), nombre, nacimiento, sexo, familia | Núcleo de identidad |
+| 2 | `CAF_CAT_SEXO` | Descripción del sexo registrado | Catálogo de apoyo |
+| 3 | `CAF_FAMILIA` | Vínculo persona–expediente familiar | Estructura soporte |
+| 4 | `CAF_FAMILIA_DETALLE` | Ubicación por período, dirección y teléfonos familiares | Fuente preferida de establecimiento por período; **contacto familiar, no de persona encargada** |
+| 5 | `RCS_PERIODO` | Referencia a período institucional | Evita mezclar estados anuales |
+| 6 | `RCS_ESTABLECIMIENTO` | Establecimiento, estado y Oficina Local | Jerarquía/ámbito |
+| 7 | `CAF_CAT_OFICINA_LOCAL` | Oficina Local y Región | Jerarquía/ámbito |
+| 8 | `CAF_CAT_REGION` | Región institucional | Jerarquía/ámbito |
+| 9 | `CAF_SERVICIO` | Catálogo de servicio/modalidad | **Semántica de modalidad por confirmar** |
+| 10 | `CAF_CAT_TIPO_CLIENTE` | Tipo de cliente asociado al servicio | Catálogo soporte |
+| 11 | `CAF_SERVICIO_CLIENTE` | Servicios de persona por mes y período | Consulta de modalidades |
+| 12 | `CAF_PERSONA_DETALLE` | Proyección temporal por persona | Compatibilidad con patrón institucional |
+| 13 | `CAF_MENOR` | Relaciones con madre, padre y persona encargada por período | Ampliación implementada; contexto del menor |
+| 14 | `CAF_EVALUACION_MENOR` | Fecha y estados nutricionales PE/PT/TE/IMC por período | Ampliación implementada; `PROVISIONAL_KEY` |
+| 15 | `CAF_INDICADOR_ANTROPOMETRICO` | Catálogo auxiliar de clasificación/nomenclatura | Ampliación implementada; códigos de seed `MOCK_ONLY` |
 
-| Objeto | Razón exacta para SIA | Rol |
-| --- | --- | --- |
-| `CAF_PERSONA` | identificación, nombre, fecha de nacimiento, sexo, vínculo con familia | directo |
-| `CAF_CAT_SEXO` | traducir `CAT_idSexo` a descripción | directo |
-| `CAF_FAMILIA` | puente institucional Persona → Familia | soporte |
-| `CAF_FAMILIA_DETALLE` | establecimiento actual de la familia por período | directo |
-| `RCS_PERIODO` | mantener la dimensión temporal del CAH | directo |
-| `RCS_ESTABLECIMIENTO` | establecimiento y vínculo con Oficina Local | directo |
-| `CAF_CAT_OFICINA_LOCAL` | Oficina Local y vínculo con Región | directo |
-| `CAF_CAT_REGION` | Región institucional | directo |
-| `CAF_SERVICIO` | descripción del servicio/modalidad | directo |
-| `CAF_CAT_TIPO_CLIENTE` | descripción del tipo de cliente del servicio | soporte |
-| `CAF_SERVICIO_CLIENTE` | servicios de una persona por período/mes | directo |
-| `CAF_PERSONA_DETALLE` | compatibilidad con el patrón histórico por período y con la lectura institucional de clientes/servicios | soporte |
+El archivo normativo del **DDL local ejecutable** es `database/sidinacc-local/010_schema_core.sql`. Las secciones SQL de este documento son **proyección de referencia**, no sustituyen el DDL implementado ni garantizan conformidad con producción.
 
-### 3.2 Objetos que NO se crean en esta primera réplica
+### 3.2 Campos añadidos de `CAF_FAMILIA_DETALLE`
 
-| Objeto / grupo | Decisión |
-| --- | --- |
-| `CAF_EVALUACION_MENOR` | diferido; RF-102 aún no define el punto exacto de entrada de vigilancia/tamizaje |
-| `CAF_INDICADOR_ANTROPOMETRICO` | diferido junto con `CAF_EVALUACION_MENOR` |
-| `CAF_MENOR` | no requerido por las pantallas P0 actuales |
-| `CAF_NACIONALIDAD` y demás catálogos demográficos | no requeridos por el perfil mínimo actual |
-| `RCS_PROVINCIA`, `RCS_CANTON`, `RCS_DISTRITO`, `RCS_POBLADO` | SIA filtra actualmente por Región → OL → Establecimiento |
-| `CAF_DETALLE_TRASLADO`, `CAF_GENERACION_CLAVE`, `CAF_CAT_TIPO_TRASLADO` | el traslado de expediente CAH no equivale al traslado/continuidad del caso A.I. |
-| `CAF_PAR_PRIORIDAD` | prioridad CAH ≠ prioridad A.I. |
-| `CAF_CAT_REFERENCIA` | referencia a servicios CEN-CINAI ≠ referencia A.I. |
-| `CAF_SALUD` | el manual indica que contiene histórico pero no está habilitada en la versión documentada |
-| tablas PMS | fuera del flujo A.I. actual |
-| `RCS_TOKEN` | token de SINIRUBE; no representa autenticación/sesión SIDINACC |
-| triggers, jobs y SP de mantenimiento | SIA solo necesita lectura de la réplica |
+- `FAD_direccion varchar(100) NULL`.
+- `FAD_telefonoUno numeric(18,0) NULL`.
+- `FAD_telefonoDos numeric(18,0) NULL`.
 
----
+Se interpretan como información familiar **correspondiente al período**, no como datos personales exclusivos de madre, padre o persona encargada. La semántica, tipo y formato real del teléfono requieren confirmación de UTIC.
+
+### 3.3 Objetos fuera de la réplica actual
+
+| Objeto/grupo | Motivo |
+|---|---|
+| `CAF_DETALLE_TRASLADO`, `CAF_GENERACION_CLAVE`, `CAF_CAT_TIPO_TRASLADO` | El movimiento de expediente CAH no es el proceso de cierre del caso A.I.; v0.7 **eliminó la continuidad automática** y no requiere copiarlo |
+| `CAF_PAR_PRIORIDAD` | Prioridad de selección CAH **distinta** de la prioridad A.I. definida por RN-009 |
+| `CAF_CAT_REFERENCIA` | Catálogo de remisión institucional CAH **distinto** de referencia interna A.I. |
+| `CAF_SALUD` | El manual técnico no demuestra una fuente activa adecuada para SIA |
+| Tablas EDIN II / EVADE | Ubicación y contrato técnico **no identificados**; prohibido inventarlos |
+| PMS, catálogos geográficos extendidos y recursos no consumidos | No hacen falta al contrato de consulta mínima |
+| `RCS_TOKEN` | Token SINIRUBE; no es mecanismo de autenticación de SIA |
+| Triggers, jobs, procedimientos de mantenimiento y vistas institucionales completas | El mock consume proyecciones de lectura, no replica SIDINACC entero |
+| Cualquier tabla `SIA_*` de casos, cierres, sesiones, atenciones o informes | Propiedad exclusiva de la BD SIA, no del espejo CAH |
+
+### 3.4 Traducción de cambios v0.7 a la réplica
+
+- **Pantalla general Personas/Clientes retirada:** conservar búsqueda por ID/nombre en referencias, sesiones, casos y atenciones, siempre autorizada; no crear listados indiscriminados.
+- **Caso A.I. único activo por persona:** se valida y persiste en SIA, no en CAF; `PER_idPersona` permite comprobar identidad global mediante adaptador.
+- **Traslado:** usar establecimiento vigente institucional para determinar ámbito, cerrar el caso A.I. de origen y, cuando corresponda, gestionar una referencia nueva en destino desde SIA; no crear mecanismo CAH de continuidad.
+- **Revaloración y cierres estructurados:** información del dominio SIA, sin nuevas tablas institucionales.
+- **Posibles referencias:** preparar una frontera de integración futura; la tabla de evaluación nutricional existente puede aportar antecedentes **no equivale** a un detector clínico/institucional validado.
+- **Reportería e Inicio:** nacimiento, sexo y jerarquía institucional ya cubiertos; indicadores operativos, casos, atenciones, porcentajes y análisis residen en SIA. El contexto institucional nunca autoriza acceso fuera del ámbito.
 
 ## 4. Decisión de clave de persona
 
@@ -266,7 +279,7 @@ CREATE TABLE dbo.CAF_FAMILIA (
 
 ---
 
-### 5.8 `CAF_FAMILIA_DETALLE`
+### 5.8 `CAF_FAMILIA_DETALLE` (incluye contacto familiar por período)
 
 **Fuente:** Manual CAH, ficha pág. 41; vista `uV_ListarClientesServicios`, págs. 68–70.
 
@@ -276,6 +289,9 @@ Esta es la fuente preferida para determinar el **establecimiento actual por per�
 CREATE TABLE dbo.CAF_FAMILIA_DETALLE (
     FAD_idFamiliaDetalle        int IDENTITY(1,1) NOT NULL PRIMARY KEY,
     FAM_idFamilia               int NOT NULL,
+    FAD_direccion               varchar(100) NULL, -- ampliación ya implementada
+    FAD_telefonoUno             numeric(18,0) NULL, -- familia / período
+    FAD_telefonoDos             numeric(18,0) NULL, -- familia / período
     FAD_inActiva                bit NULL,
     EST_idEstablecimientoActual int NULL,
     RCS_idPeriodo               numeric(18,0) NOT NULL,
@@ -455,6 +471,79 @@ ON dbo.CAF_SERVICIO_CLIENTE (
 
 ---
 
+### 5.14 `CAF_MENOR` — ampliación existente
+
+**Propósito:** identificar para cada menor la persona registrada como madre, padre y encargada en el período consultado. No crea una entidad adicional de persona; los identificadores referencian `CAF_PERSONA`.
+
+**Proyección del script local vigente:**
+
+```sql
+CREATE TABLE dbo.CAF_MENOR (
+    MEN_idRegistroMenor int NOT NULL PRIMARY KEY, -- TODO-UTIC: manual indica identity
+    PER_idPersona       nvarchar(20) NOT NULL,
+    MEN_idMadre         nvarchar(20) NULL,
+    MEN_idPadre         nvarchar(20) NULL,
+    MEN_idEncargado     nvarchar(20) NOT NULL,
+    RCS_idPeriodo       numeric(18,0) NOT NULL,
+    BIT_eliminado       bit NULL,
+    CONSTRAINT FK_LOCAL_MENOR_PERSONA FOREIGN KEY (PER_idPersona) REFERENCES dbo.CAF_PERSONA(PER_idPersona),
+    CONSTRAINT FK_LOCAL_MENOR_MADRE FOREIGN KEY (MEN_idMadre) REFERENCES dbo.CAF_PERSONA(PER_idPersona),
+    CONSTRAINT FK_LOCAL_MENOR_PADRE FOREIGN KEY (MEN_idPadre) REFERENCES dbo.CAF_PERSONA(PER_idPersona),
+    CONSTRAINT FK_LOCAL_MENOR_ENCARGADO FOREIGN KEY (MEN_idEncargado) REFERENCES dbo.CAF_PERSONA(PER_idPersona),
+    CONSTRAINT FK_LOCAL_MENOR_PERIODO FOREIGN KEY (RCS_idPeriodo) REFERENCES dbo.RCS_PERIODO(RCS_idPeriodo)
+);
+CREATE INDEX IX_CAF_MENOR_PersonaPeriodo ON dbo.CAF_MENOR(PER_idPersona, RCS_idPeriodo);
+```
+
+El script ejecutable usa guardas de existencia/idempotencia no repetidas en el fragmento. La relación del encargado con el menor se deduce de la correspondencia de IDs (`Madre`, `Padre` u `Otra persona encargada`), **no** de un rol institucional inventado. No incluir `MEN_rezagoDesarrollo`; no es sinónimo de EDIN II/EVADE.
+
+### 5.15 `CAF_EVALUACION_MENOR` — ampliación existente
+
+**Propósito:** lectura histórica de resultados nutricionales ya calculados en CAH. SIA no recalcula indicadores ni establece por sí sola criterios de referencia.
+
+```sql
+CREATE TABLE dbo.CAF_EVALUACION_MENOR (
+    EVM_idEvaluacionMenor    int NOT NULL PRIMARY KEY, -- PROVISIONAL_KEY / TODO-UTIC
+    PER_idPersona            nvarchar(20) NOT NULL,
+    EVM_fechaEvaluacion      datetime NOT NULL,
+    RCS_idPeriodo            numeric(18,0) NOT NULL,
+    EVM_estadoNutricionalPe  tinyint NULL,
+    EVM_estadoNutricionalPt  tinyint NULL,
+    EVM_estadoNutricionalTe  tinyint NULL,
+    EVM_estadoNutricionalImc tinyint NULL,
+    BIT_eliminado            bit NULL,
+    CONSTRAINT FK_LOCAL_EVM_PERSONA FOREIGN KEY (PER_idPersona) REFERENCES dbo.CAF_PERSONA(PER_idPersona),
+    CONSTRAINT FK_LOCAL_EVM_PERIODO FOREIGN KEY (RCS_idPeriodo) REFERENCES dbo.RCS_PERIODO(RCS_idPeriodo)
+);
+CREATE INDEX IX_CAF_EVALUACION_MENOR_PersonaPeriodoFecha
+    ON dbo.CAF_EVALUACION_MENOR(PER_idPersona, RCS_idPeriodo, EVM_fechaEvaluacion);
+```
+
+**Diferencia crítica:** la ficha del manual parece marcar `PER_idPersona` como PK y `EVM_idEvaluacionMenor` como campo identidad no-PK, incompatibles con varias evaluaciones por persona. El mock usa `EVM_idEvaluacionMenor` como **PK local provisional** para representar historial. No afirmar que esa es la PK institucional. No se replican peso, talla, edad ni auditoría en esta superficie implementada.
+
+### 5.16 `CAF_INDICADOR_ANTROPOMETRICO` — ampliación existente
+
+```sql
+CREATE TABLE dbo.CAF_INDICADOR_ANTROPOMETRICO (
+    ANT_id             int NOT NULL PRIMARY KEY, -- TODO-UTIC: manual indica identity
+    ANT_area           char(3) NULL,
+    ANT_clasificacion  nvarchar(50) NULL,
+    ANT_nomenclatura   nchar(6) NULL,
+    BIT_eliminado      bit NULL
+);
+```
+
+**No está documentada una FK comprobada** desde los códigos PE/PT/TE/IMC a este catálogo. No inventar JOIN, reglas clínicas ni traducciones oficiales de sus códigos. Los registros sembrados son de prueba y deben identificarse como `MOCK_ONLY`.
+
+### 5.17 Relación entre este documento y el SQL implementado
+
+- `010_schema_core.sql` incorpora guardas, índices, roles de lectura y adiciones no destructivas a `CAF_FAMILIA_DETALLE`.
+- La documentación conserva diferencias de tipo/clave cuando el manual oficial no es concluyente.
+- No ejecutar los `CREATE TABLE` ilustrativos de esta sección sobre una réplica ya creada: usar exclusivamente los scripts idempotentes existentes en orden.
+- Para diferencias entre un fragmento de esta especificación y el código local, comprobar el script versionado antes de cualquier migración; registrar la divergencia en lugar de aplicar un arreglo silencioso.
+
+---
+
 ## 6. Resolución de ubicación institucional
 
 Cadena canónica de SIA:
@@ -487,6 +576,12 @@ Para `SIDINACC_PERIOD_ID`:
 - **no** buscar automáticamente otro período;
 - **no** ampliar el ámbito del usuario;
 - **no** inferir el establecimiento desde un registro histórico sin señalizarlo.
+
+### Caso de traslado dentro de un mismo período — pendiente específico v0.7
+
+Los datos locales demuestran el cambio 2025 → 2026, pero **no comprueban** cómo resuelve SIDINACC una reasignación que ocurre dos veces dentro de 2026. Antes de elegir una fila de `CAF_FAMILIA_DETALLE` debe confirmarse con UTIC si existe una sola fila vigente, historial de filas por período o una regla de desempate. **No usar `TOP 1` arbitrario ni resolver silenciosamente por orden de inserción**. Para el mock, un caso de coexistencia ambigua debe fallar de manera controlada y quedar `NEEDS_VALIDATION`, sin ampliar el ámbito.
+
+No confundir el movimiento de expediente CAH con el cierre por traslado del caso A.I. o con la generación de una nueva referencia A.I.
 
 ---
 
@@ -540,6 +635,8 @@ export interface InstitutionalAuthProvider {
 }
 ```
 
+En v0.7, `ASC2` y `ASC3` deben compartir las capacidades de Establecimiento **cuando estén autorizados**; esta equivalencia de negocio no crea roles físicos CAH ni permisos globales. El proveedor entrega `authorizedEstablishmentIds` y el backend debe hacer cumplir los límites de acceso. Reportería general de Establecimiento sigue pendiente de validación institucional.
+
 En local:
 
 ```
@@ -587,52 +684,30 @@ Este fixture:
 
 ---
 
-## 8. Adapter obligatorio
+## 8. Adaptador obligatorio y contratos de consumo
 
-El dominio SIA no debe ejecutar SQL institucional directamente.
+El dominio SIA no debe ejecutar SQL institucional directamente. Se conserva el contrato anterior y se documentan **extensiones propuestas**, no implementaciones certificadas. Las nuevas operaciones no deben atribuirse a una API real de SIDINACC.
 
 ```typescript
 export interface SidinaccReader {
-  searchPersons(
-    query: string,
-    scope: InstitutionalUserContext
-  ): Promise<PersonSummary[]>;
-
-  getPersonProfile(
-    personId: string,
-    scope: InstitutionalUserContext
-  ): Promise<PersonProfile | null>;
-
-  getPersonServices(
-    personId: string,
-    periodId: number
-  ): Promise<InstitutionalService[]>;
-
-  listEstablishmentsForScope(
-    scope: InstitutionalUserContext
-  ): Promise<InstitutionalEstablishment[]>;
+  searchPersons(query: string, scope: InstitutionalUserContext): Promise<PersonSummary[]>;
+  getPersonProfile(personId: string, scope: InstitutionalUserContext): Promise<PersonProfile | null>;
+  getPersonServices(personId: string, periodId: number): Promise<InstitutionalService[]>;
+  listEstablishmentsForScope(scope: InstitutionalUserContext): Promise<InstitutionalEstablishment[]>;
 }
-```
 
-DTO mínimo:
-
-```typescript
 export interface PersonSummary {
-  institutionalPersonId: string; // PER_idPersona
+  institutionalPersonId: string; // CAF_PERSONA.PER_idPersona (provisional)
   fullName: string;
   birthDate: string | null;
-  age: number | null;             // calcular en aplicación
+  age: number | null;       // derivada, no persistida
   sex: string | null;
-
   establishmentId: number | null;
   establishmentName: string | null;
-
   officeLocalId: number | null;
   officeLocalName: string | null;
-
   regionId: number | null;
   regionName: string | null;
-
   source: "SIDINACC";
 }
 
@@ -645,21 +720,59 @@ export interface InstitutionalService {
 }
 ```
 
-### Regla de persistencia en SIA
+### 8.1 Propuestas de extensión de lectura para v0.7
 
-Cuando una entidad A.I. necesite vincularse a una persona:
+```typescript
+// CONTRATO PROPUESTO. Confirmar alcance y fuente con UTIC antes de integrar en producción.
+export interface InstitutionalFamilyContext {
+  personId: string;
+  periodId: number;
+  guardianPersonId: string | null;
+  guardianName: string | null;
+  guardianRelationship: "MADRE" | "PADRE" | "OTRA_PERSONA" | null;
+  familyAddress: string | null;    // domicilio familiar, no domicilio individual del encargado
+  familyPhonePrimary: string | null;
+  familyPhoneSecondary: string | null;
+}
 
+export interface InstitutionalNutritionResult {
+  personId: string;
+  periodId: number;
+  evaluationDate: string;
+  // códigos registrados por CAH; traducción y criterio institucional pendientes
+  peCode: number | null;
+  ptCode: number | null;
+  teCode: number | null;
+  imcCode: number | null;
+  source: "CAH";
+}
+
+export interface SidinaccReaderV02Extensions {
+  getCurrentInstitutionalLocation(
+    personId: string, periodId: number, scope: InstitutionalUserContext
+  ): Promise<{ establishmentId: number; officeLocalId: number; regionId: number } | null>;
+  getFamilyContext(
+    personId: string, periodId: number, scope: InstitutionalUserContext
+  ): Promise<InstitutionalFamilyContext | null>;
+  listNutritionResults(
+    personId: string, periodId: number, scope: InstitutionalUserContext
+  ): Promise<InstitutionalNutritionResult[]>;
+}
 ```
-guardar PER_idPersona
-```
 
-No copiar permanentemente nombre, sexo, región, OL o establecimiento salvo que se trate deliberadamente de:
+- Los IDs de madre/padre/encargado se interpretan desde `CAF_MENOR` del mismo período; sus nombres se consultan mediante `CAF_PERSONA` con autorización.
+- Contacto/dirección proceden del **detalle familiar del período**, no de `CAF_MENOR`.
+- La información de sexo, edad y ubicación debe resolverse dentro del ámbito del usuario. Ninguna de estas operaciones concede permiso adicional.
+- Para nuevas referencias A.I., la BD SIA guarda el identificador institucional y, cuando sea necesario, un snapshot histórico **justificado** de datos visibles al envío.
+- Si no existe información autorizada, devolver `null` o lista vacía. Nunca recuperar unilateralmente expedientes históricos ni saltarse ámbitos.
 
-- snapshot histórico;
-- dato denormalizado con justificación;
-- caché explícito con estrategia de invalidez.
+### 8.2 Frontera futura de posibles referencias
 
----
+La sección **Posibles referencias** de v0.7 es parte del dominio SIA. La generación automática de señales institucionales requiere contrato de integración independiente, acordado con UTIC. Un lector de nutrición **no es** un servicio de detección. No inferir fuentes EDIN II/EVADE ni usar un código sintético de prueba como diagnóstico real.
+
+### 8.3 Regla de persistencia
+
+En SIA se guarda `PER_idPersona` como identificador de integración **provisional**. No copiar como dato maestro permanente nombre, sexo, establecimiento o teléfono; solo snapshots históricos, cachés declaradas o datos denormalizados con justificación documentada. Cualquier cambio futuro de clave requiere ADR y migración controlada.
 
 ## 9. Reglas de ámbito
 
@@ -789,270 +902,277 @@ Si la UI solo necesita la lista de modalidades del período, deduplicar por `SER
 
 ---
 
-## 12. Vigilancia / tamizaje
+## 12. Vigilancia, nutrición y posibles referencias
 
-No implementar todavía.
+**Estado real de la réplica:** `CAF_EVALUACION_MENOR` y `CAF_INDICADOR_ANTROPOMETRICO` **ya existen** en el SQL local; no deben volver a considerarse excluidas. Se conservan como **proyección sintética de antecedentes registrados**, no como motor de detección ni fuente clínica validada.
 
-La extensión futura esperada del adapter podrá consumir:
+### Qué puede demostrarse ahora
 
-```
-CAF_EVALUACION_MENOR
-CAF_INDICADOR_ANTROPOMETRICO
-```
+- Consultar múltiples evaluaciones de la misma persona por período y fecha.
+- Leer códigos PE/PT/TE/IMC existentes, sin recalcular resultados.
+- Mostrar fechas y separar evaluaciones eliminadas lógicamente.
+- Registrar escenarios `MOCK_ONLY` para probar transporte de datos y presentación, sin convertirlos en reglas oficiales.
 
-para fecha, edad, peso, talla y resultados PE/PT/TE/IMC.
+### Qué NO queda autorizado
 
-Pero RF-102 todavía establece que el punto exacto donde estos hallazgos ingresan al flujo A.I. debe definirse antes de automatizarlo.
+- Inferir malnutrición, EDIN II o EVADE a partir de códigos inventados o del campo `MEN_rezagoDesarrollo`.
+- Crear tablas de supuestos sistemas EDIN II/EVADE en `SIDINACC_LOCAL`.
+- Generar referencias A.I. automáticamente desde una evaluación nutricional.
+- Tomar el catálogo de indicadores como FK confirmada de los estados nutricionales.
+- Recalcular PE/PT/TE/IMC o sustituir criterio institucional/profesional.
 
-Por tanto:
+### Integración posterior
 
-```typescript
-// FUTURE — no implementar en v0.1
-interface SidinaccSurveillanceReader {
-  getLatestAnthropometricEvaluation(personId: string): Promise<unknown>;
-}
-```
+Solicitar a UTIC la fuente, definición de códigos, estructura/servicio, semántica temporal, autorización de consulta y criterios institucionales para señales. La detección automática validada formará un servicio desacoplado del lector CAH y el registro de la sugerencia gestionada pertenecerá al dominio SIA.
 
-No crear tablas “por si acaso”.
+### Separación entre dato y prueba
 
----
+Un ejemplo sintético como `código 9 = señal demo MOCK_ONLY` únicamente prueba un escenario técnico; **no es un umbral nutricional ni una regla de remisión oficial**.
 
-## 13. Seed sintético obligatorio
+## 13. Semillas actuales, datos sintéticos y pruebas temporales
 
-### Jerarquía mínima
+El seed local **ya no se limita** al escenario mínimo de 2 Regiones, 3 Oficinas Locales y 5 establecimientos descrito en la v0.1. Se conserva la estructura real implementada:
 
-```
-Región Demo Norte
-  ├─ OL Demo A
-  │   ├─ EST 1001001
-  │   └─ EST 1001002
-  └─ OL Demo B
-      └─ EST 1002001
+| Archivo | Contenido |
+|---|---|
+| `020_seed_catalogs.sql` | Períodos, sexo, tipo de cliente, servicios de prueba y catálogos auxiliares |
+| `030_seed_institutional_structure.sql` | Jerarquía territorial generada desde catálogo institucional público |
+| `040_seed_synthetic_population.sql` | Población totalmente sintética y escenarios familiares/nutricionales |
+| `data/cen_cinai_territorial_catalog.csv` | Fuente de preparación del catálogo territorial derivado |
+| `tools/generate_territorial_seed.py` | Herramienta para regenerar/controlar la semilla territorial desde fuente autorizada |
+| `DATASET_SUMMARY.md` | Justificación, distribución y conteos **proyectados** del seed |
 
-Región Demo Sur
-  └─ OL Demo C
-      ├─ EST 2001001
-      └─ EST 2001002
-```
+### 13.1 Estructura territorial base
 
-### Personas mínimas
+- **9 Direcciones Regionales**.
+- **41 Oficinas Locales**.
+- **661 establecimientos** registrados en la fuente territorial: **630 activos**, **23 cerrados** y **8 inactivos**, según el catálogo versionado en el repositorio.
+- Solo los establecimientos activos y no eliminados reciben población sintética activa en 2026, con **5 a 10 personas por establecimiento** según las reglas de seed.
+- Los códigos y nombres de territorio proceden de un listado institucional público; **las personas, familias, fechas, servicios y evaluaciones se simulan**. No importar datos sensibles reales.
 
-Crear al menos 12 personas sintéticas que incluyan:
+### 13.2 Identidades y períodos
 
-- 2 nombres muy similares;
-- 1 identificación exacta fácil de localizar;
-- 1 persona sin servicios en 2026;
-- 1 persona con dos servicios;
-- 1 persona con `BIT_eliminado = 1`;
-- 1 familia con establecimiento distinto en 2025 y 2026;
-- personas distribuidas entre los cinco establecimientos.
+- Identificadores de persona siguen `SYN-<ESTID>-<NN>` con longitud compatible con `PER_idPersona nvarchar(20)`.
+- Semilla determinística documentada: `SIDINACC_SYNTHETIC_SEED = 20261019`.
+- Períodos: **2025 y 2026**. Configurar explícitamente `SIDINACC_PERIOD_ID=2026` en el entorno de demostración. No asumir que 2026 seguirá siendo el período actual en otras fechas.
+- Ejemplo de cambio entre períodos: `SYN-1100102-03`, establecimiento **1010320** en 2025 y **1100102** en 2026.
+- Identidades de personas encargadas, madres y padres se encuentran en `CAF_PERSONA` y **no se tratan como beneficiarias** ni se incluyen indiscriminadamente en búsquedas de clientes.
 
-IDs sintéticos:
+### 13.3 Escenarios especiales existentes
 
-```
-SYN-000001
-SYN-000002
-...
-```
+- `SYN-1100102-01`: búsqueda exacta y dos servicios en 2026; persona encargada = madre en 2026 y padre en 2025.
+- `SYN-1100102-02`: persona sin servicios en 2026; encargado = padre.
+- `SYN-1100102-03`: familia con cambio de establecimiento entre períodos; encargado distinto de madre/padre.
+- `SYN-1100102-04`: madre encargada y padre no registrado.
+- `SYN-1100102-99`: persona eliminada lógicamente.
+- Personas con nombres similares para búsqueda por texto y con evaluaciones nutricionales repetidas, fechadas, de períodos distintos y eliminadas lógicamente.
+- Servicios nombrados `Servicio Demo 1..3 (SINTETICO)`; **no** representan modalidades institucionales reales.
 
-### Períodos
+### 13.4 Escenarios nuevos recomendados por v0.7 (NO existentes por el solo hecho de documentarlos)
 
-```
-2025
-2026
-```
+1. Cambio de establecimiento **dentro del mismo período**, con mecanismo real de fila vigente pendiente de UTIC. No agregar filas ambiguas sin acordar la lectura canónica.
+2. Acceso contextual ASC2/ASC3 a uno y varios establecimientos autorizados a través del proveedor de autenticación mock, no a través de tablas nuevas.
+3. Consulta de antecedentes nutricionales sin fabricar hallazgos cuando no existe evaluación.
+4. Aislamiento de ámbitos al consultar ubicación, encargado y evaluaciones.
+5. Flujo de cierre de caso A.I. por traslado y posterior nueva referencia **probado en la BD SIA/integración**, nunca añadiendo columnas A.I. a CAH.
 
-La familia trasladada debe tener:
-
-```
-2025 -> EST 1001001
-2026 -> EST 2001001
-```
-
-para demostrar que SIA toma el establecimiento correspondiente al período configurado.
-
-**Prohibido:** usar nombres, identificaciones, expedientes u otros datos reales de CEN-CINAI.
-
----
+Los casos y porcentajes de cobertura, cierres, revaloraciones y gráficos de A.I. requieren semillas de **SIA_CENCINAI**, que no forman parte de esta réplica.
 
 ## 14. Usuario SQL de solo lectura
 
-La app SIA no debe conectarse a `SIDINACC_LOCAL` con un usuario con permisos de escritura.
+El repositorio implementa un **rol** `sia_sidinacc_reader_role` y un usuario de solo lectura `sia_sidinacc_reader`; los scripts protegen su creación con verificaciones de existencia. Los logins del entorno se deben configurar fuera del repositorio, sin contraseñas incluidas.
 
-Ejemplo:
+La aplicación de SIA **no** debe usar una cuenta propietaria ni permiso de escritura sobre `SIDINACC_LOCAL`. La política incorpora denegación explícita de operaciones mutadoras, según el script actual.
 
-```
+```sql
+-- Esquema conceptual de permisos, NO reemplaza las guardas de 010_schema_core.sql.
 USE SIDINACC_LOCAL;
 GO
-
-CREATE USER sia_sidinacc_reader WITHOUT LOGIN;
-GO
-
-ALTER ROLE db_datareader ADD MEMBER sia_sidinacc_reader;
-GO
-
-DENY INSERT, UPDATE, DELETE TO sia_sidinacc_reader;
-GO
+-- Rol de lectura controlada (ya gestionado por script real):
+-- sia_sidinacc_reader_role
+-- usuario local: sia_sidinacc_reader
+-- logins por entorno: se provisionan/mapean de forma separada.
 ```
 
-En Docker/desarrollo real usar un login separado y mapearlo a este rol/usuario según la configuración del entorno.
+**Pruebas requeridas:** confirmar efectivamente permisos de solo lectura y ausencia de DML/DDL con el principal usado por la aplicación. Esta documentación no demuestra haberlos comprobado en ejecución SQL Server.
 
----
+## 15. Archivos existentes y fronteras de implementación
 
-## 15. Estructura esperada del repositorio
+```text
+docs/architecture/
+  SIDINACC_CAH_DATABASE_ANALYSIS.md
+  SIDINACC_LOCAL_REPLICA_SPEC.md       <- este documento v0.2
 
-```
-database/
-  sidinacc-local/
-    001_create_database.sql
-    010_schema_core.sql
-    020_seed_catalogs.sql
-    030_seed_synthetic.sql
-    090_smoke_tests.sql
-    README.md
-
-src/
-  integrations/
-    sidinacc/
-      SidinaccReader.ts
-      SqlSidinaccReader.ts
-      types.ts
-
-    auth/
-      InstitutionalAuthProvider.ts
-      MockInstitutionalAuthProvider.ts
-      fixtures/
-        users.json
+database/sidinacc-local/
+  001_create_database.sql
+  010_schema_core.sql
+  020_seed_catalogs.sql
+  030_seed_institutional_structure.sql
+  040_seed_synthetic_population.sql
+  090_smoke_tests.sql
+  README.md
+  DATASET_SUMMARY.md
+  data/cen_cinai_territorial_catalog.csv
+  tools/generate_territorial_seed.py
 ```
 
-No mezclar scripts `SIDINACC_LOCAL` con migraciones de `SIA_CENCINAI`.
+El contrato de aplicación continúa **pendiente de implementación/verificación**, según el README actual, para:
 
----
-
-## 16. Smoke tests obligatorios
-
-`090_smoke_tests.sql` debe verificar al menos:
-
-```
-T01  2 regiones existen
-T02  3 OL existen
-T03  5 establecimientos activos existen
-T04  12+ personas sintéticas existen
-T05  no hay personas cuyo ID no empiece por SYN-
-T06  persona SYN-000001 se resuelve por identificación
-T07  búsqueda por apellido devuelve múltiples candidatos
-T08  una persona eliminada no aparece
-T09  familia histórica resuelve EST distinto en 2025 y 2026
-T10  persona con dos servicios devuelve ambos
-T11  persona sin servicios devuelve lista vacía
-T12  todos los servicios referencian personas/períodos válidos
+```text
+src/integrations/sidinacc/
+  SidinaccReader.ts
+  SqlSidinaccReader.ts
+  types.ts
+src/integrations/auth/
+  InstitutionalAuthProvider.ts
+  MockInstitutionalAuthProvider.ts
+  fixtures/users.json
 ```
 
-Las pruebas de ámbito se ejecutan a nivel de adapter porque la autorización local vive fuera de la BD.
+No declarar estos componentes como existentes por aparecer en esta propuesta. No mezclar scripts de `SIDINACC_LOCAL` con migraciones de la futura base `SIA_CENCINAI`. `DATASET_SUMMARY.md` contiene cifras de proyección calculada, **no un acta de ejecución de SQL Server**.
 
----
+## 16. Pruebas de humo de la réplica
 
-## 17. Criterios de aceptación
+`database/sidinacc-local/090_smoke_tests.sql` define **61 verificaciones (T01–T61)**, no únicamente las 12 de la especificación inicial. El script imprime `SIDINACC_LOCAL smoke tests PASSED (61/61)` **si se ejecuta y se cumplen sus controles**; el repositorio por sí solo no prueba ejecución en un servidor.
 
-La réplica se considera lista cuando:
+### Cobertura actual documentada
 
-- `SIDINACC_LOCAL` y `SIA_CENCINAI` son bases separadas.
-- Todos los datos de `SIDINACC_LOCAL` son sintéticos.
-- SIA posee acceso de lectura únicamente.
-- Se puede buscar una persona por `PER_idPersona`.
-- Se puede buscar por nombre parcial.
-- La coincidencia exacta por ID aparece primero.
-- Ninguna búsqueda retorna personas fuera del ámbito.
-- El perfil devuelve establecimiento, Oficina Local y Región.
-- El establecimiento se resuelve para el período configurado.
-- El usuario de un establecimiento lo recibe automáticamente.
-- El usuario multiestablecimiento solo puede usar los establecimientos autorizados.
-- Oficina Local resuelve sus establecimientos.
-- Regional resuelve establecimientos a través de sus OL.
-- Nacional puede resolver todos los establecimientos activos.
-- El perfil puede devolver servicios/modalidades del período.
-- El caso 2025/2026 demuestra que no se usa un establecimiento histórico incorrecto.
-- La lógica de dominio depende de `SidinaccReader`, no de SQL institucional.
-- La autorización depende de `InstitutionalAuthProvider`, no de tablas inventadas.
-- No existe ningún dato real de clientes/beneficiarias.
+| Grupo | IDs | Verificaciones |
+|---|---|---|
+| Períodos, catálogos y personas sintéticas | T01–T12 | Períodos, sexos/tipos, búsquedas, eliminadas, servicios, historia familiar |
+| Integridad territorial y volumen sintético | T13–T41 | 15 tablas, 9 Regiones, 41 OL, establecimientos, ámbito, ausencia de huérfanos, lecturas, estructura y conteos por estado |
+| Encargado y contacto familiar | T42–T50 | Madre/padre/encargado por período, dirección y teléfonos, no reutilizar dato familiar de otro año |
+| Evaluaciones e indicadores demo | T51–T61 | Varias evaluaciones, fecha, período, eliminado, códigos `MOCK_ONLY`, ausencia EDIN/EVADE, índices y PK provisional |
 
----
+### Nuevas pruebas de integración recomendadas para v0.7
+
+Las siguientes **NO forman parte de T01–T61 hasta que se agreguen realmente**:
+
+- `IT-01`: aislamiento del ámbito en búsqueda por identificación y por nombre para Establecimiento, OL, Región y Nacional.
+- `IT-02`: usuario ASC2/ASC3 con varios establecimientos autorizados, suministrados por `InstitutionalAuthProvider`.
+- `IT-03`: historial y ubicación vigente con traslado **dentro del mismo período**, sujeto a definición UTIC.
+- `IT-04`: si existen múltiples detalles familiares en un mismo período, rechazar/no inventar el vigente ante ambigüedad.
+- `IT-05`: ausencia de contacto o encargado no produce un dato falso ni revela familiares de otro ámbito.
+- `IT-06`: no se convierte una evaluación nutricional en referencia A.I. automáticamente; solo simulación identificada.
+- `IT-07`: un caso activo A.I. global por persona y nueva referencia independiente tras cierre: **se comprueba en SIA/integración**, no como constraint en SIDINACC_LOCAL.
+
+### Evidencias de ejecución
+
+Ejecutar scripts en ambiente local de pruebas y conservar fecha, versión de SQL Server, salida de cada test y conteos reales. No confundir evidencia de `README.md` con salida comprobada en tiempo de ejecución.
+
+## 17. Criterios de aceptación de SIDINACC_LOCAL v0.2
+
+### Criterios de estructura
+
+- `SIDINACC_LOCAL` y `SIA_CENCINAI` son dominios/bases separados; no se ha creado modelo SIA dentro del espejo CAH.
+- La réplica incluye **exactamente 15 tablas locales**, con ampliaciones y restricciones provisionales documentadas.
+- No se ejecutan automáticamente scripts de recreación destructiva ni se clonan todas las tablas del manual.
+- Se mantienen fuentes territoriales públicas y población de clientes/encargados/evaluaciones enteramente sintética.
+- La aplicación utiliza solo lectura y contratos desacoplados.
+
+### Criterios de lectura e integración
+
+- Búsqueda por `PER_idPersona` exacta y nombre parcial, con límite de ámbito antes de responder.
+- Perfil básico con nacimiento, sexo y ubicación por período, sin asumir una ubicación de otro año si falta la del actual.
+- Familia y contexto de persona encargada por período, distinguiendo dirección/teléfono **familiar** de contacto particular.
+- Servicios/modalidades disponibles por persona, con descripción institucional definitiva pendiente de UTIC.
+- Evaluaciones nutricionales históricas consultables **solo para demostración y lectura autorizada**, sin significado de detección automática.
+- No hay identificación real, nombres de niños reales ni datos personales institucionales importados.
+
+### Evidencia de pruebas
+
+- Ejecutar y registrar T01–T61 en SQL Server local; **no declarar PASS por el mero hecho de existir el archivo**.
+- Agregar pruebas de adaptador, autorización y cambio territorial intraperíodo antes de depender de estos casos funcionalmente.
+- Documentar diferencias entre el esquema simulado y el DDL institucional entregado por UTIC.
+
+### Límites v0.7
+
+- Unicidad del caso activo, cierre por traslado, revaloraciones, cierre estructurado, registros de posibles referencias y reportería se implementarán **exclusivamente en SIA**, nunca como extensiones artificiales de `SIDINACC_LOCAL`.
+- La detección automática depende de fuentes autorizadas y no queda habilitada por la sola presencia de `CAF_EVALUACION_MENOR`.
 
 ## 18. Instrucciones explícitas para Cursor
 
 Cursor **NO DEBE**:
 
-1. clonar las 57 tablas del manual;
-2. crear datos reales o seudonimizados a partir de registros reales;
-3. crear una tabla institucional ficticia de `usuario -> establecimientos` y tratarla como fuente oficial;
-4. usar `RCS_TOKEN` como sesión/autenticación SIDINACC;
-5. usar `CAF_PAR_PRIORIDAD` como prioridad A.I.;
-6. usar `CAF_CAT_REFERENCIA` como referencia A.I.;
-7. implementar traslado A.I. reutilizando directamente el traslado CAH;
-8. implementar `CAF_EVALUACION_MENOR`/vigilancia en v0.1;
-9. acceder a `CAF_*`/`RCS_*` desde controladores o servicios de dominio;
-10. persistir copias de datos maestros sin justificar snapshot/caché/histórico;
-11. corregir silenciosamente tipos o nombres inconsistentes del manual;
-12. inventar el mecanismo de período activo o de autorizaciones institucionales.
+1. Reconstruir las 57 tablas del manual ni recrear sin necesidad las 15 ya existentes.
+2. Importar registros reales ni pseudonimizados; las personas son sintéticas.
+3. Crear tablas ficticias de usuario → establecimientos, EDIN II/EVADE, casos o referencias A.I. dentro del espejo.
+4. Tratar `RCS_TOKEN` como sesión institucional, ni `CAF_PAR_PRIORIDAD` como prioridad A.I., ni `CAF_CAT_REFERENCIA` como referencia A.I.
+5. Implementar continuidad automática por traslado o reutilizar directamente los SP de traslado CAH para cerrar/crear casos A.I.
+6. Aplicar a `CAF_EVALUACION_MENOR` reglas clínicas de un código demo `MOCK_ONLY`, ni asumir claves foráneas no documentadas.
+7. Ejecutar SQL `CAF_*` desde la capa de dominio de SIA, ni copiar maestros sin justificar cache/snapshot.
+8. Inferir la relación de autorización o el período vigente sin evidencia.
+9. Dar por completadas las integraciones, adaptadores o pruebas sin haberlos implementado/ejecutado.
+10. Actualizar `SIA_CENCINAI` como parte de una tarea exclusiva de validación de esta réplica.
 
 Cursor **SÍ DEBE**:
 
-- mantener `SIDINACC_LOCAL` desacoplada;
-- implementar `SidinaccReader`;
-- implementar `MockInstitutionalAuthProvider`;
-- aplicar scope antes de devolver resultados;
-- conservar `PER_idPersona` como identificador de integración v0.1;
-- registrar como `TODO-UTIC` todo punto que dependa del esquema institucional real.
+- Mantener y revisar la réplica de 15 tablas, siguiendo `database/sidinacc-local/README.md` y los scripts ejecutables.
+- Preservar `PER_idPersona` como identificador provisional y registrar `TODO-UTIC` sobre su sustitución.
+- Implementar `SidinaccReader` y el proveedor de autorización desacoplado cuando se indique expresamente, siempre con filtrado por ámbito.
+- Incluir el contexto del menor/familia y nutrición existente dentro de los contratos de lectura cuando sean necesarios, sin convertirlo en lógica automática de referencias.
+- Documentar/registrar discrepancias con el manual y decisiones `PROVISIONAL_TYPE`, `PROVISIONAL_KEY`, `LOCAL_COMPATIBILITY_DECISION` y `MOCK_ONLY`.
+- Mantener scripts y semillas idempotentes, pruebas verificables y separación de entornos.
 
----
+## 19. TODO-UTIC y validaciones pendientes
 
-## 19. TODO-UTIC antes de integración real
+Los puntos siguientes **no impiden el mock local**, pero sí condicionan la integración productiva o los criterios de lectura:
 
-Estos puntos bloquean integración institucional, pero **no bloquean el mock local**:
+1. Obtener DDL real, vistas autorizadas y metadatos de tablas consumidas en el entorno vigente.
+2. Confirmar la clave de interoperabilidad `PER_idPersona` frente a `RCS_idPersona`.
+3. Confirmar autenticación/sesión institucional y dónde se obtienen usuario → perfil → establecimientos autorizados (incluido ASC2/ASC3).
+4. Confirmar mecanismo oficial de período actual y selección de períodos históricos.
+5. Confirmar si la integración será por tablas/vistas/servicios/API y qué permisos de lectura se autorizarán.
+6. Validar tipos y PK reales de Región, OL, establecimiento, persona, menor y evaluación nutricional; incluido el `PROVISIONAL_KEY` de `EVM_idEvaluacionMenor`.
+7. Validar `EST_inActivo`, `FAD_inActiva`, `PER_beneficiario`, `BIT_eliminado` de servicio-cliente, y los códigos sexo/tipo de cliente.
+8. Validar el origen institucional de la modalidad de servicio frente a `CAF_SERVICIO` y sus códigos reales.
+9. Confirmar fuente y semántica de `FAD_direccion`, `FAD_telefonoUno` y `FAD_telefonoDos`, además de identificación y relación del encargado.
+10. **Traslado dentro del mismo período:** confirmar cómo se selecciona el detalle familiar vigente y cómo resolver duplicados/versiones intraperíodo.
+11. Confirmar correspondencia oficial entre códigos de estado nutricional PE/PT/TE/IMC y catálogos, y si se autoriza su consulta por SIA.
+12. Identificar **las fuentes reales de EDIN II y EVADE**, disponibilidad de API/vistas, estructura y criterios autorizados de detección.
+13. Definir contrato de las **Posibles referencias** (origen, fecha de detección, criterio, restricciones, trazabilidad), sin asumir que reside dentro de CAH.
+14. Confirmar restricciones adicionales de confidencialidad, seguridad, logs y alcance de reportes de Establecimiento.
+15. Solicitar ambiente de pruebas y credenciales segregadas de solo lectura.
+16. Confirmar versión real y compatibilidad de SQL Server, intercalación y tipos provisionales; en local los scripts requieren SQL Server 2017+.
+17. Verificar los resultados reales de `090_smoke_tests.sql` en el ambiente local y registrar cualquier divergencia antes de afirmar conformidad.
 
-1. obtener DDL real de las tablas consumidas;
-2. confirmar `PER_idPersona` vs `RCS_idPersona` como clave oficial de interoperabilidad;
-3. confirmar mecanismo real de autenticación/sesión;
-4. confirmar dónde vive `usuario -> perfil/rol -> establecimientos autorizados`;
-5. confirmar cómo se determina el período vigente;
-6. confirmar si la integración será por tablas, vistas o API/servicio;
-7. confirmar tipos reales de `REG_nombre` y `OFL_nombre`;
-8. confirmar restricciones adicionales para datos sensibles;
-9. obtener ambiente de pruebas y credenciales de solo lectura;
-10. confirmar si `CAF_SERVICIO` corresponde exactamente a la modalidad que SIA debe mostrar.
+### Decisiones locales provisionales que no se deben presentar como institucionales
 
-Cuando estas respuestas existan, actualizar esta especificación antes de tocar el dominio de SIA.
+- `PER_idPersona` como llave principal de integración para v0.2.
+- `EVM_idEvaluacionMenor` como PK física local.
+- Catálogo nutricional demo y código de señal `MOCK_ONLY`.
+- `EST_inActivo=1` como activo según convención del seed público.
+- Tipos textuales `REG_nombre` y `OFL_nombre` y compatibilidades de claves enteras.
+- Período `2026` como configuración de ejemplo, no como período institucional permanente.
 
----
+## 20. Decisión final y control de cambios
 
-## 20. Decisión final
+**Decisión:** preservar **15 tablas** en `SIDINACC_LOCAL`, sin recrearlas ni reducirlas. La v0.7 **no exige nuevas tablas institucionales inmediatas**. La actualización principal recae en la documentación y los contratos de lectura contextual por período y ámbito. Antes de implementar Posibles referencias mediante datos reales deben conocerse las fuentes y criterios autorizados.
 
-La primera réplica local queda limitada a:
-
-```
-PERSONA
-  CAF_PERSONA
-  CAF_CAT_SEXO
-  CAF_PERSONA_DETALLE
-
-FAMILIA / UBICACIÓN
-  CAF_FAMILIA
-  CAF_FAMILIA_DETALLE
-
-JERARQUÍA
-  RCS_ESTABLECIMIENTO
-  CAF_CAT_OFICINA_LOCAL
-  CAF_CAT_REGION
-
-TIEMPO
-  RCS_PERIODO
-
-SERVICIOS
-  CAF_SERVICIO
-  CAF_CAT_TIPO_CLIENTE
-  CAF_SERVICIO_CLIENTE
+```text
+IDENTIDAD: CAF_PERSONA, CAF_CAT_SEXO, CAF_PERSONA_DETALLE
+FAMILIA / UBICACIÓN: CAF_FAMILIA, CAF_FAMILIA_DETALLE
+TERRITORIO: RCS_ESTABLECIMIENTO, CAF_CAT_OFICINA_LOCAL, CAF_CAT_REGION
+PERÍODO: RCS_PERIODO
+SERVICIOS: CAF_SERVICIO, CAF_CAT_TIPO_CLIENTE, CAF_SERVICIO_CLIENTE
+CONTEXTO DEL MENOR: CAF_MENOR
+ANTECEDENTES NUTRICIONALES DEMO: CAF_EVALUACION_MENOR, CAF_INDICADOR_ANTROPOMETRICO
 ```
 
-Todo lo demás queda fuera hasta que un requerimiento o flujo ejecutable de SIA demuestre que realmente lo necesita.
+### Registro de cambios
 
-Esto permite que la implementación local sea pequeña, auditable y reemplazable, sin convertir la simulación en una falsa reconstrucción de SIDINACC completo.
+| Versión | Fecha | Descripción |
+|---|---|---|
+| 0.1 | Octubre 2026 | Especificación inicial de 12 tablas, contratos mínimos y pruebas base. |
+| **0.2** | **03/11/2026** | Conciliación documental con los 15 objetos del SQL existente; ampliación de menor/encargado, contacto familiar, evaluación e indicador nutricional; semillas territoriales vigentes; 61 pruebas definidas; adaptación conceptual a SIA v0.7, sin continuidad automática y con integración de detección pendiente. |
+
+### Estado de cumplimiento de la revisión
+
+- **Documentado:** inventario de 15 tablas, SQL local de referencia, separación de dominios, fuentes y limitaciones.
+- **Implementado según scripts versionados:** estructura, seeds, índices y `090_smoke_tests.sql`.
+- **No verificado en esta revisión:** ejecución en SQL Server real, resultados de pruebas, adaptador de aplicación y proveedor de autorización.
+- **Pendiente institucional:** validaciones `TODO-UTIC` de este documento.
+
+### Próximo trabajo independiente
+
+Rediseñar después la **BD propia de SIA-CENCINAI** de conformidad con v0.7, eliminando continuidad automática, definiendo unicidad global de caso activo, revaloraciones históricas, cierre estructurado y persistencia de informes analíticos. **Ese rediseño no debe alterar las tablas de este espejo.**
