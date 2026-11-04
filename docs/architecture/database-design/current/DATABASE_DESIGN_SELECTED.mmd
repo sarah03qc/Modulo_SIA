@@ -1,0 +1,370 @@
+erDiagram
+    VINCULO_PERSONA ||--o{ REF_REFERENCIA : persona
+    VINCULO_PERSONA ||--o{ REF_POSIBLE : persona
+    VINCULO_PERSONA ||--o{ CASO_AI : persona
+    VINCULO_PERSONA ||--o{ ATE_GRUPAL_PARTICIPANTE : persona
+    VINCULO_PERSONA ||--o{ PROG_PERSONA : persona
+
+    CAT_VERSION ||--o{ CAT_ITEM : versiona
+    CAT_VERSION ||--o{ CAT_MATRIZ_PRIORIDAD : versiona
+    CAT_INSTRUMENTO_VERSION ||--o{ CAT_INSTRUMENTO_CATEGORIA : contiene
+    CAT_INSTRUMENTO_CATEGORIA ||--o{ CAT_INSTRUMENTO_FACTOR : contiene
+
+    CAT_ITEM ||--o{ REF_REFERENCIA : via
+    CAT_ITEM ||--o{ REF_REFERENCIA : origen
+    CAT_ITEM ||--o{ REF_MOTIVO : motivo
+    REF_REFERENCIA ||--|| REF_CONTEXTO : congela
+    REF_REFERENCIA ||--o{ REF_MOTIVO : selecciona
+    REF_REFERENCIA ||--o{ REF_IMPRESION : imprime
+    REF_POSIBLE |o--o| REF_REFERENCIA : origina
+    CAT_ITEM ||--o{ SES_DISCIPLINA : disciplina
+    CAT_ITEM ||--o{ CASO_PLAN_ESTRATEGIA : estrategia
+    CAT_ITEM ||--o{ CASO_PLAN_DISCIPLINA : disciplina
+    CAT_ITEM ||--o{ ATE_INDIVIDUAL : disciplina
+    CAT_ITEM ||--o{ ATE_INDIVIDUAL : estrategia
+    CAT_ITEM ||--o{ ATE_GRUPAL : tipo
+    CAT_ITEM ||--o{ ATE_GRUPAL_DISCIPLINA : disciplina
+    CAT_ITEM ||--o{ PROG_ACTIVIDAD : tipo
+    CAT_ITEM ||--o{ CASO_CIERRE : motivo
+    CAT_ITEM ||--o{ CASO_PLAN : frecuencia
+
+    SES_SESION ||--o{ SES_DISCIPLINA : convoca
+    SES_SESION ||--o{ SES_SITUACION : analiza
+    SES_SITUACION |o--o| REF_REFERENCIA : referencia
+    SES_SITUACION |o--o| CASO_AI : caso
+    SES_SITUACION ||--o{ SES_VALORACION : valora
+    SES_VALORACION }o--|| CAT_INSTRUMENTO_VERSION : instrumento
+    SES_VALORACION }o--|| CAT_MATRIZ_PRIORIDAD : calcula
+    SES_VALORACION ||--|{ SES_VALORACION_CATEGORIA : responde
+    SES_VALORACION_CATEGORIA }o--|| CAT_INSTRUMENTO_CATEGORIA : categoria
+    SES_VALORACION_CATEGORIA ||--o{ SES_VALORACION_FACTOR : factores
+    SES_VALORACION_FACTOR }o--|| CAT_INSTRUMENTO_FACTOR : factor
+    REF_REFERENCIA ||--o| SES_RESOLUCION : resuelve
+    SES_RESOLUCION }o--|| SES_SESION : sesion
+    SES_RESOLUCION }o--|| SES_VALORACION : respalda
+
+    REF_REFERENCIA ||--o| CASO_AI : abre
+    CASO_AI ||--o{ CASO_ESTADO_HISTORIAL : transiciona
+    CASO_AI ||--o| CASO_CIERRE : cierra
+    CASO_AI ||--o{ CASO_PLAN : versiona
+    CASO_AI }o--o| SES_VALORACION : vigente
+    CASO_AI }o--o| CASO_PLAN : plan_vigente
+    CASO_PLAN ||--|{ CASO_PLAN_PROPOSITO : propone
+    CASO_PLAN ||--o{ CASO_PLAN_ESTRATEGIA : elige
+    CASO_PLAN ||--o{ CASO_PLAN_DISCIPLINA : asigna
+
+    CASO_AI ||--o{ ATE_INDIVIDUAL : recibe
+    ATE_GRUPAL ||--|{ ATE_GRUPAL_PARTICIPANTE : incluye
+    ATE_GRUPAL ||--o{ ATE_GRUPAL_DISCIPLINA : cubre
+    ATE_GRUPAL ||--o{ ATE_GRUPAL_PROFESIONAL : realiza
+    CASO_AI ||--o{ ATE_GRUPAL_PARTICIPANTE : participa
+
+    PROG_ACTIVIDAD ||--o{ PROG_CAMBIO : cambia
+    PROG_ACTIVIDAD ||--o{ PROG_PERSONA : asocia
+    CASO_AI ||--o{ PROG_PERSONA : caso
+
+    CASO_AI ||--o{ DOC_DOCUMENTO : adjunta
+    CASO_AI ||--o{ DOC_COORDINACION : coordina
+    DOC_COORDINACION ||--o{ DOC_COORDINACION_EVENTO : gestiona
+    CASO_AI ||--o{ DOC_REPORTE_CASO : reporta
+
+    INF_INFORME ||--|{ INF_VISUALIZACION : contiene
+    INF_VISUALIZACION ||--o{ INF_AGREGADO : snapshot
+    AUD_MIGRACION_LOTE ||--o{ AUD_MIGRACION_ERROR : rechaza
+
+    VINCULO_PERSONA {
+        nvarchar per_id_persona PK
+        datetime2 primera_operacion_en
+        rowversion fila_version
+    }
+    CAT_VERSION {
+        bigint cat_version_id PK
+        nvarchar codigo_catalogo
+        int numero_version
+        bit vigente
+    }
+    CAT_ITEM {
+        bigint cat_item_id PK
+        bigint cat_version_id FK
+        nvarchar codigo_catalogo
+        nvarchar codigo
+        bit requiere_texto
+    }
+    CAT_MATRIZ_PRIORIDAD {
+        bigint matriz_version_id PK
+        nvarchar riesgo_codigo PK
+        nvarchar proteccion_codigo PK
+        nvarchar prioridad_codigo
+    }
+    CAT_INSTRUMENTO_VERSION {
+        bigint instrumento_version_id PK
+        int numero_version
+        bit vigente
+    }
+    CAT_INSTRUMENTO_CATEGORIA {
+        bigint categoria_id PK
+        bigint instrumento_version_id FK
+        nvarchar eje
+        nvarchar ambito
+        bit es_requerida
+    }
+    CAT_INSTRUMENTO_FACTOR {
+        bigint factor_id PK
+        bigint categoria_id FK
+        nvarchar codigo
+        bit es_abierto
+    }
+    CAT_CODIGO_REGION_REFERENCIA {
+        int region_id PK
+        nvarchar codigo
+    }
+    REF_CONSECUTIVO_CONTROL {
+        int establecimiento_id PK
+        smallint anio PK
+        int ultimo_numero
+    }
+    REF_REFERENCIA {
+        bigint referencia_id PK
+        nvarchar per_id_persona FK
+        bigint via_item_id FK
+        bigint origen_item_id FK
+        nvarchar estado
+        nvarchar consecutivo
+        int establecimiento_id
+        datetime2 enviada_en
+    }
+    REF_CONTEXTO {
+        bigint referencia_id PK
+        smallint edad_anios
+        date fecha_nacimiento_informada
+    }
+    REF_MOTIVO {
+        bigint motivo_id PK
+        bigint referencia_id FK
+        bigint cat_item_id FK
+        nvarchar especificacion
+    }
+    REF_IMPRESION {
+        bigint impresion_id PK
+        bigint referencia_id FK
+        datetime2 impresa_en
+    }
+    REF_POSIBLE {
+        bigint posible_id PK
+        nvarchar per_id_persona FK
+        bigint referencia_id FK
+        nvarchar criterio_codigo
+        nvarchar estado
+    }
+    SES_SESION {
+        bigint sesion_id PK
+        int oficina_local_id
+        date fecha
+        time hora_inicio
+        time hora_fin
+    }
+    SES_DISCIPLINA {
+        bigint sesion_id PK
+        bigint disciplina_item_id PK
+    }
+    SES_SITUACION {
+        bigint situacion_id PK
+        bigint sesion_id FK
+        bigint referencia_id FK
+        bigint caso_id FK
+    }
+    SES_VALORACION {
+        bigint valoracion_id PK
+        bigint situacion_id FK
+        bigint caso_id FK
+        bigint referencia_id FK
+        bigint instrumento_version_id FK
+        bigint matriz_version_id FK
+        nvarchar riesgo_codigo FK
+        nvarchar proteccion_codigo FK
+        nvarchar prioridad_codigo FK
+        bit es_vigente
+    }
+    SES_VALORACION_CATEGORIA {
+        bigint valoracion_id PK
+        bigint categoria_id PK
+        nvarchar respuesta
+    }
+    SES_VALORACION_FACTOR {
+        bigint valoracion_factor_id PK
+        bigint valoracion_id FK
+        bigint categoria_id FK
+        bigint factor_id FK
+        nvarchar respuesta_enlace FK
+    }
+    SES_RESOLUCION {
+        bigint resolucion_id PK
+        bigint referencia_id FK
+        bigint sesion_id FK
+        bigint valoracion_id FK
+        nvarchar decision
+    }
+    CASO_AI {
+        bigint caso_id PK
+        nvarchar per_id_persona FK
+        bigint referencia_id FK
+        nvarchar estado
+        bigint valoracion_vigente_id FK
+        bigint plan_vigente_id FK
+        int establecimiento_id
+    }
+    CASO_ESTADO_HISTORIAL {
+        bigint historial_id PK
+        bigint caso_id FK
+        nvarchar estado
+        datetime2 ocurrido_en
+    }
+    CASO_CIERRE {
+        bigint caso_id PK
+        bigint motivo_item_id FK
+        nvarchar explicacion
+        date fecha_cierre
+        int destino_establecimiento_id
+    }
+    CASO_PLAN {
+        bigint plan_id PK
+        bigint caso_id FK
+        bigint frecuencia_item_id FK
+        int numero_version
+        bit es_vigente
+    }
+    CASO_PLAN_PROPOSITO {
+        bigint proposito_id PK
+        bigint plan_id FK
+        int orden
+        nvarchar texto
+    }
+    CASO_PLAN_ESTRATEGIA {
+        bigint plan_id PK
+        bigint estrategia_item_id PK
+    }
+    CASO_PLAN_DISCIPLINA {
+        bigint plan_id PK
+        bigint disciplina_item_id PK
+    }
+    ATE_INDIVIDUAL {
+        bigint atencion_individual_id PK
+        bigint caso_id FK
+        nvarchar per_id_persona FK
+        date fecha_atencion
+        bigint disciplina_item_id FK
+        bigint estrategia_item_id FK
+    }
+    ATE_GRUPAL {
+        bigint atencion_grupal_id PK
+        bigint tipo_item_id FK
+        date fecha_atencion
+        nvarchar tema
+    }
+    ATE_GRUPAL_DISCIPLINA {
+        bigint atencion_grupal_id PK
+        bigint disciplina_item_id PK
+    }
+    ATE_GRUPAL_PROFESIONAL {
+        bigint profesional_id PK
+        bigint atencion_grupal_id FK
+        nvarchar profesional_usuario
+    }
+    ATE_GRUPAL_PARTICIPANTE {
+        bigint participante_id PK
+        bigint atencion_grupal_id FK
+        nvarchar per_id_persona FK
+        bigint caso_id FK
+        bit asistio
+    }
+    PROG_ACTIVIDAD {
+        bigint actividad_id PK
+        bigint tipo_item_id FK
+        int oficina_local_id
+        int region_id
+        date fecha_prevista
+        date fecha_vigente
+        nvarchar estado
+    }
+    PROG_CAMBIO {
+        bigint cambio_id PK
+        bigint actividad_id FK
+        int numero
+        nvarchar estado_nuevo
+    }
+    PROG_PERSONA {
+        bigint actividad_id PK
+        nvarchar per_id_persona PK
+        bigint caso_id FK
+    }
+    DOC_DOCUMENTO {
+        bigint documento_id PK
+        bigint caso_id FK
+        nvarchar clave_almacen
+        date fecha_documento
+    }
+    DOC_COORDINACION {
+        bigint coordinacion_id PK
+        bigint caso_id FK
+        nvarchar profesional_responsable
+        nvarchar digitador_usuario
+        date fecha_coordinacion
+    }
+    DOC_COORDINACION_EVENTO {
+        bigint evento_id PK
+        bigint coordinacion_id FK
+        nvarchar estado_texto
+        datetime2 ocurrido_en
+    }
+    DOC_REPORTE_CASO {
+        bigint reporte_id PK
+        bigint caso_id FK
+        nvarchar tipo_proposito
+        date fecha_reporte
+    }
+    INF_INFORME {
+        bigint informe_id PK
+        nvarchar titulo
+        nvarchar ambito_nivel
+        int periodo_anio
+        datetime2 corte_en
+        nvarchar clave_archivo
+    }
+    INF_VISUALIZACION {
+        bigint visualizacion_id PK
+        bigint informe_id FK
+        tinyint codigo_visualizacion
+        int orden
+        nvarchar analisis
+    }
+    INF_AGREGADO {
+        bigint agregado_id PK
+        bigint visualizacion_id FK
+        nvarchar etiqueta
+        decimal valor_numerico
+    }
+    BOR_CAPTURA {
+        bigint borrador_id PK
+        nvarchar usuario
+        nvarchar flujo
+        nvarchar contenido
+    }
+    AUD_EVENTO {
+        bigint evento_id PK
+        nvarchar usuario
+        nvarchar accion
+        nvarchar entidad
+        nvarchar entidad_id
+        nvarchar codigo_cambio
+    }
+    AUD_MIGRACION_LOTE {
+        bigint lote_id PK
+        nvarchar fuente
+        int filas_rechazadas
+    }
+    AUD_MIGRACION_ERROR {
+        bigint error_id PK
+        bigint lote_id FK
+        nvarchar clave_externa
+        nvarchar codigo_error
+    }
