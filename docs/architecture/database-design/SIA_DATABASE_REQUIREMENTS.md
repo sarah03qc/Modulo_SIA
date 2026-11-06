@@ -2,6 +2,7 @@
 
 **Estado del documento:** PROPUESTO como insumo de diseño. No es aprobación institucional ni DDL.
 **Fecha de análisis:** 2026-11-03
+**Aclaración 2026-11-05:** Alina confirmó que el consecutivo se digita. Este inventario queda alineado con esa regla. Las tres propuestas candidatas no se reescribieron: siguen describiendo el contador que después se retiró del diseño seleccionado.
 **Base a diseñar:** persistencia propia de Atención Interdisciplinaria. Nombre de trabajo `SIA_CENCINAI`.
 **Base que no se diseña aquí:** `SIDINACC_LOCAL` / CAH.
 
@@ -101,7 +102,7 @@ Hechos confirmados (HU-013, HU-014, HU-015 a HU-018; RF-021 a RF-037, RF-114 a R
 - Salud puede incluir `Otra condición de salud`. El resto de alternativas de Salud no está enumerado.
 - Factores de riesgo de referencia distinguen ámbito individual, hogar-familiar y comunitario, sin opción genérica `Otro factor de riesgo`. Los ítems concretos de ese grupo no están enumerados.
 - Acciones previas, resultados previos e información complementaria: tres textos distintos.
-- Consecutivo `DNCC-DRXX-OLXXX-{código de establecimiento}-REF-XXX-20XX`, único, más un identificador técnico. Códigos regionales identificados: CS, HN, CH, HC, BR, CN, PC, CO, CE. El establecimiento es el del niño, no el del digitador.
+- Consecutivo digitado por la persona usuaria, `DNCC-DRXX-OLXXX-{código de establecimiento}-REF-XXX-20XX`, único, más un identificador técnico. El sistema valida formato y unicidad; no lo genera ni exige correlatividad. Códigos regionales identificados: CS, HN, CH, HC, BR, CN, PC, CO, CE. El establecimiento es el del niño, no el del digitador.
 - Contexto histórico del apartado 2.3.
 - Envío digital: fecha, hora y usuario no editables. Estado resultante `Pendiente de revisión`. Un borrador no es una referencia enviada.
 - Resultado posterior: `Admitida a A.I.` al abrir el caso, o `No requiere A.I.` con justificación. No hay estado manual `Recibida`.
@@ -251,7 +252,7 @@ Hechos confirmados (HU-038 a HU-043, HU-050; RF-083 a RF-096, RF-122, RF-123, RF
 
 ### 3.12 Borradores, catálogos, migración y auditoría
 
-- Borrador recuperable para referencia, sesión, valoración y atenciones (RNF-008). No se confunde con un hecho confirmado ni consume consecutivo definitivo. PROPUESTO: el consecutivo se asigna al enviar.
+- Borrador recuperable para referencia, sesión, valoración y atenciones (RNF-008). No se confunde con un hecho confirmado ni reserva el consecutivo. El valor, si el borrador lo trae, se valida al enviar.
 - Versionado de catálogos e instrumentos (RF-099, RF-100, RNF-018, RNF-019, CU-33).
 - Migración controlada con lote, mapeo y errores (RF-101, CU-34). Sin duplicar personas institucionales.
 - Auditoría de accesos y cambios relevantes.
@@ -274,7 +275,7 @@ Hechos confirmados (HU-038 a HU-043, HU-050; RF-083 a RF-096, RF-122, RF-123, RF
 | INV-12 | Programación y atención son hechos distintos. | RF-075, RF-126, 15.3 visualización 8 | Sin disparador que copie una actividad programada a una atención. |
 | INV-13 | El reporte individual no cierra el caso. | RN-011, P-15 | Sin cambio de estado en esa operación. |
 | INV-14 | `Otro` exige texto. Traslado no es cierre satisfactorio. | RN-003, RF-066 | Restricción condicional. |
-| INV-15 | El consecutivo de referencia es único y usa el establecimiento de la persona. | RF-114, RF-115, RN-030 | Unicidad y asignación bajo bloqueo por establecimiento y año. |
+| INV-15 | El consecutivo de referencia es único, lo digita la persona usuaria y usa el establecimiento de la persona. | RF-114, RF-115, RN-030 | Índice único y validación de formato en el servicio. Sin contador por establecimiento y año. La propuesta anterior de asignación bajo bloqueo quedó retirada el 2026-11-05. |
 | INV-16 | Una referencia entra una sola vez en una sesión. Un caso activo también. | RF-040 | Unicidad de la asociación. |
 | INV-17 | De una misma sugerencia concurrente solo una operación válida confirma la referencia. | RF-127, RNF-007 | Bloqueo de la sugerencia y unicidad de la referencia originada. |
 | INV-18 | El ámbito se aplica en datos, no solo en pantalla. | RNF-001, RF-002, RF-104 | Predicado de ámbito en cada consulta. Sin tabla paralela de autorización. |
@@ -331,7 +332,7 @@ Agregados jerárquicos: Establecimiento solo con sus autorizados; Oficina Local 
 | Programación | Transiciones con motivo y fechas. |
 | Coordinación | Cambios de estado identificables. |
 | Informe | Corte y análisis conservados. |
-| Corrección de un hecho clínico ya confirmado | No está especificada. NEEDS_VALIDATION. Mientras tanto, no se actualiza el contenido confirmado. |
+| Corrección de un hecho confirmado, incluido el consecutivo ya enviado | No está especificada. NEEDS_VALIDATION. Mientras tanto, no se actualiza el contenido confirmado ni el consecutivo. |
 
 ## 7. Concurrencia
 
@@ -341,7 +342,7 @@ Puntos calientes:
 - Dos aperturas simultáneas en Oficinas Locales distintas.
 - Dos gestiones de la misma posible referencia.
 - Revaloración y cambio de plan del mismo caso.
-- Asignación del consecutivo por establecimiento y año.
+- Dos envíos simultáneos del mismo consecutivo digitado.
 - Edición de borrador o de actividad programada.
 
 El diseño físico debe distinguir lo que un constraint cubre de lo que solo cubre la transacción. El detalle por propuesta está en `SIA_DATABASE_PROPOSALS.md`.
@@ -429,7 +430,7 @@ RF-103: permisos reforzados adicionales. Qué documentos los exigen: NEEDS_VALID
 | NV-ARCHIVO | Repositorio de binarios y retención del informe | Metadatos sí; binario y formato no. |
 | NV-REPORTERIA-EST | KPI permitidos a Establecimiento | El predicado de ámbito existe; el permiso no se concede. |
 | NV-RN040 | Ratificación de la fórmula de cobertura con Alina | La fórmula provisional se implementa tal como está escrita. |
-| NV-CORRECCION | Cómo se corrige un hecho clínico confirmado | Contenido confirmado inmutable hasta regla explícita. |
+| NV-CORRECCION | Cómo se corrige un hecho confirmado, incluido el consecutivo ya enviado | Contenido confirmado inmutable hasta regla explícita. Sin modificación libre del consecutivo. |
 | NV-SEXO-EDAD | Sexo y edad actual exigen lectura institucional al consultar | Las visualizaciones 2 y 3 dependen del adaptador. El resto de A.I. funciona sin copiar esos maestros. |
 | NV-AUTH | Mecanismo real de autorización | Sin tabla SIA de establecimientos por usuario. |
 | NV-STACK | SQL Server como motor de producto | Restricción de este diseño; falta decisión de stack aprobada. |

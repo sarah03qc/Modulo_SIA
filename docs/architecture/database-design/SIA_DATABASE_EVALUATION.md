@@ -171,3 +171,7 @@ Los cambios se aplican en `current/DATABASE_DESIGN_SELECTED.md`. No se reescribe
 ## 9. Qué no quedó cerrado
 
 Siguen NEEDS_VALIDATION y no bloquean la selección del modelo: ratificación de RN-040 con Alina, corrección de un hecho confirmado, equivalencia de posibles referencias, catálogo completo de factores y disciplinas, información individual exacta de Regional y Nacional, permisos reforzados de documentos, formato del informe, clave institucional definitiva de persona y mecanismo real de autorización. El diseño no los resuelve ampliando permisos ni inventando ítems.
+
+## 10. Nota posterior, sin cambiar el dictamen
+
+El 2026-11-05 Alina confirmó que el consecutivo institucional se digita y no se genera. Las tres propuestas evaluadas aquí incluían un contador por establecimiento y año. Esa descripción se conserva en `SIA_DATABASE_PROPOSALS.md`. No se modifican las puntuaciones ni el veredicto `APPROVED_WITH_CHANGES` de la propuesta A. El diseño seleccionado retiró después la tabla de control; esa corrección está en `current/DATABASE_DESIGN_SELECTED.md` y no forma parte del objeto que estos revisores calificaron.

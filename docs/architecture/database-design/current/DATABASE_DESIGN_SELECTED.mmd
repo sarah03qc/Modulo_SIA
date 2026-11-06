@@ -46,8 +46,9 @@ erDiagram
     REF_REFERENCIA ||--o| CASO_AI : abre
     CASO_AI ||--o{ CASO_ESTADO_HISTORIAL : transiciona
     CASO_AI ||--o| CASO_CIERRE : cierra
+    CASO_ESTADO_HISTORIAL ||--o| CASO_CIERRE : evento
     CASO_AI ||--o{ CASO_PLAN : versiona
-    CASO_AI }o--o| SES_VALORACION : vigente
+    CASO_AI |o--|| SES_VALORACION : vigente
     CASO_AI }o--o| CASO_PLAN : plan_vigente
     CASO_PLAN ||--|{ CASO_PLAN_PROPOSITO : propone
     CASO_PLAN ||--o{ CASO_PLAN_ESTRATEGIA : elige
@@ -57,11 +58,11 @@ erDiagram
     ATE_GRUPAL ||--|{ ATE_GRUPAL_PARTICIPANTE : incluye
     ATE_GRUPAL ||--o{ ATE_GRUPAL_DISCIPLINA : cubre
     ATE_GRUPAL ||--o{ ATE_GRUPAL_PROFESIONAL : realiza
-    CASO_AI ||--o{ ATE_GRUPAL_PARTICIPANTE : participa
+    CASO_AI |o--o{ ATE_GRUPAL_PARTICIPANTE : persona_del_caso
 
     PROG_ACTIVIDAD ||--o{ PROG_CAMBIO : cambia
     PROG_ACTIVIDAD ||--o{ PROG_PERSONA : asocia
-    CASO_AI ||--o{ PROG_PERSONA : caso
+    CASO_AI |o--o{ PROG_PERSONA : caso_opcional
 
     CASO_AI ||--o{ DOC_DOCUMENTO : adjunta
     CASO_AI ||--o{ DOC_COORDINACION : coordina
@@ -117,11 +118,6 @@ erDiagram
     CAT_CODIGO_REGION_REFERENCIA {
         int region_id PK
         nvarchar codigo
-    }
-    REF_CONSECUTIVO_CONTROL {
-        int establecimiento_id PK
-        smallint anio PK
-        int ultimo_numero
     }
     REF_REFERENCIA {
         bigint referencia_id PK
@@ -188,6 +184,7 @@ erDiagram
     SES_VALORACION_CATEGORIA {
         bigint valoracion_id PK
         bigint categoria_id PK
+        bigint instrumento_version_id FK
         nvarchar respuesta
     }
     SES_VALORACION_FACTOR {
@@ -211,6 +208,7 @@ erDiagram
         nvarchar estado
         bigint valoracion_vigente_id FK
         bigint plan_vigente_id FK
+        bigint cierre_caso_id FK
         int establecimiento_id
     }
     CASO_ESTADO_HISTORIAL {
@@ -222,6 +220,7 @@ erDiagram
     CASO_CIERRE {
         bigint caso_id PK
         bigint motivo_item_id FK
+        bigint historial_id FK
         nvarchar explicacion
         date fecha_cierre
         int destino_establecimiento_id

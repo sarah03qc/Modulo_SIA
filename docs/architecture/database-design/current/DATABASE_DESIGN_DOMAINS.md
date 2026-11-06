@@ -6,7 +6,7 @@ Complementan `DATABASE_DESIGN_SELECTED.mmd`. No lo sustituyen. Las cardinalidade
 
 ## 1. Referencias y posibles referencias
 
-La referencia enviada es obligatoria en su contexto histórico. La posible referencia puede no llegar a crear referencia. El control de consecutivo y el código regional no cuelgan de la persona.
+La referencia enviada es obligatoria en su contexto histórico. La posible referencia puede no llegar a crear referencia. El código regional no cuelga de la persona: el segmento DR se valida contra los nueve códigos confirmados y no asigna un número. Que ese código coincida con la región de la persona sigue NEEDS_VALIDATION.
 
 ```mermaid
 erDiagram
@@ -20,7 +20,7 @@ erDiagram
     CAT_ITEM ||--o{ REF_REFERENCIA : via_u_origen
 ```
 
-`REF_CONSECUTIVO_CONTROL` y `CAT_CODIGO_REGION_REFERENCIA` no tienen FK hacia la referencia. Evitan acoplar el contador al borrado de un envío. El consecutivo ya asignado vive en `REF_REFERENCIA` y es único.
+`CAT_CODIGO_REGION_REFERENCIA` no tiene FK hacia la referencia. Comprueba el segmento regional digitado y no guarda un contador. El consecutivo validado vive en `REF_REFERENCIA` y es único. No hay entidad de control por establecimiento y año.
 
 ## 2. Sesiones y valoraciones
 
@@ -40,11 +40,11 @@ erDiagram
     SES_RESOLUCION }o--|| SES_VALORACION : respalda
 ```
 
-No hay tabla de sugerencia de riesgo. Riesgo y protección son columnas profesionales de `SES_VALORACION`, y la prioridad entra solo si la tupla existe en la matriz.
+No hay tabla de sugerencia de riesgo. Riesgo y protección son columnas profesionales de `SES_VALORACION`, y la prioridad entra solo si la tupla existe en la matriz. La respuesta de categoría lleva la versión del instrumento. El factor referencia (`factor_id`, `categoria_id`) además de la respuesta `FACTORES`.
 
 ## 3. Casos y planes
 
-La referencia abre como máximo un caso. El cierre es cero o uno y no apunta a otro caso. El plan vigente es una de las versiones. La valoración vigente es una FK, no una copia de los factores.
+La referencia abre como máximo un caso. El cierre es cero o uno y no apunta a otro caso. `cierre_caso_id` es el puntero de regreso de esa misma relación: nulo con el caso activo e igual a `caso_id` cuando está cerrado. No es una segunda entidad. El plan vigente es una de las versiones. La valoración vigente es una FK obligatoria, no una copia de riesgo, protección ni prioridad. El plan vigente sigue siendo opcional en la sentencia intermedia de la apertura.
 
 ```mermaid
 erDiagram
@@ -52,8 +52,9 @@ erDiagram
     VINCULO_PERSONA ||--o{ CASO_AI : persona
     CASO_AI ||--o{ CASO_ESTADO_HISTORIAL : transiciona
     CASO_AI ||--o| CASO_CIERRE : cierra
+    CASO_ESTADO_HISTORIAL ||--o| CASO_CIERRE : evento
     CASO_AI ||--o{ CASO_PLAN : versiona
-    CASO_AI }o--o| SES_VALORACION : vigente
+    CASO_AI |o--|| SES_VALORACION : vigente
     CASO_AI }o--o| CASO_PLAN : plan_vigente
     CASO_PLAN ||--|{ CASO_PLAN_PROPOSITO : propone
     CASO_PLAN ||--o{ CASO_PLAN_ESTRATEGIA : elige
@@ -73,13 +74,13 @@ erDiagram
     ATE_GRUPAL ||--|{ ATE_GRUPAL_PARTICIPANTE : incluye
     ATE_GRUPAL ||--o{ ATE_GRUPAL_DISCIPLINA : cubre
     ATE_GRUPAL ||--o{ ATE_GRUPAL_PROFESIONAL : realiza
-    CASO_AI ||--o{ ATE_GRUPAL_PARTICIPANTE : si_hay_caso_activo
+    CASO_AI |o--o{ ATE_GRUPAL_PARTICIPANTE : caso_opcional
     PROG_ACTIVIDAD ||--o{ PROG_CAMBIO : cambia
     PROG_ACTIVIDAD ||--o{ PROG_PERSONA : asocia
-    CASO_AI ||--o{ PROG_PERSONA : caso_opcional
+    CASO_AI |o--o{ PROG_PERSONA : caso_opcional
 ```
 
-`asistio` nulo no cuenta como atención efectiva. Una actividad sin filas en `PROG_PERSONA` es general.
+`asistio` nulo no cuenta como atención efectiva. La línea hacia `CASO_AI` es opcional: `caso_id` nulo es un participante sin caso. Cuando viene informado, la FK compuesta exige la persona de ese caso. Una actividad sin filas en `PROG_PERSONA` es general. La línea de `PROG_PERSONA` hacia el caso también es opcional y usa la misma FK compuesta.
 
 ## 5. Documentos, coordinaciones e informes
 
@@ -108,6 +109,6 @@ erDiagram
     AUD_MIGRACION_LOTE ||--o{ AUD_MIGRACION_ERROR : rechaza
 ```
 
-Quedan en el diagrama global, sin FK de negocio: `CAT_CODIGO_REGION_REFERENCIA`, `REF_CONSECUTIVO_CONTROL`, `BOR_CAPTURA` y `AUD_EVENTO`.
+Quedan en el diagrama global, sin FK de negocio: `CAT_CODIGO_REGION_REFERENCIA`, `BOR_CAPTURA` y `AUD_EVENTO`.
 
 La integración con SIDINACC no se dibuja. `per_id_persona` coincide en valor con `CAF_PERSONA.PER_idPersona` y no es clave foránea.

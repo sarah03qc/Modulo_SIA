@@ -3,6 +3,7 @@
 **Estado:** PROPUESTO. Documento de comparación, conservado como fue entregado a la evaluación. No autoriza DDL.
 
 **Nota posterior a la evaluación:** el dictamen está en `SIA_DATABASE_EVALUATION.md`. Este texto no se reescribió para favorecer una propuesta. La frase de más abajo, «Las tres cumplen los requisitos confirmados», quedó matizada por la revisión independiente: la propuesta B no cierra con un solo constraint la equivalencia entre el ancla de activo y la ausencia de cierre. El diseño seleccionado, con los cambios exigidos, está en `current/DATABASE_DESIGN_SELECTED.md`.
+**Aclaración 2026-11-05, sin reescribir las tres propuestas:** Alina confirmó que el consecutivo se digita. Las menciones de `ref_consecutivo_control` que siguen abajo pertenecen al texto evaluado el 2026-11-03. El diseño seleccionado ya no tiene esa tabla ni un incremento por establecimiento y año.
 **Insumo:** `SIA_DATABASE_REQUIREMENTS.md`.
 **Motor de comparación:** Microsoft SQL Server. Sin tablas temporales, triggers, event sourcing general, vistas materializadas ni GUID como clave por defecto.
 **Independencia:** no se reutilizó un diseño anterior de base propia.

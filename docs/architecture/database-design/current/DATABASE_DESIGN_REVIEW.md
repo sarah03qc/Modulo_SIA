@@ -5,7 +5,8 @@
 **Skill aplicada:** `review-sql-server-schema`.
 **También se usan:** `verify-traceability` sobre la cadena hasta el diseño, y los hallazgos de A-07 ya incorporados.
 **Quién revisa:** A-00, después de la selección independiente. No es un cuarto subprocess. La evaluación de las tres propuestas sí lo fue. Esta revisión no ejecuta SQL ni crea la base.
-**Decisión de cierre:** `APPROVED`. Al revisar la candidata aparecieron dos ajustes de clave; quedaron escritos en el diseño seleccionado antes de cerrar esta revisión. No queda un rediseño pendiente. La aceptación humana sigue abierta.
+**Decisión de esta pasada:** `APPROVED`. Al revisar la candidata aparecieron dos ajustes de clave; quedaron escritos en el diseño seleccionado antes de cerrar esta revisión. No queda un rediseño pendiente. La aceptación humana sigue abierta.
+**Pasada posterior:** el endurecimiento del 2026-11-03 está en la sección 16. Donde esta revisión decía residual de cierre, caché o participante grupal, manda esa sección.
 
 ## 1. Claves
 
@@ -25,12 +26,12 @@ Hay FK internas entre hechos de SIA. No hay FK a `SIDINACC_LOCAL`. No hay `ON DE
 
 Las circulares están acotadas y son insertables:
 
-- `caso_ai.valoracion_vigente_id` hacia `ses_valoracion`, y `ses_valoracion.caso_id` hacia `caso_ai`, ambos nulos en el momento intermedio de la apertura.
+- `caso_ai.valoracion_vigente_id` hacia `ses_valoracion` es no nulo: el caso se inserta con la valoración ya creada. `ses_valoracion.caso_id` hacia `caso_ai` sí nace nulo y se completa después. `plan_vigente_id` sigue nulo hasta que el plan existe.
 - `caso_ai.plan_vigente_id` hacia `caso_plan`, y `caso_plan.caso_id` hacia `caso_ai`. El plan se inserta después del caso.
 
 `ses_valoracion_factor` referencia la categoría solo cuando su respuesta es `FACTORES`. `NINGUNO` no admite hijos. No hace falta trigger.
 
-`ref_posible.referencia_id` es opcional. `ate_grupal_participante.caso_id` es opcional y no usa la FK compuesta de la individual, porque la persona puede no tener caso. La igualdad de persona, cuando el caso viene informado, queda en prueba de transacción. Es un hallazgo importante no bloqueante: un participante podría apuntar al caso de otra persona si el servicio se equivoca. La conciliación correspondiente está en la sección 12.
+`ref_posible.referencia_id` es opcional. `ate_grupal_participante.caso_id` es opcional. Desde el endurecimiento usa la misma FK compuesta de la individual: si `caso_id` es nulo, SQL Server no la comprueba; si viene informado, la persona tiene que ser la del caso. La conciliación de la sección 12 queda como detector de una constraint desactivada. El detalle está en la sección 16.
 
 No existe `caso_destino_id`.
 
@@ -54,14 +55,14 @@ Quedan en el motor, entre otros:
 - Único filtrado de un caso `ACTIVO` por persona.
 - Únicos filtrados de valoración vigente, antes y después de tener caso.
 - Único filtrado de un plan vigente por caso.
-- Único de consecutivo.
+- Único del consecutivo digitado. No hay tabla de secuencia.
 - Único filtrado de una referencia originada por sugerencia.
 - Único filtrado propuesto de posible referencia pendiente por persona, criterio y establecimiento. La equivalencia institucional sigue NEEDS_VALIDATION. El índice puede cambiar sin tocar los hechos ya resueltos.
 - `CHECK` de hora de fin posterior a la de inicio, de motivo obligatorio al reprogramar o cancelar, y de justificación cuando la decisión es no requiere A.I.
 
 Índices de bandeja, cobertura, motivos, cierres y vencidas están justificados en la sección 21 del diseño. No hay un índice por cada FK.
 
-No se crean tablas temporales, vistas materializadas, triggers ni `sp_getapplock`. El bloqueo es `HOLDLOCK` y `UPDLOCK` sobre `vinculo_persona`.
+No se crean tablas temporales, vistas materializadas, triggers ni `sp_getapplock`. El bloqueo es `HOLDLOCK` y `UPDLOCK` sobre `vinculo_persona`. El alta de esa fila quedó después como `SELECT` más `INSERT`, sin `MERGE`. Ver sección 16.
 
 ## 5. Historial, fechas y concurrencia
 
@@ -69,7 +70,7 @@ Valoraciones, factores, categorías, planes anteriores, envío, contexto, impres
 
 La fecha real de atención es `date`. La digitación es `datetime2(0)`. El envío no se confunde con la impresión. La edad de la referencia no se confunde con la edad actual.
 
-El estado `CERRADO` sin fila de cierre, y la caché de prioridad distinta de la valoración vigente, no los impide un `CHECK`. Lo impiden la transacción y dos consultas de conciliación que deben devolver cero filas. Es el límite consciente de no usar trigger. Queda como riesgo residual, no como rediseño: A-09 aceptó esa vía.
+En esta pasada, el estado `CERRADO` sin fila de cierre y la caché de prioridad quedaron fuera de un `CHECK`. El endurecimiento posterior sí ata `CERRADO` a `cierre_caso_id` y elimina la caché. El caso `ACTIVO` que conserve una fila de cierre sigue sin constraint. El detalle y el motivo para no usar trigger están en la sección 16.
 
 No hay borrado lógico general. El borrado físico solo aplica a `bor_captura` al confirmar, y no a hechos clínicos.
 
@@ -135,9 +136,9 @@ Ninguno abierto. Los dos que esta revisión encontró se escribieron en el dise�
 
 | ID | Hallazgo | Estado |
 | --- | --- | --- |
-| R-01 | Cierre y estado no están atados por constraint | Residual. Transacción más conciliación en cero. |
-| R-02 | Caché de prioridad puede divergir | Residual. La lectura oficial es la valoración. Conciliación en cero. |
-| R-03 | Participante grupal con `caso_id` de otra persona | Residual. Prueba de transacción. No bloquea el modelo. |
+| R-01 | Cierre y estado no están atados por constraint | Superado en la sección 16 para `CERRADO` sin fila. Sigue abierto el lado `ACTIVO` con fila de cierre |
+| R-02 | Caché de prioridad puede divergir | Cerrado. Las tres columnas no se persisten |
+| R-03 | Participante grupal con `caso_id` de otra persona | Cerrado por FK compuesta. `caso_id` sigue anulable |
 | R-04 | Atención insertada sobre un caso ya cerrado | Residual. La transacción exige `ACTIVO`. No hay constraint cruzado. |
 | R-05 | Vista de Establecimiento sin predicado de filas | Residual. El rol no lee `caso_ai` y el servicio filtra. |
 
@@ -171,7 +172,7 @@ WHERE c.estado <> N'ACTIVO'
         i.digitada_en);
 ```
 
-La segunda solo señala atenciones digitadas después del cierre. No borra nada. Sirve de alerta, no de corrección silenciosa.
+La segunda solo señala atenciones digitadas después del cierre. No borra nada. Sirve de alerta, no de corrección silenciosa. La primera queda cubierta por la FK compuesta; se conserva por si la constraint se desactiva. La misma forma aplica a `prog_persona`.
 
 ## 13. Evolución
 
@@ -192,3 +193,73 @@ Ninguno de ellos autoriza a sembrar ítems no escritos ni a conceder reportería
 Los cambios de A-02, A-09, A-07 y los dos de esta revisión están en el diseño seleccionado. Los residuales están nombrados y tienen conciliación o permiso, no una regla escondida. No se pide otro modelo.
 
 Esto no es aceptación humana del módulo ni permiso para crear la base.
+
+## 16. Endurecimiento del 2026-11-03
+
+Segunda pasada, solo sobre la propuesta A. No compara A/B/C ni ejecuta SQL. Intervinieron, en solo lectura, A-05, A-02, A-07 y A-01. Sus ajustes quedaron incorporados al diseño seleccionado antes de cerrar esta sección.
+
+| Decisión | Resultado |
+| --- | --- |
+| FK compuesta de `ate_grupal_participante` y de `prog_persona` | Incorporada. `caso_id` anulable. `MATCH SIMPLE` no comprueba la FK cuando ese valor es nulo |
+| `CHECK` de `cierre_caso_id` y FK al historial `CERRADO` del mismo caso | Incorporados. Impiden confirmar un caso cerrado sin su fila y sin su evento |
+| Caso activo con fila de cierre | Sigue sin constraint. Transacción, permiso y conciliación |
+| Caché de prioridad | Eliminada. La bandeja usa `INCLUDE (valoracion_vigente_id)` y la PK de `ses_valoracion` |
+| `MERGE` del vínculo | Sustituido por `SELECT ... UPDLOCK, HOLDLOCK` e `INSERT` si no hay fila |
+| Trigger | No. El lado que el motor puede cerrar ya lo cierra el `CHECK`. El otro lado no mejora con un trigger mientras el rol de aplicación no tenga escritura directa |
+
+`NV-GRUPAL-AMBITO` queda abierto: un alta grupal no copia el identificador de un caso activo fuera del ámbito del actor. RN-040 sigue provisional. No aparece un bloqueo nuevo que impida describir el esquema.
+
+La validación de esta pasada es documental. No hubo DDL ni prueba ejecutable de las constraints.
+
+A-09 revisó el texto ya editado y pidió un ajuste: la relación `vigente` y la viñeta de las FK circulares todavía trataban `valoracion_vigente_id` como nulo. Ese puntero es obligatorio. El nulo del ciclo es `ses_valoracion.caso_id`, y el de la apertura es `plan_vigente_id`. Los dos diagramas y esta sección quedaron alineados con eso. No se reabrió el participante, el cierre, la caché ni el orden de bloqueos.
+
+## 17. Aclaración del consecutivo — 2026-11-05
+
+Alina, contraparte institucional, confirmó que el consecutivo se digita completo. El sistema valida formato y unicidad. No lo genera. Esta sección no reescribe el dictamen del 2026-11-03 ni las puntuaciones de `SIA_DATABASE_EVALUATION.md`. Esas propuestas describían un contador; el diseño seleccionado ya no lo tiene.
+
+| Qué cambia | Dónde |
+| --- | --- |
+| `ref_referencia.consecutivo` sigue obligatorio y único | Captura manual. Cadena canónica |
+| `ref_consecutivo_control` | Eliminada. Su única función era incrementar |
+| Bloqueo por establecimiento y año | Retirado. El duplicado lo resuelve el índice único |
+| `caso_ai.consecutivo_origen` | Sigue siendo copia inmutable del valor validado |
+| `cat_codigo_region_referencia` | Sigue. El segmento DR debe ser uno de los nueve códigos. No exige coincidir con la región de la persona y no numera |
+| Corrección después del envío | NV-CORRECCION. Sin `UPDATE` libre |
+
+Normalización que compara y guarda: recorte de extremos y mayúsculas ASCII. No se quitan ceros ni se rellenan segmentos. `001` y `1` no son el mismo consecutivo.
+
+La validación de formato es del servicio. El formulario es complementario. El motor garantiza `NOT NULL` y el índice único. Un `CHECK` no puede saber el establecimiento de la persona.
+
+### 17.1 Criterios de prueba
+
+No se ejecutaron. No exigen que un número sea el siguiente de otro.
+
+| Criterio | Resultado esperado |
+| --- | --- |
+| Estructura válida, como `DNCC-DRCS-OL101-1010102-REF-001-2026`, con un DR de los nueve códigos y el establecimiento de la persona referida | Se conserva esa cadena canónica. `referencia_id` se genera aparte |
+| Misma cadena en minúsculas o con espacios extremos | Se guarda una sola forma canónica. No crea otra referencia |
+| Prefijo distinto de `DNCC`, `DR`, `OL` o `REF` | Mensaje de formato. No se envía |
+| Segmento faltante | Mensaje de formato. No se envía |
+| Separador distinto del guion, o guion de más | Mensaje de formato. No se envía |
+| Carácter fuera de letras, dígitos y guion | Mensaje de formato. No se envía |
+| Año que no cumple `20` y dos dígitos | Mensaje de formato. No se envía. No se exige que el año sea el de la fecha de envío |
+| Establecimiento distinto del de la persona referida | Mensaje de correspondencia. No se usa el establecimiento de quien digita |
+| Oficina Local con formato `OL` y tres dígitos, aunque no sea la de quien digita | El formato se acepta. RF-115 no exige que coincida con la Oficina Local de la persona |
+| Consecutivo ya registrado | Mensaje de duplicado, sin datos de la otra referencia. No se asigna otro número |
+| Dos usuarios envían a la vez el mismo valor canónico | Uno confirma. El otro recibe el duplicado del índice único. No hay reintento que invente un número |
+| Referencia desde plantilla Excel | El consecutivo precargado se revisa y se valida como en CU-04. El archivo no lo genera |
+| Apertura del caso | `consecutivo_origen` queda igual al valor validado de la referencia |
+| Ausencia de generación | No existe fila de control. Un envío no propone ni completa la serie. `REF-017` es válido aunque no exista `REF-016` |
+| Borrador | Puede guardar el texto. No reserva el número |
+| Consecutivo ya enviado | No hay modificación libre. El procedimiento autorizado sigue NEEDS_VALIDATION |
+
+### 17.2 Revisión SQL Server de este delta
+
+- Clave sustituta `referencia_id` e identificador documental natural único conviven. La natural no se genera.
+- No queda tabla de secuencia ni protocolo de `UPDLOCK` exclusivo del incremento.
+- La carrera de dos insertos iguales la cierra el índice único, no un contador.
+- La normalización evita dos filas por mayúsculas o espacios extremos, sin declarar equivalentes números de distinto ancho.
+- El formato que depende de la persona queda fuera del `CHECK`.
+- No se añaden reglas de hueco, reserva o reutilización.
+
+El dictamen `APPROVED` del esquema se mantiene con esta corrección. No es permiso para crear la base.
