@@ -7,7 +7,7 @@ const reactRecommended = react.configs.flat?.recommended || react.configs.recomm
 
 export default [
   {
-    ignores: ['**/node_modules/**', '**/dist/**', 'coverage/**']
+    ignores: ['**/node_modules/**', '**/dist/**', 'coverage/**', '.local/**']
   },
   js.configs.recommended,
   {

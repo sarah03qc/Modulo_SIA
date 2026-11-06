@@ -320,6 +320,8 @@ usar SSMS. No dejar la contraseña en el historial de consultas ni en archivos g
 El login es un objeto del servidor: **sobrevive** a la eliminación manual de `SIDINACC_LOCAL`.
 Tras recrear la base, repetir solo `CREATE USER ... FOR LOGIN` y `ALTER ROLE ... ADD MEMBER`.
 
+En el contenedor local `sidinacc-local-sql` el login `sia_sidinacc_app` ya está creado y mapeado al rol. La contraseña está solo en `apps/api/.env`. No repetir `CREATE LOGIN` ni cambiar esa contraseña desde un archivo del repositorio.
+
 No hay contraseñas, cadenas de conexión ni archivos `.env` reales en el repositorio.
 
 ## 16. Smoke tests (`090_smoke_tests.sql`)

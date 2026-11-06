@@ -52,7 +52,10 @@ describeLive('conexión local a SQL Server', () => {
     expect(sidinacc.available).toBe(true);
     expect(sidinacc.database).toBe('SIDINACC_LOCAL');
     expect(typeof sidinacc.readOnly).toBe('boolean');
-    if (config.sidinacc.user.toLowerCase() === 'sa' || config.sameDatabaseUser) {
+    if (config.sidinacc.user.toLowerCase() === 'sia_sidinacc_app') {
+      expect(sidinacc.readOnly).toBe(true);
+      expect(config.sameDatabaseUser).toBe(false);
+    } else if (config.sidinacc.user.toLowerCase() === 'sa' || config.sameDatabaseUser) {
       expect(sidinacc.readOnly).toBe(false);
     }
     expect(siaBefore[0].migration_count).toBe(siaAfter[0].migration_count);

@@ -994,7 +994,7 @@ GO
 -- logins por entorno: se provisionan/mapean de forma separada.
 ```
 
-**Pruebas requeridas:** confirmar efectivamente permisos de solo lectura y ausencia de DML/DDL con el principal usado por la aplicación. Esta documentación no demuestra haberlos comprobado en ejecución SQL Server.
+En el entorno local, la aplicación usa el login `sia_sidinacc_app`, creado fuera del repositorio y mapeado únicamente a `sia_sidinacc_reader_role`. La comprobación de 2026-11-06 ejecutó `SELECT` y recibió denegación del motor para `INSERT`, `UPDATE`, `DELETE`, `CREATE TABLE`, `ALTER`, `DROP` y para abrir `SIA_CENCINAI`. La contraseña no forma parte de esta especificación. `sia_sidinacc_reader` permanece `WITHOUT LOGIN`.
 
 ## 15. Archivos existentes y fronteras de implementación
 

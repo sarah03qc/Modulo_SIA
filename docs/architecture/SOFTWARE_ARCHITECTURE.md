@@ -93,9 +93,11 @@ El arranque con `NODE_ENV=production` se rechaza. No hay configuración producti
 
 ## Seguridad de la réplica
 
-En el motor local existe el login `cencinai_reader`, no es `sysadmin` y su base predeterminada es `SIDINACC_LOCAL`. No tiene usuario mapeado dentro de esa base. La contraseña no está en el repositorio. El usuario de base `sia_sidinacc_reader` fue creado `WITHOUT LOGIN`.
+La conexión institucional usa el login `sia_sidinacc_app`. Su base predeterminada es `SIDINACC_LOCAL`. No es `sysadmin` ni miembro de otros roles de servidor; el único permiso de servidor concedido es `CONNECT SQL`. El usuario de base, con el mismo nombre, pertenece solo a `sia_sidinacc_reader_role`. Ese rol es miembro de `db_datareader` y conserva los `DENY` de `INSERT`, `UPDATE`, `DELETE` y `ALTER` que ya definía el esquema. `SELECT` cubre la superficie de la réplica porque el rol reutiliza `db_datareader`; no se concedió `SELECT` objeto por objeto ni se amplió el rol.
 
-No se crearon logins, usuarios ni permisos. La credencial disponible para comprobar el contenedor es la de despliegue. Mientras las dos variables usen ese mismo usuario, el aislamiento de permisos **no está verificado**. El proceso lo registra al arrancar y `/ready` devuelve `readOnly: false`.
+La contraseña no está en el repositorio. `cencinai_reader` continúa sin usuario en la base y no se reutilizó. `sia_sidinacc_reader` sigue siendo `WITHOUT LOGIN`. `sia_sidinacc_app` no tiene usuario en `SIA_CENCINAI`, `HAS_DBACCESS` devuelve 0 y una consulta de tres partes hacia esa base falla con el error 916. El encadenamiento entre bases está desactivado y `guest` no tiene `CONNECT` en `SIA_CENCINAI`.
+
+`readOnly` sale de la sonda de permisos del login. Con esta cuenta es `true`. `writeFilterEnabled` solo indica que el filtro del adaptador está activo; no sustituye esa sonda. Si las dos conexiones comparten usuario, el arranque lo advierte. La sonda deja de informar solo lectura cuando ese login puede escribir o es `sysadmin`.
 
 ## Contrato técnico
 
@@ -112,7 +114,7 @@ No se crearon logins, usuarios ni permisos. La credencial disponible para compro
   "status": "ready",
   "checks": {
     "sia": { "status": "up", "database": "SIA_CENCINAI" },
-    "sidinacc": { "status": "up", "database": "SIDINACC_LOCAL", "readOnly": false }
+    "sidinacc": { "status": "up", "database": "SIDINACC_LOCAL", "readOnly": true }
   }
 }
 ```
@@ -127,7 +129,7 @@ Node corre en el host. SQL Server sigue siendo el contenedor existente `sidinacc
 
 ## Riesgos y pendientes
 
-- Aislamiento real de `SIDINACC_LOCAL` hasta disponer de un login de lectura mapeado al rol existente.
+- La conexión de `SIA_CENCINAI` todavía usa la credencial de despliegue. El aislamiento verificado corresponde a la réplica, no a un usuario de escritura de mínimo privilegio para el módulo.
 - Contrato de sesión SIDINACC.
 - Identificador institucional definitivo de persona.
 - Logotipo y certificación de accesibilidad.
