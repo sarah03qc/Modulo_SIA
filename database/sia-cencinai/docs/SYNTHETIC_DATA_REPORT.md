@@ -95,8 +95,8 @@ Cada escala dejó un informe nacional de 12 visualizaciones, uno regional de 8 y
 | Referencia | Réplica | SIA |
 | --- | ---: | ---: |
 | Personas | 4708 | 4695 vínculos, las ubicadas en 2026 |
-| Hecho más grande de la réplica | 5470 servicios | 4050 atenciones individuales y 2960 referencias |
-| Regiones / oficinas / establecimientos activos | 9 / 41 / 630 | Los casos activos usan esas nueve regiones |
+| Hecho más grande de la réplica | 5470 servicios | 4129 atenciones individuales y 3040 referencias, después del pase territorial |
+| Regiones / oficinas / establecimientos activos | 9 / 41 / 630 | Los 630 establecimientos activos tienen al menos un caso sintético. El detalle está en `TERRITORIAL_COVERAGE_REPORT.md`. |
 
 No se inventaron personas fuera de la réplica para inflar el volumen.
 
@@ -105,6 +105,7 @@ No se inventaron personas fuera de la réplica para inflar el volumen.
 - El mapa `region_id` 1..9 hacia CS, HN, CH, HC, BR, CN, PC, CO y CE sigue `NEEDS_VALIDATION`.
 - `CAF_MENOR` y las evaluaciones nutricionales de la réplica son pocas. El generador no las convirtió en casos.
 - La edad del contexto no ajusta el cumpleaños dentro del año.
-- Las etiquetas de lugar del contexto no son el nombre institucional del establecimiento.
+- La escala `030` etiqueta el contexto como `Region`, `OL` y `EST` más el identificador. El pase `040` guarda el nombre de región, Oficina Local y establecimiento de la réplica. No guarda dirección, teléfono ni nombre de persona.
+- Ese pase, semilla `20261105`, agregó 79 referencias y 79 casos activos el 2025-04-18, uno por establecimiento activo que el perfil aleatorio había dejado sin caso. No inventa personas. La segunda ejecución no inserta.
 - El instrumento, las disciplinas y la estrategia sintéticos salen de la semilla `020`. Sin esa semilla, la escala se detiene.
 - La prueba de concurrencia dejó confirmada la referencia `DNCC-DRCS-OL101-1100102-REF-900-2026`.

@@ -1,0 +1,662 @@
+region_id,region_nombre,oficina_local_id,oficina_local_nombre,establecimiento_id,activo,personas_elegibles,referencias,casos,casos_activos,casos_cerrados
+1,"Central Sur",101,"Hatillo",1010320,1,6,4,3,1,2
+1,"Central Sur",101,"Hatillo",1010321,1,7,4,2,2,0
+1,"Central Sur",101,"Hatillo",1011007,1,9,2,1,1,0
+1,"Central Sur",101,"Hatillo",1011008,1,10,11,8,1,7
+1,"Central Sur",101,"Hatillo",1011009,1,5,2,1,1,0
+1,"Central Sur",101,"Hatillo",1011031,1,9,6,3,1,2
+1,"Central Sur",101,"Hatillo",1011035,1,7,5,3,3,0
+1,"Central Sur",101,"Hatillo",1011102,1,8,3,1,1,0
+1,"Central Sur",101,"Hatillo",1011107,1,7,2,1,1,0
+1,"Central Sur",101,"Hatillo",1030107,1,5,2,1,1,0
+1,"Central Sur",101,"Hatillo",1030401,1,5,2,2,2,0
+1,"Central Sur",101,"Hatillo",1031104,1,6,8,5,2,3
+1,"Central Sur",101,"Hatillo",1100102,1,10,12,6,2,4
+1,"Central Sur",101,"Hatillo",1100401,1,9,3,2,2,0
+1,"Central Sur",102,"Ciudad Colón",1040104,1,6,2,2,1,1
+1,"Central Sur",102,"Ciudad Colón",1040206,1,6,7,4,0,4
+1,"Central Sur",102,"Ciudad Colón",1040208,1,8,6,2,1,1
+1,"Central Sur",102,"Ciudad Colón",1040301,1,5,3,2,1,1
+1,"Central Sur",102,"Ciudad Colón",1040602,1,6,5,2,1,1
+1,"Central Sur",102,"Ciudad Colón",1040701,1,9,6,4,2,2
+1,"Central Sur",102,"Ciudad Colón",1040901,1,5,4,3,1,2
+1,"Central Sur",102,"Ciudad Colón",1040904,1,8,1,1,1,0
+1,"Central Sur",102,"Ciudad Colón",1070102,1,10,9,4,3,1
+1,"Central Sur",102,"Ciudad Colón",1070201,1,7,3,2,2,0
+1,"Central Sur",102,"Ciudad Colón",1070301,1,5,3,2,1,1
+1,"Central Sur",102,"Ciudad Colón",1090102,1,6,2,2,1,1
+1,"Central Sur",102,"Ciudad Colón",1090301,1,7,5,2,2,0
+1,"Central Sur",102,"Ciudad Colón",1090501,1,9,3,1,1,0
+1,"Central Sur",102,"Ciudad Colón",1120301,1,7,4,3,1,2
+1,"Central Sur",102,"Ciudad Colón",1160102,1,10,9,4,0,4
+1,"Central Sur",102,"Ciudad Colón",1160105,1,7,10,7,1,6
+1,"Central Sur",103,"Tibás",1010202,1,8,6,4,3,1
+1,"Central Sur",103,"Tibás",1010205,1,5,3,1,1,0
+1,"Central Sur",103,"Tibás",1010706,1,8,5,5,4,1
+1,"Central Sur",103,"Tibás",1010903,1,7,4,3,1,2
+1,"Central Sur",103,"Tibás",1010917,1,9,3,2,0,2
+1,"Central Sur",103,"Tibás",1010919,1,5,2,2,1,1
+1,"Central Sur",103,"Tibás",1010920,0,0,0,0,0,0
+1,"Central Sur",103,"Tibás",1020102,1,8,5,2,2,0
+1,"Central Sur",103,"Tibás",1020208,1,6,1,1,1,0
+1,"Central Sur",103,"Tibás",1020302,0,0,0,0,0,0
+1,"Central Sur",103,"Tibás",1130103,1,5,3,1,1,0
+1,"Central Sur",103,"Tibás",1130202,1,8,7,5,2,3
+1,"Central Sur",103,"Tibás",1130203,1,9,2,1,1,0
+1,"Central Sur",103,"Tibás",1130401,1,9,7,3,1,2
+1,"Central Sur",104,"Curridabat-Desamparados",1010502,1,8,4,2,1,1
+1,"Central Sur",104,"Curridabat-Desamparados",1010506,1,6,4,1,1,0
+1,"Central Sur",104,"Curridabat-Desamparados",1030103,1,7,10,5,2,3
+1,"Central Sur",104,"Curridabat-Desamparados",1030202,1,10,4,2,2,0
+1,"Central Sur",104,"Curridabat-Desamparados",1030203,1,5,7,5,3,2
+1,"Central Sur",104,"Curridabat-Desamparados",1030402,1,6,2,2,1,1
+1,"Central Sur",104,"Curridabat-Desamparados",1030501,1,9,5,3,1,2
+1,"Central Sur",104,"Curridabat-Desamparados",1031001,1,5,2,2,1,1
+1,"Central Sur",104,"Curridabat-Desamparados",1031101,1,9,4,3,3,0
+1,"Central Sur",104,"Curridabat-Desamparados",1031201,1,7,4,3,2,1
+1,"Central Sur",104,"Curridabat-Desamparados",1180102,1,6,5,5,2,3
+1,"Central Sur",104,"Curridabat-Desamparados",1180401,1,5,4,2,1,1
+1,"Central Sur",104,"Curridabat-Desamparados",3010708,1,6,4,4,2,2
+1,"Central Sur",104,"Curridabat-Desamparados",3030801,1,5,5,4,1,3
+1,"Central Sur",105,"Aserrí-Acosta",1030301,1,7,4,3,1,2
+1,"Central Sur",105,"Aserrí-Acosta",1030602,1,8,3,1,0,1
+1,"Central Sur",105,"Aserrí-Acosta",1030603,1,9,8,8,4,4
+1,"Central Sur",105,"Aserrí-Acosta",1030901,1,7,5,4,3,1
+1,"Central Sur",105,"Aserrí-Acosta",1060102,1,6,3,1,1,0
+1,"Central Sur",105,"Aserrí-Acosta",1060103,1,7,6,6,3,3
+1,"Central Sur",105,"Aserrí-Acosta",1060301,1,7,6,2,1,1
+1,"Central Sur",105,"Aserrí-Acosta",1060302,1,8,5,4,3,1
+1,"Central Sur",105,"Aserrí-Acosta",1060304,1,10,6,5,2,3
+1,"Central Sur",105,"Aserrí-Acosta",1060402,1,6,3,3,3,0
+1,"Central Sur",105,"Aserrí-Acosta",1060404,1,8,4,1,1,0
+1,"Central Sur",105,"Aserrí-Acosta",1060502,1,10,6,4,2,2
+1,"Central Sur",105,"Aserrí-Acosta",1060601,1,7,4,3,2,1
+1,"Central Sur",105,"Aserrí-Acosta",1060701,1,5,2,1,0,1
+1,"Central Sur",105,"Aserrí-Acosta",1120103,1,7,6,4,2,2
+1,"Central Sur",105,"Aserrí-Acosta",1120201,1,9,6,4,2,2
+1,"Central Sur",105,"Aserrí-Acosta",1120402,1,6,3,2,0,2
+1,"Central Sur",105,"Aserrí-Acosta",1120505,1,7,5,3,2,1
+1,"Central Sur",106,"Guadalupe",1080104,1,10,7,4,3,1
+1,"Central Sur",106,"Guadalupe",1080106,1,6,2,1,1,0
+1,"Central Sur",106,"Guadalupe",1080108,1,8,10,8,4,4
+1,"Central Sur",106,"Guadalupe",1080301,1,9,7,5,2,3
+1,"Central Sur",106,"Guadalupe",1080501,1,5,4,1,1,0
+1,"Central Sur",106,"Guadalupe",1080503,1,7,3,2,1,1
+1,"Central Sur",106,"Guadalupe",1080701,1,7,5,3,1,2
+1,"Central Sur",106,"Guadalupe",1110102,1,8,4,2,0,2
+1,"Central Sur",106,"Guadalupe",1110301,1,9,6,3,2,1
+1,"Central Sur",106,"Guadalupe",1140101,1,7,3,2,0,2
+1,"Central Sur",106,"Guadalupe",1140301,1,9,7,2,2,0
+1,"Central Sur",106,"Guadalupe",1140302,1,10,4,3,3,0
+1,"Central Sur",106,"Guadalupe",1150107,1,5,2,1,1,0
+1,"Central Sur",106,"Guadalupe",1150202,1,10,4,2,2,0
+1,"Central Sur",106,"Guadalupe",4030402,1,6,2,1,1,0
+2,"Huetar Norte",201,"Ciudad Quesada",2030602,1,6,7,5,3,2
+2,"Huetar Norte",201,"Ciudad Quesada",2030603,1,7,3,3,2,1
+2,"Huetar Norte",201,"Ciudad Quesada",2030609,1,7,8,3,2,1
+2,"Huetar Norte",201,"Ciudad Quesada",2030610,1,8,3,1,1,0
+2,"Huetar Norte",201,"Ciudad Quesada",2100106,1,6,3,2,1,1
+2,"Huetar Norte",201,"Ciudad Quesada",2100111,1,5,2,1,1,0
+2,"Huetar Norte",201,"Ciudad Quesada",2100118,1,6,3,1,1,0
+2,"Huetar Norte",201,"Ciudad Quesada",2100121,1,9,7,4,3,1
+2,"Huetar Norte",201,"Ciudad Quesada",2100128,1,10,7,7,5,2
+2,"Huetar Norte",201,"Ciudad Quesada",2100403,1,9,6,2,1,1
+2,"Huetar Norte",201,"Ciudad Quesada",2100404,1,10,6,3,2,1
+2,"Huetar Norte",201,"Ciudad Quesada",2100503,1,7,4,3,2,1
+2,"Huetar Norte",201,"Ciudad Quesada",2100504,1,8,3,1,0,1
+2,"Huetar Norte",201,"Ciudad Quesada",2100603,1,5,2,2,1,1
+2,"Huetar Norte",201,"Ciudad Quesada",2100604,1,6,4,1,1,0
+2,"Huetar Norte",201,"Ciudad Quesada",2100607,1,9,5,2,1,1
+2,"Huetar Norte",201,"Ciudad Quesada",2100608,1,10,3,2,2,0
+2,"Huetar Norte",201,"Ciudad Quesada",2100609,1,5,3,1,1,0
+2,"Huetar Norte",201,"Ciudad Quesada",2100610,1,6,2,2,1,1
+2,"Huetar Norte",201,"Ciudad Quesada",2101107,1,5,4,3,1,2
+2,"Huetar Norte",201,"Ciudad Quesada",2101119,1,5,2,1,1,0
+2,"Huetar Norte",202,"La Fortuna",2100202,1,6,3,1,1,0
+2,"Huetar Norte",202,"La Fortuna",2100203,1,7,9,5,3,2
+2,"Huetar Norte",202,"La Fortuna",2100204,1,8,4,1,1,0
+2,"Huetar Norte",202,"La Fortuna",2100205,1,9,6,5,3,2
+2,"Huetar Norte",202,"La Fortuna",2100206,1,10,3,2,1,1
+2,"Huetar Norte",202,"La Fortuna",2100703,1,9,4,3,2,1
+2,"Huetar Norte",202,"La Fortuna",2100705,1,5,3,2,1,1
+2,"Huetar Norte",202,"La Fortuna",2100709,1,9,8,7,2,5
+2,"Huetar Norte",202,"La Fortuna",2100710,1,10,8,5,2,3
+2,"Huetar Norte",202,"La Fortuna",2100802,1,6,2,1,1,0
+2,"Huetar Norte",202,"La Fortuna",2100803,1,7,3,2,2,0
+2,"Huetar Norte",202,"La Fortuna",2100804,1,8,5,2,2,0
+2,"Huetar Norte",202,"La Fortuna",2100901,1,9,6,3,1,2
+2,"Huetar Norte",202,"La Fortuna",2100902,1,10,5,4,2,2
+2,"Huetar Norte",202,"La Fortuna",2101004,1,10,5,4,2,2
+2,"Huetar Norte",202,"La Fortuna",2101202,1,10,8,1,1,0
+2,"Huetar Norte",203,"Santa Rosa",2101111,1,9,8,6,2,4
+2,"Huetar Norte",203,"Santa Rosa",2101112,1,10,7,5,2,3
+2,"Huetar Norte",203,"Santa Rosa",2101114,1,6,4,2,2,0
+2,"Huetar Norte",203,"Santa Rosa",2101118,1,10,11,6,3,3
+2,"Huetar Norte",203,"Santa Rosa",2101120,1,6,2,2,1,1
+2,"Huetar Norte",203,"Santa Rosa",2101121,1,7,5,4,2,2
+2,"Huetar Norte",203,"Santa Rosa",2101302,1,8,5,3,1,2
+2,"Huetar Norte",203,"Santa Rosa",2101308,1,8,6,5,4,1
+2,"Huetar Norte",203,"Santa Rosa",2101309,1,9,6,2,2,0
+2,"Huetar Norte",203,"Santa Rosa",2101310,1,10,8,7,2,5
+2,"Huetar Norte",203,"Santa Rosa",2101311,1,5,3,2,0,2
+2,"Huetar Norte",203,"Santa Rosa",2101312,1,6,4,3,1,2
+2,"Huetar Norte",203,"Santa Rosa",2101313,1,7,2,1,1,0
+2,"Huetar Norte",203,"Santa Rosa",2140102,1,6,3,2,2,0
+2,"Huetar Norte",203,"Santa Rosa",2140104,1,8,6,2,2,0
+2,"Huetar Norte",203,"Santa Rosa",2140109,1,7,4,1,1,0
+2,"Huetar Norte",203,"Santa Rosa",2140113,1,5,5,4,2,2
+2,"Huetar Norte",203,"Santa Rosa",2140114,1,6,1,1,1,0
+2,"Huetar Norte",203,"Santa Rosa",2140115,1,7,9,5,3,2
+2,"Huetar Norte",203,"Santa Rosa",2140116,1,8,1,1,1,0
+2,"Huetar Norte",203,"Santa Rosa",2140117,1,9,4,1,1,0
+2,"Huetar Norte",203,"Santa Rosa",2140118,1,10,7,7,5,2
+2,"Huetar Norte",203,"Santa Rosa",2140203,1,5,4,2,0,2
+2,"Huetar Norte",203,"Santa Rosa",2140204,1,6,6,4,2,2
+2,"Huetar Norte",203,"Santa Rosa",2140205,1,7,5,1,1,0
+2,"Huetar Norte",203,"Santa Rosa",2140301,1,7,5,4,1,3
+2,"Huetar Norte",203,"Santa Rosa",2140302,1,8,7,3,2,1
+2,"Huetar Norte",203,"Santa Rosa",2140303,1,9,7,3,1,2
+2,"Huetar Norte",203,"Santa Rosa",2140304,1,10,3,1,1,0
+2,"Huetar Norte",203,"Santa Rosa",2140305,1,5,5,2,1,1
+2,"Huetar Norte",203,"Santa Rosa",2140401,1,5,4,3,1,2
+2,"Huetar Norte",203,"Santa Rosa",2140402,1,6,5,2,1,1
+2,"Huetar Norte",203,"Santa Rosa",2140403,1,7,4,3,2,1
+2,"Huetar Norte",203,"Santa Rosa",2140404,1,8,3,1,0,1
+2,"Huetar Norte",204,"San Rafael de Guatuso",2150103,1,5,2,2,1,1
+2,"Huetar Norte",204,"San Rafael de Guatuso",2150105,1,7,1,1,1,0
+2,"Huetar Norte",204,"San Rafael de Guatuso",2150204,1,10,8,6,3,3
+2,"Huetar Norte",204,"San Rafael de Guatuso",2150209,1,9,5,1,0,1
+2,"Huetar Norte",204,"San Rafael de Guatuso",2150302,1,6,3,1,1,0
+3,"Chorotega",301,"Liberia",2130203,1,7,4,2,2,0
+3,"Chorotega",301,"Liberia",5010104,1,10,5,3,1,2
+3,"Chorotega",301,"Liberia",5010105,1,5,7,5,3,2
+3,"Chorotega",301,"Liberia",5010123,1,5,4,2,2,0
+3,"Chorotega",301,"Liberia",5010202,1,6,3,1,1,0
+3,"Chorotega",301,"Liberia",5010302,1,10,7,4,3,1
+3,"Chorotega",301,"Liberia",5010402,1,8,6,3,1,2
+3,"Chorotega",301,"Liberia",5040103,1,9,10,6,3,3
+3,"Chorotega",301,"Liberia",5040202,1,6,3,1,1,0
+3,"Chorotega",301,"Liberia",5040302,1,10,7,2,2,0
+3,"Chorotega",301,"Liberia",5050104,1,8,3,1,1,0
+3,"Chorotega",301,"Liberia",5050201,0,0,0,0,0,0
+3,"Chorotega",301,"Liberia",5050303,1,9,7,3,1,2
+3,"Chorotega",301,"Liberia",5050304,0,0,0,0,0,0
+3,"Chorotega",301,"Liberia",5050305,1,5,1,1,1,0
+3,"Chorotega",301,"Liberia",5050401,1,5,4,1,0,1
+3,"Chorotega",301,"Liberia",5050403,1,7,4,1,0,1
+3,"Chorotega",301,"Liberia",5100202,1,6,3,1,1,0
+3,"Chorotega",301,"Liberia",5100301,0,0,0,0,0,0
+3,"Chorotega",301,"Liberia",5100401,1,7,2,2,2,0
+3,"Chorotega",302,"Santa Cruz",5030103,1,5,5,4,2,2
+3,"Chorotega",302,"Santa Cruz",5030104,1,6,1,1,1,0
+3,"Chorotega",302,"Santa Cruz",5030106,1,8,1,1,1,0
+3,"Chorotega",302,"Santa Cruz",5030107,1,9,5,4,1,3
+3,"Chorotega",302,"Santa Cruz",5030108,1,10,8,5,3,2
+3,"Chorotega",302,"Santa Cruz",5030202,1,8,5,4,2,2
+3,"Chorotega",302,"Santa Cruz",5030203,1,9,7,2,2,0
+3,"Chorotega",302,"Santa Cruz",5030306,1,10,6,1,1,0
+3,"Chorotega",302,"Santa Cruz",5030307,1,5,3,3,2,1
+3,"Chorotega",302,"Santa Cruz",5030311,1,9,6,3,1,2
+3,"Chorotega",302,"Santa Cruz",5030313,1,5,2,2,1,1
+3,"Chorotega",302,"Santa Cruz",5030315,1,7,2,2,2,0
+3,"Chorotega",302,"Santa Cruz",5030316,0,0,0,0,0,0
+3,"Chorotega",302,"Santa Cruz",5030401,1,9,6,4,1,3
+3,"Chorotega",302,"Santa Cruz",5030402,1,10,5,3,2,1
+3,"Chorotega",302,"Santa Cruz",5030404,1,6,5,4,2,2
+3,"Chorotega",302,"Santa Cruz",5030405,1,7,2,1,1,0
+3,"Chorotega",302,"Santa Cruz",5030502,1,8,4,2,1,1
+3,"Chorotega",302,"Santa Cruz",5030503,1,9,5,3,2,1
+3,"Chorotega",302,"Santa Cruz",5030603,1,7,4,1,1,0
+3,"Chorotega",302,"Santa Cruz",5030701,1,9,4,2,1,1
+3,"Chorotega",302,"Santa Cruz",5030702,0,0,0,0,0,0
+3,"Chorotega",302,"Santa Cruz",5030801,1,7,5,3,2,1
+3,"Chorotega",302,"Santa Cruz",5030901,1,5,5,2,0,2
+3,"Chorotega",302,"Santa Cruz",5030902,1,6,5,1,1,0
+3,"Chorotega",302,"Santa Cruz",5030903,1,7,3,3,1,2
+3,"Chorotega",302,"Santa Cruz",5030904,1,8,3,1,1,0
+3,"Chorotega",303,"Nicoya",5020108,1,6,6,1,1,0
+3,"Chorotega",303,"Nicoya",5020109,1,7,3,1,1,0
+3,"Chorotega",303,"Nicoya",5020112,1,10,7,1,1,0
+3,"Chorotega",303,"Nicoya",5020113,1,5,7,5,1,4
+3,"Chorotega",303,"Nicoya",5020114,1,6,2,1,1,0
+3,"Chorotega",303,"Nicoya",5020115,1,7,8,6,4,2
+3,"Chorotega",303,"Nicoya",5020125,1,5,4,4,2,2
+3,"Chorotega",303,"Nicoya",5020129,1,9,2,1,1,0
+3,"Chorotega",303,"Nicoya",5020202,0,0,0,0,0,0
+3,"Chorotega",303,"Nicoya",5020203,1,5,3,3,2,1
+3,"Chorotega",303,"Nicoya",5020204,1,6,4,2,2,0
+3,"Chorotega",303,"Nicoya",5020205,1,7,4,4,2,2
+3,"Chorotega",303,"Nicoya",5020301,1,7,4,3,2,1
+3,"Chorotega",303,"Nicoya",5020302,1,8,8,4,2,2
+3,"Chorotega",303,"Nicoya",5020303,1,9,6,5,3,2
+3,"Chorotega",303,"Nicoya",5020304,1,10,4,1,1,0
+3,"Chorotega",303,"Nicoya",5020305,0,0,0,0,0,0
+3,"Chorotega",303,"Nicoya",5020307,1,7,5,2,0,2
+3,"Chorotega",303,"Nicoya",5020308,0,0,0,0,0,0
+3,"Chorotega",303,"Nicoya",5020309,1,9,7,1,1,0
+3,"Chorotega",303,"Nicoya",5020402,0,0,0,0,0,0
+3,"Chorotega",303,"Nicoya",5020403,1,7,4,3,2,1
+3,"Chorotega",303,"Nicoya",5020404,1,8,1,1,1,0
+3,"Chorotega",303,"Nicoya",5020502,0,0,0,0,0,0
+3,"Chorotega",303,"Nicoya",5020602,1,8,3,1,1,0
+3,"Chorotega",304,"Nandayure",5090102,1,10,6,4,2,2
+3,"Chorotega",304,"Nandayure",5090201,1,7,7,5,2,3
+3,"Chorotega",304,"Nandayure",5090302,1,6,4,3,2,1
+3,"Chorotega",304,"Nandayure",5090402,1,10,5,3,2,1
+3,"Chorotega",304,"Nandayure",5090404,1,6,5,4,2,2
+3,"Chorotega",304,"Nandayure",5090506,0,0,0,0,0,0
+3,"Chorotega",304,"Nandayure",5090507,0,0,0,0,0,0
+3,"Chorotega",304,"Nandayure",5090603,1,7,4,1,1,0
+3,"Chorotega",304,"Nandayure",5090604,1,8,3,3,2,1
+3,"Chorotega",304,"Nandayure",5090605,1,9,6,5,4,1
+3,"Chorotega",304,"Nandayure",5110102,1,6,6,1,1,0
+3,"Chorotega",304,"Nandayure",5110105,1,9,5,1,1,0
+3,"Chorotega",304,"Nandayure",5110201,1,9,2,1,1,0
+3,"Chorotega",304,"Nandayure",5110401,1,5,2,1,0,1
+3,"Chorotega",305,"Cañas",2130104,1,10,4,2,0,2
+3,"Chorotega",305,"Cañas",2130105,1,5,7,4,1,3
+3,"Chorotega",305,"Cañas",2130302,1,10,7,5,4,1
+3,"Chorotega",305,"Cañas",2130402,1,8,4,2,1,1
+3,"Chorotega",305,"Cañas",2130503,1,7,6,3,2,1
+3,"Chorotega",305,"Cañas",5060106,1,8,8,3,2,1
+3,"Chorotega",305,"Cañas",5060401,1,9,7,5,3,2
+3,"Chorotega",305,"Cañas",5070104,1,10,10,5,2,3
+3,"Chorotega",305,"Cañas",5070401,1,7,3,1,1,0
+3,"Chorotega",305,"Cañas",5070402,1,8,3,2,2,0
+3,"Chorotega",305,"Cañas",5080103,1,7,1,1,1,0
+3,"Chorotega",305,"Cañas",5080202,1,10,9,4,3,1
+3,"Chorotega",305,"Cañas",5080303,1,9,7,3,2,1
+3,"Chorotega",305,"Cañas",5080501,1,9,7,2,2,0
+3,"Chorotega",305,"Cañas",5080602,1,8,5,2,2,0
+3,"Chorotega",305,"Cañas",5080703,1,7,6,2,2,0
+4,"Huetar Caribe",401,"Limón-Matina",7010108,1,10,4,1,1,0
+4,"Huetar Caribe",401,"Limón-Matina",7010109,1,5,4,2,0,2
+4,"Huetar Caribe",401,"Limón-Matina",7010110,1,6,7,4,1,3
+4,"Huetar Caribe",401,"Limón-Matina",7010201,1,7,5,1,1,0
+4,"Huetar Caribe",401,"Limón-Matina",7010202,1,8,6,6,3,3
+4,"Huetar Caribe",401,"Limón-Matina",7010203,1,9,5,1,1,0
+4,"Huetar Caribe",401,"Limón-Matina",7010204,1,10,7,4,2,2
+4,"Huetar Caribe",401,"Limón-Matina",7010205,1,5,3,2,2,0
+4,"Huetar Caribe",401,"Limón-Matina",7010301,1,5,2,1,1,0
+4,"Huetar Caribe",401,"Limón-Matina",7010401,1,9,7,5,2,3
+4,"Huetar Caribe",401,"Limón-Matina",7010402,1,10,5,3,2,1
+4,"Huetar Caribe",401,"Limón-Matina",7050102,1,8,6,4,2,2
+4,"Huetar Caribe",401,"Limón-Matina",7050103,1,9,9,7,3,4
+4,"Huetar Caribe",401,"Limón-Matina",7050104,0,0,0,0,0,0
+4,"Huetar Caribe",401,"Limón-Matina",7050108,1,8,2,1,1,0
+4,"Huetar Caribe",401,"Limón-Matina",7050203,1,7,6,6,4,2
+4,"Huetar Caribe",401,"Limón-Matina",7050205,1,9,7,7,3,4
+4,"Huetar Caribe",401,"Limón-Matina",7050206,1,10,4,1,1,0
+4,"Huetar Caribe",401,"Limón-Matina",7050207,1,5,5,2,1,1
+4,"Huetar Caribe",401,"Limón-Matina",7050303,1,5,2,1,1,0
+4,"Huetar Caribe",401,"Limón-Matina",7050305,1,7,5,2,1,1
+4,"Huetar Caribe",401,"Limón-Matina",7050306,0,0,0,0,0,0
+4,"Huetar Caribe",402,"Pococí 1",7020104,1,10,9,6,3,3
+4,"Huetar Caribe",402,"Pococí 1",7020106,1,6,6,3,2,1
+4,"Huetar Caribe",402,"Pococí 1",7020109,1,9,5,1,0,1
+4,"Huetar Caribe",402,"Pococí 1",7020202,1,6,7,4,0,4
+4,"Huetar Caribe",402,"Pococí 1",7020304,1,6,6,3,2,1
+4,"Huetar Caribe",402,"Pococí 1",7020403,1,9,6,2,1,1
+4,"Huetar Caribe",402,"Pococí 1",7020405,1,5,1,1,1,0
+4,"Huetar Caribe",402,"Pococí 1",7060103,1,7,10,5,2,3
+4,"Huetar Caribe",402,"Pococí 1",7060104,0,0,0,0,0,0
+4,"Huetar Caribe",402,"Pococí 1",7060107,1,5,2,1,1,0
+4,"Huetar Caribe",402,"Pococí 1",7060108,1,6,5,3,2,1
+4,"Huetar Caribe",402,"Pococí 1",7060302,1,8,6,5,2,3
+4,"Huetar Caribe",402,"Pococí 1",7060403,1,7,4,3,2,1
+4,"Huetar Caribe",402,"Pococí 1",7060406,1,10,9,3,2,1
+4,"Huetar Caribe",402,"Pococí 1",7060501,1,9,5,3,1,2
+4,"Huetar Caribe",403,"Siquirres",7030102,1,6,3,1,1,0
+4,"Huetar Caribe",403,"Siquirres",7030105,1,9,8,5,1,4
+4,"Huetar Caribe",403,"Siquirres",7030107,1,5,2,1,1,0
+4,"Huetar Caribe",403,"Siquirres",7030116,1,8,9,4,2,2
+4,"Huetar Caribe",403,"Siquirres",7030119,1,5,4,4,2,2
+4,"Huetar Caribe",403,"Siquirres",7030120,1,6,3,1,1,0
+4,"Huetar Caribe",403,"Siquirres",7030121,1,7,4,3,1,2
+4,"Huetar Caribe",403,"Siquirres",7030202,1,10,4,2,0,2
+4,"Huetar Caribe",403,"Siquirres",7030204,1,6,4,1,1,0
+4,"Huetar Caribe",403,"Siquirres",7030205,1,7,4,4,3,1
+4,"Huetar Caribe",403,"Siquirres",7030206,1,8,4,1,1,0
+4,"Huetar Caribe",403,"Siquirres",7030303,1,9,5,4,2,2
+4,"Huetar Caribe",403,"Siquirres",7030403,1,7,4,3,2,1
+4,"Huetar Caribe",403,"Siquirres",7030502,1,10,8,6,5,1
+4,"Huetar Caribe",403,"Siquirres",7030503,1,5,5,2,1,1
+4,"Huetar Caribe",403,"Siquirres",7030601,1,7,5,3,1,2
+4,"Huetar Caribe",403,"Siquirres",7030602,1,8,2,1,1,0
+4,"Huetar Caribe",403,"Siquirres",7030603,0,0,0,0,0,0
+4,"Huetar Caribe",404,"Pococí 2",7020305,1,7,2,2,2,0
+4,"Huetar Caribe",404,"Pococí 2",7020310,1,6,4,2,2,0
+4,"Huetar Caribe",404,"Pococí 2",7020314,1,10,2,1,1,0
+4,"Huetar Caribe",404,"Pococí 2",7020316,1,6,9,5,1,4
+4,"Huetar Caribe",404,"Pococí 2",7020317,1,7,3,1,1,0
+4,"Huetar Caribe",404,"Pococí 2",7020318,0,0,0,0,0,0
+4,"Huetar Caribe",404,"Pococí 2",7020408,1,8,3,2,0,2
+4,"Huetar Caribe",404,"Pococí 2",7020500,1,10,5,3,3,0
+4,"Huetar Caribe",404,"Pococí 2",7020503,1,7,4,3,2,1
+4,"Huetar Caribe",404,"Pococí 2",7020505,1,9,3,1,1,0
+4,"Huetar Caribe",404,"Pococí 2",7020506,1,10,6,4,2,2
+4,"Huetar Caribe",404,"Pococí 2",7020507,1,5,3,1,1,0
+4,"Huetar Caribe",404,"Pococí 2",7020512,1,10,7,5,3,2
+4,"Huetar Caribe",404,"Pococí 2",7020602,1,10,5,4,3,1
+4,"Huetar Caribe",404,"Pococí 2",7020604,1,6,4,1,1,0
+4,"Huetar Caribe",405,"Talamanca",7040103,1,5,1,1,1,0
+4,"Huetar Caribe",405,"Talamanca",7040105,1,7,4,1,1,0
+4,"Huetar Caribe",405,"Talamanca",7040113,0,0,0,0,0,0
+4,"Huetar Caribe",405,"Talamanca",7040116,1,6,2,1,1,0
+4,"Huetar Caribe",405,"Talamanca",7040117,1,7,6,2,1,1
+4,"Huetar Caribe",405,"Talamanca",7040202,1,8,7,5,2,3
+4,"Huetar Caribe",405,"Talamanca",7040205,1,5,3,1,1,0
+4,"Huetar Caribe",405,"Talamanca",7040206,1,6,5,3,1,2
+4,"Huetar Caribe",405,"Talamanca",7040207,1,7,9,5,2,3
+4,"Huetar Caribe",405,"Talamanca",7040304,1,8,2,2,2,0
+4,"Huetar Caribe",405,"Talamanca",7040305,1,9,8,3,1,2
+5,"Brunca",501,"Pérez Zeledón 1",1190108,1,10,5,4,3,1
+5,"Brunca",501,"Pérez Zeledón 1",1190129,1,7,7,4,3,1
+5,"Brunca",501,"Pérez Zeledón 1",1190130,1,8,7,5,2,3
+5,"Brunca",501,"Pérez Zeledón 1",1190131,1,9,5,4,0,4
+5,"Brunca",501,"Pérez Zeledón 1",1190132,1,10,10,7,3,4
+5,"Brunca",501,"Pérez Zeledón 1",1190202,1,8,6,4,2,2
+5,"Brunca",501,"Pérez Zeledón 1",1190303,1,7,3,2,0,2
+5,"Brunca",501,"Pérez Zeledón 1",1190308,1,6,4,1,1,0
+5,"Brunca",501,"Pérez Zeledón 1",1190309,1,7,4,3,2,1
+5,"Brunca",501,"Pérez Zeledón 1",1190403,1,5,2,1,1,0
+5,"Brunca",501,"Pérez Zeledón 1",1190404,0,0,0,0,0,0
+5,"Brunca",501,"Pérez Zeledón 1",1190405,1,7,3,1,1,0
+5,"Brunca",501,"Pérez Zeledón 1",1190406,1,8,3,2,2,0
+5,"Brunca",501,"Pérez Zeledón 1",1190407,1,9,6,4,3,1
+5,"Brunca",501,"Pérez Zeledón 1",1190902,1,6,6,2,0,2
+5,"Brunca",501,"Pérez Zeledón 1",1191001,1,9,7,4,2,2
+5,"Brunca",501,"Pérez Zeledón 1",1191002,1,10,6,4,2,2
+5,"Brunca",501,"Pérez Zeledón 1",1191003,1,5,4,2,2,0
+5,"Brunca",501,"Pérez Zeledón 1",1191101,1,7,7,5,2,3
+5,"Brunca",501,"Pérez Zeledón 1",1191102,0,0,0,0,0,0
+5,"Brunca",501,"Pérez Zeledón 1",1191103,1,9,8,4,2,2
+5,"Brunca",502,"Buenos Aires",6030101,1,7,6,4,3,1
+5,"Brunca",502,"Buenos Aires",6030103,1,9,11,6,4,2
+5,"Brunca",502,"Buenos Aires",6030104,1,10,5,1,1,0
+5,"Brunca",502,"Buenos Aires",6030111,1,5,3,1,1,0
+5,"Brunca",502,"Buenos Aires",6030115,1,9,5,3,1,2
+5,"Brunca",502,"Buenos Aires",6030202,1,6,2,1,1,0
+5,"Brunca",502,"Buenos Aires",6030204,1,8,4,2,1,1
+5,"Brunca",502,"Buenos Aires",6030307,1,9,4,1,1,0
+5,"Brunca",502,"Buenos Aires",6030404,1,10,5,1,1,0
+5,"Brunca",502,"Buenos Aires",6030701,1,7,5,3,2,1
+5,"Brunca",502,"Buenos Aires",6030901,1,9,8,4,1,3
+5,"Brunca",503,"Osa-Palmar Norte",6050103,1,5,4,1,1,0
+5,"Brunca",503,"Osa-Palmar Norte",6050108,1,10,4,1,1,0
+5,"Brunca",503,"Osa-Palmar Norte",6050204,1,10,6,5,3,2
+5,"Brunca",503,"Osa-Palmar Norte",6050208,1,8,6,1,1,0
+5,"Brunca",503,"Osa-Palmar Norte",6050302,1,6,4,1,1,0
+5,"Brunca",504,"San Vito",6080107,1,9,8,5,3,2
+5,"Brunca",504,"San Vito",6080111,1,7,3,2,1,1
+5,"Brunca",504,"San Vito",6080118,1,8,2,2,1,1
+5,"Brunca",504,"San Vito",6080119,1,9,7,3,2,1
+5,"Brunca",504,"San Vito",6080203,1,9,3,1,1,0
+5,"Brunca",504,"San Vito",6080204,1,10,6,5,3,2
+5,"Brunca",504,"San Vito",6080208,1,8,6,1,1,0
+5,"Brunca",504,"San Vito",6080209,1,9,7,7,2,5
+5,"Brunca",504,"San Vito",6080302,1,6,4,2,2,0
+5,"Brunca",504,"San Vito",6080303,1,7,7,5,1,4
+5,"Brunca",504,"San Vito",6080305,1,9,8,8,5,3
+5,"Brunca",504,"San Vito",6080404,1,6,4,1,1,0
+5,"Brunca",504,"San Vito",6080405,1,7,5,5,4,1
+5,"Brunca",505,"Golfito-Corredores",6070103,1,7,4,1,1,0
+5,"Brunca",505,"Golfito-Corredores",6070204,1,6,2,2,1,1
+5,"Brunca",505,"Golfito-Corredores",6070208,1,10,7,1,1,0
+5,"Brunca",505,"Golfito-Corredores",6070303,1,9,7,5,1,4
+5,"Brunca",505,"Golfito-Corredores",6100103,1,7,7,5,2,3
+5,"Brunca",505,"Golfito-Corredores",6100204,1,6,4,2,2,0
+5,"Brunca",505,"Golfito-Corredores",6100302,1,8,6,5,3,2
+5,"Brunca",505,"Golfito-Corredores",6100401,1,5,2,1,0,1
+5,"Brunca",506,"Pérez Zeledón 2",1190204,1,10,7,4,3,1
+5,"Brunca",506,"Pérez Zeledón 2",1190301,1,5,3,2,2,0
+5,"Brunca",506,"Pérez Zeledón 2",1190304,1,8,9,7,4,3
+5,"Brunca",506,"Pérez Zeledón 2",1190305,1,9,4,1,1,0
+5,"Brunca",506,"Pérez Zeledón 2",1190310,1,8,4,2,2,0
+5,"Brunca",506,"Pérez Zeledón 2",1190311,1,9,7,4,3,1
+5,"Brunca",506,"Pérez Zeledón 2",1190312,1,10,5,3,3,0
+5,"Brunca",506,"Pérez Zeledón 2",1190502,1,8,4,3,2,1
+5,"Brunca",506,"Pérez Zeledón 2",1190503,0,0,0,0,0,0
+5,"Brunca",506,"Pérez Zeledón 2",1190602,1,6,4,4,2,2
+5,"Brunca",506,"Pérez Zeledón 2",1190702,1,10,6,3,2,1
+5,"Brunca",506,"Pérez Zeledón 2",1190704,1,6,3,1,1,0
+5,"Brunca",506,"Pérez Zeledón 2",1190705,1,7,5,1,1,0
+5,"Brunca",506,"Pérez Zeledón 2",1190802,1,8,6,3,2,1
+5,"Brunca",506,"Pérez Zeledón 2",1190803,1,9,5,3,2,1
+5,"Brunca",506,"Pérez Zeledón 2",1190805,1,5,5,3,1,2
+5,"Brunca",506,"Pérez Zeledón 2",1190806,1,6,4,1,1,0
+5,"Brunca",506,"Pérez Zeledón 2",1190807,1,7,2,1,1,0
+5,"Brunca",506,"Pérez Zeledón 2",1190808,1,8,7,4,1,3
+5,"Brunca",506,"Pérez Zeledón 2",6030501,1,5,3,2,1,1
+6,"Central Norte",601,"Heredia",4010105,1,7,5,3,1,2
+6,"Central Norte",601,"Heredia",4010106,1,8,9,8,5,3
+6,"Central Norte",601,"Heredia",4010109,1,5,4,4,3,1
+6,"Central Norte",601,"Heredia",4010125,1,9,4,1,1,0
+6,"Central Norte",601,"Heredia",4010201,1,7,5,3,2,1
+6,"Central Norte",601,"Heredia",4010302,1,6,6,2,0,2
+6,"Central Norte",601,"Heredia",4010402,1,10,5,3,2,1
+6,"Central Norte",601,"Heredia",4010404,1,6,7,4,2,2
+6,"Central Norte",601,"Heredia",4010408,1,10,4,1,1,0
+6,"Central Norte",601,"Heredia",4030103,1,7,3,1,1,0
+6,"Central Norte",601,"Heredia",4030301,1,7,4,3,1,2
+6,"Central Norte",601,"Heredia",4030501,1,9,6,5,4,1
+6,"Central Norte",601,"Heredia",4030601,1,7,4,1,1,0
+6,"Central Norte",601,"Heredia",4050201,1,5,3,1,1,0
+6,"Central Norte",602,"Flores",4010501,0,0,0,0,0,0
+6,"Central Norte",602,"Flores",4020102,1,8,7,4,0,4
+6,"Central Norte",602,"Flores",4020201,1,5,3,1,1,0
+6,"Central Norte",602,"Flores",4020601,1,9,7,5,2,3
+6,"Central Norte",602,"Flores",4040103,1,5,6,3,2,1
+6,"Central Norte",602,"Flores",4040201,1,7,4,3,1,2
+6,"Central Norte",602,"Flores",4040401,1,9,5,2,1,1
+6,"Central Norte",602,"Flores",4040502,1,8,6,1,1,0
+6,"Central Norte",602,"Flores",4050103,1,9,4,1,1,0
+6,"Central Norte",602,"Flores",4060102,1,6,5,3,1,2
+6,"Central Norte",602,"Flores",4060401,1,5,2,1,0,1
+6,"Central Norte",602,"Flores",4070102,1,10,8,5,3,2
+6,"Central Norte",602,"Flores",4070201,1,7,4,3,2,1
+6,"Central Norte",602,"Flores",4080102,1,8,4,2,0,2
+6,"Central Norte",602,"Flores",4090102,1,6,2,2,1,1
+6,"Central Norte",603,"Alajuela",2010105,1,5,7,4,0,4
+6,"Central Norte",603,"Alajuela",2010106,1,6,6,5,3,2
+6,"Central Norte",603,"Alajuela",2010201,1,5,3,2,2,0
+6,"Central Norte",603,"Alajuela",2010302,1,10,7,4,2,2
+6,"Central Norte",603,"Alajuela",2010304,1,6,2,1,1,0
+6,"Central Norte",603,"Alajuela",2010401,1,7,3,2,1,1
+6,"Central Norte",603,"Alajuela",2010402,1,8,6,4,1,3
+6,"Central Norte",603,"Alajuela",2010501,1,5,4,3,2,1
+6,"Central Norte",603,"Alajuela",2010602,1,10,4,2,2,0
+6,"Central Norte",603,"Alajuela",2010603,1,5,6,4,2,2
+6,"Central Norte",603,"Alajuela",2010604,1,6,2,1,1,0
+6,"Central Norte",603,"Alajuela",2010703,1,9,6,2,1,1
+6,"Central Norte",603,"Alajuela",2010801,1,5,4,3,1,2
+6,"Central Norte",603,"Alajuela",2010901,1,9,5,3,2,1
+6,"Central Norte",603,"Alajuela",2010902,1,10,9,4,2,2
+6,"Central Norte",604,"Grecia",2010202,1,6,2,2,0,2
+6,"Central Norte",604,"Grecia",2010605,1,7,3,1,1,0
+6,"Central Norte",604,"Grecia",2010704,0,0,0,0,0,0
+6,"Central Norte",604,"Grecia",2011102,1,6,3,2,2,0
+6,"Central Norte",604,"Grecia",2011301,1,7,4,3,2,1
+6,"Central Norte",604,"Grecia",2030106,1,8,2,1,1,0
+6,"Central Norte",604,"Grecia",2030201,1,7,5,4,3,1
+6,"Central Norte",604,"Grecia",2030502,1,8,4,3,1,2
+6,"Central Norte",604,"Grecia",2030701,1,9,7,6,5,1
+6,"Central Norte",604,"Grecia",2030801,1,7,6,4,1,3
+6,"Central Norte",604,"Grecia",2050103,1,7,4,1,1,0
+6,"Central Norte",604,"Grecia",2050201,0,0,0,0,0,0
+6,"Central Norte",604,"Grecia",2050401,0,0,0,0,0,0
+6,"Central Norte",604,"Grecia",2050403,0,0,0,0,0,0
+6,"Central Norte",604,"Grecia",2050701,1,5,3,2,1,1
+6,"Central Norte",604,"Grecia",2080103,1,7,7,5,2,3
+6,"Central Norte",604,"Grecia",2080301,1,7,7,3,1,2
+6,"Central Norte",604,"Grecia",2080401,1,5,2,1,0,1
+6,"Central Norte",605,"Sarapiquí",2011402,1,6,5,3,1,2
+6,"Central Norte",605,"Sarapiquí",2011403,1,7,2,1,1,0
+6,"Central Norte",605,"Sarapiquí",4100110,1,6,5,4,3,1
+6,"Central Norte",605,"Sarapiquí",4100202,1,8,5,4,2,2
+6,"Central Norte",605,"Sarapiquí",4100304,1,8,4,4,0,4
+6,"Central Norte",605,"Sarapiquí",4100306,1,10,4,3,3,0
+6,"Central Norte",605,"Sarapiquí",4100314,1,6,7,6,3,3
+7,"Pacífico Central",701,"Puntarenas",6010107,1,5,4,2,1,1
+7,"Pacífico Central",701,"Puntarenas",6010202,1,10,5,2,2,0
+7,"Pacífico Central",701,"Puntarenas",6010203,1,5,3,3,1,2
+7,"Pacífico Central",701,"Puntarenas",6010302,1,8,6,5,3,2
+7,"Pacífico Central",701,"Puntarenas",6010603,1,9,3,1,1,0
+7,"Pacífico Central",701,"Puntarenas",6010605,1,5,1,1,1,0
+7,"Pacífico Central",701,"Puntarenas",6010609,1,9,10,4,3,1
+7,"Pacífico Central",701,"Puntarenas",6010801,1,9,6,4,1,3
+7,"Pacífico Central",701,"Puntarenas",6010803,1,5,5,3,1,2
+7,"Pacífico Central",701,"Puntarenas",6010902,0,0,0,0,0,0
+7,"Pacífico Central",701,"Puntarenas",6011203,1,9,5,1,1,0
+7,"Pacífico Central",701,"Puntarenas",6011208,1,8,2,1,1,0
+7,"Pacífico Central",701,"Puntarenas",6011301,1,5,4,2,1,1
+7,"Pacífico Central",701,"Puntarenas",6011501,1,7,4,2,0,2
+7,"Pacífico Central",701,"Puntarenas",6011502,1,8,6,3,1,2
+7,"Pacífico Central",701,"Puntarenas",6020103,1,5,7,5,2,3
+7,"Pacífico Central",701,"Puntarenas",6020110,1,6,6,3,1,2
+7,"Pacífico Central",701,"Puntarenas",6040103,1,7,4,1,1,0
+7,"Pacífico Central",701,"Puntarenas",6040301,1,7,6,2,0,2
+7,"Pacífico Central",702,"Orotina",2040102,1,8,7,7,3,4
+7,"Pacífico Central",702,"Orotina",2040301,1,9,8,6,2,4
+7,"Pacífico Central",702,"Orotina",2090103,1,5,3,1,1,0
+7,"Pacífico Central",702,"Orotina",2090201,1,7,5,3,2,1
+7,"Pacífico Central",702,"Orotina",2090401,1,9,4,2,2,0
+7,"Pacífico Central",702,"Orotina",6060104,1,10,9,5,2,3
+7,"Pacífico Central",702,"Orotina",6060105,1,5,2,1,1,0
+7,"Pacífico Central",702,"Orotina",6060202,1,6,6,1,1,0
+7,"Pacífico Central",702,"Orotina",6060203,1,7,1,1,1,0
+7,"Pacífico Central",702,"Orotina",6060304,1,6,4,2,0,2
+7,"Pacífico Central",702,"Orotina",6090104,0,0,0,0,0,0
+7,"Pacífico Central",702,"Orotina",6090108,1,8,5,4,2,2
+7,"Pacífico Central",702,"Orotina",6110104,1,6,1,1,1,0
+7,"Pacífico Central",702,"Orotina",6110201,1,7,7,5,2,3
+7,"Pacífico Central",702,"Orotina",6110202,1,8,5,4,2,2
+7,"Pacífico Central",703,"Jicaral",6010405,1,9,5,2,1,1
+7,"Pacífico Central",703,"Jicaral",6010406,1,10,3,3,1,2
+7,"Pacífico Central",703,"Jicaral",6010408,1,6,4,1,1,0
+7,"Pacífico Central",703,"Jicaral",6010409,1,7,8,7,2,5
+7,"Pacífico Central",703,"Jicaral",6010410,1,8,6,1,1,0
+7,"Pacífico Central",703,"Jicaral",6010411,1,9,6,4,2,2
+7,"Pacífico Central",703,"Jicaral",6010503,1,5,4,1,1,0
+7,"Pacífico Central",703,"Jicaral",6010505,1,7,2,2,1,1
+7,"Pacífico Central",703,"Jicaral",6011103,1,5,4,1,1,0
+8,"Central Occidente",801,"San Ramón",2020104,1,8,6,3,2,1
+8,"Central Occidente",801,"San Ramón",2020111,1,9,6,4,2,2
+8,"Central Occidente",801,"San Ramón",2020112,1,10,6,4,0,4
+8,"Central Occidente",801,"San Ramón",2020302,1,8,4,3,1,2
+8,"Central Occidente",801,"San Ramón",2020502,1,10,4,3,2,1
+8,"Central Occidente",801,"San Ramón",2020608,1,8,2,2,2,0
+8,"Central Occidente",801,"San Ramón",2020803,1,5,4,2,2,0
+8,"Central Occidente",801,"San Ramón",2020903,1,9,6,4,3,1
+8,"Central Occidente",801,"San Ramón",2021302,1,6,5,3,2,1
+8,"Central Occidente",801,"San Ramón",2021304,1,8,4,4,0,4
+8,"Central Occidente",801,"San Ramón",2021305,1,9,8,4,3,1
+8,"Central Occidente",801,"San Ramón",2021306,1,10,4,3,3,0
+8,"Central Occidente",802,"Naranjo",2060103,1,5,5,4,3,1
+8,"Central Occidente",802,"Naranjo",2060104,1,6,4,1,1,0
+8,"Central Occidente",802,"Naranjo",2060107,1,9,2,1,1,0
+8,"Central Occidente",802,"Naranjo",2060116,1,6,7,6,1,5
+8,"Central Occidente",802,"Naranjo",2060117,1,7,2,2,2,0
+8,"Central Occidente",802,"Naranjo",2060301,1,5,2,1,1,0
+8,"Central Occidente",802,"Naranjo",2060701,1,9,6,3,2,1
+8,"Central Occidente",802,"Naranjo",2110103,1,7,3,1,1,0
+8,"Central Occidente",802,"Naranjo",2110201,1,9,5,4,2,2
+8,"Central Occidente",802,"Naranjo",2110302,1,8,4,3,2,1
+8,"Central Occidente",802,"Naranjo",2110501,1,9,6,4,2,2
+8,"Central Occidente",802,"Naranjo",2110701,1,5,2,1,1,0
+8,"Central Occidente",803,"Palmares",2070203,1,7,6,6,4,2
+8,"Central Occidente",803,"Palmares",2070302,1,10,8,5,2,3
+8,"Central Occidente",803,"Palmares",2070602,1,10,8,5,3,2
+8,"Central Occidente",803,"Palmares",2070702,1,8,4,4,3,1
+8,"Central Occidente",803,"Palmares",2120103,1,5,3,1,1,0
+8,"Central Occidente",803,"Palmares",2120104,0,0,0,0,0,0
+8,"Central Occidente",803,"Palmares",2120109,1,5,4,2,0,2
+8,"Central Occidente",803,"Palmares",2120201,1,7,5,1,1,0
+8,"Central Occidente",803,"Palmares",2120402,1,10,7,7,5,2
+9,"Central Este",901,"Tejar del Guarco",1030803,1,5,4,2,0,2
+9,"Central Este",901,"Tejar del Guarco",1030804,1,6,5,3,2,1
+9,"Central Este",901,"Tejar del Guarco",1030807,1,9,7,4,1,3
+9,"Central Este",901,"Tejar del Guarco",1050103,1,9,1,1,1,0
+9,"Central Este",901,"Tejar del Guarco",1050202,1,6,7,4,3,1
+9,"Central Este",901,"Tejar del Guarco",1050302,1,10,8,7,2,5
+9,"Central Este",901,"Tejar del Guarco",1050303,1,5,4,1,1,0
+9,"Central Este",901,"Tejar del Guarco",1170103,1,9,12,6,3,3
+9,"Central Este",901,"Tejar del Guarco",1170302,1,10,4,3,3,0
+9,"Central Este",901,"Tejar del Guarco",1200102,1,8,6,4,3,1
+9,"Central Este",901,"Tejar del Guarco",1200202,1,6,5,5,2,3
+9,"Central Este",901,"Tejar del Guarco",1200302,1,10,7,5,4,1
+9,"Central Este",901,"Tejar del Guarco",1200401,1,7,5,4,3,1
+9,"Central Este",901,"Tejar del Guarco",1200501,1,5,4,2,1,1
+9,"Central Este",901,"Tejar del Guarco",1200601,1,9,7,2,1,1
+9,"Central Este",901,"Tejar del Guarco",3080102,1,10,6,4,2,2
+9,"Central Este",901,"Tejar del Guarco",3080204,1,10,6,2,2,0
+9,"Central Este",901,"Tejar del Guarco",3080206,1,6,2,1,1,0
+9,"Central Este",901,"Tejar del Guarco",3080207,1,7,6,2,1,1
+9,"Central Este",901,"Tejar del Guarco",3080301,1,5,5,2,0,2
+9,"Central Este",902,"Cartago",3010301,1,7,5,3,2,1
+9,"Central Este",902,"Cartago",3010401,1,5,2,1,0,1
+9,"Central Este",902,"Cartago",3010402,1,6,4,3,2,1
+9,"Central Este",902,"Cartago",3010501,1,9,7,5,3,2
+9,"Central Este",902,"Cartago",3010503,1,5,2,1,1,0
+9,"Central Este",902,"Cartago",3010601,1,7,3,1,0,1
+9,"Central Este",902,"Cartago",3010701,1,5,3,2,1,1
+9,"Central Este",902,"Cartago",3010704,1,8,2,1,1,0
+9,"Central Este",902,"Cartago",3010705,1,9,10,8,4,4
+9,"Central Este",902,"Cartago",3010706,1,10,10,6,5,1
+9,"Central Este",902,"Cartago",3010709,1,7,4,2,1,1
+9,"Central Este",902,"Cartago",3010710,1,8,6,3,2,1
+9,"Central Este",902,"Cartago",3010714,1,6,1,1,0,1
+9,"Central Este",902,"Cartago",3010901,1,7,2,1,1,0
+9,"Central Este",902,"Cartago",3010903,1,9,8,6,3,3
+9,"Central Este",902,"Cartago",3011001,1,5,4,3,1,2
+9,"Central Este",902,"Cartago",3011101,1,9,7,5,1,4
+9,"Central Este",902,"Cartago",3030104,1,10,4,3,1,2
+9,"Central Este",902,"Cartago",3030401,1,7,4,2,1,1
+9,"Central Este",903,"Oreamuno",3010801,1,9,4,1,1,0
+9,"Central Este",903,"Oreamuno",3020104,1,6,4,1,1,0
+9,"Central Este",903,"Oreamuno",3020112,1,8,6,6,3,3
+9,"Central Este",903,"Oreamuno",3020113,1,9,5,1,1,0
+9,"Central Este",903,"Oreamuno",3020201,1,7,6,3,1,2
+9,"Central Este",903,"Oreamuno",3020302,1,6,4,3,2,1
+9,"Central Este",903,"Oreamuno",3020303,1,7,7,5,2,3
+9,"Central Este",903,"Oreamuno",3020304,1,8,4,3,2,1
+9,"Central Este",903,"Oreamuno",3020305,1,9,8,8,5,3
+9,"Central Este",903,"Oreamuno",3020402,1,10,7,5,3,2
+9,"Central Este",903,"Oreamuno",3040104,1,8,3,2,1,1
+9,"Central Este",903,"Oreamuno",3040105,1,9,10,5,3,2
+9,"Central Este",903,"Oreamuno",3040107,1,5,2,1,1,0
+9,"Central Este",903,"Oreamuno",3040109,1,7,1,1,1,0
+9,"Central Este",903,"Oreamuno",3060102,1,8,7,3,1,2
+9,"Central Este",903,"Oreamuno",3060201,1,5,3,1,1,0
+9,"Central Este",903,"Oreamuno",3060301,1,9,6,3,2,1
+9,"Central Este",903,"Oreamuno",3070102,1,6,1,1,1,0
+9,"Central Este",903,"Oreamuno",3070202,1,10,4,2,1,1
+9,"Central Este",903,"Oreamuno",3070401,1,5,3,1,0,1
+9,"Central Este",904,"Turrialba",3040203,1,5,7,5,2,3
+9,"Central Este",904,"Turrialba",3040204,1,6,2,1,1,0
+9,"Central Este",904,"Turrialba",3040303,1,9,7,3,1,2
+9,"Central Este",904,"Turrialba",3050103,1,5,4,2,0,2
+9,"Central Este",904,"Turrialba",3050105,1,7,5,1,1,0
+9,"Central Este",904,"Turrialba",3050118,1,8,6,6,5,1
+9,"Central Este",904,"Turrialba",3050124,1,8,6,2,2,0
+9,"Central Este",904,"Turrialba",3050125,1,9,7,7,3,4
+9,"Central Este",904,"Turrialba",3050203,1,9,8,8,5,3
+9,"Central Este",904,"Turrialba",3050305,1,9,5,2,1,1
+9,"Central Este",904,"Turrialba",3050402,1,10,5,4,2,2
+9,"Central Este",904,"Turrialba",3050504,1,10,8,5,3,2
+9,"Central Este",904,"Turrialba",3050506,1,6,1,1,1,0
+9,"Central Este",904,"Turrialba",3050507,1,7,8,4,2,2
+9,"Central Este",904,"Turrialba",3050602,1,6,7,5,3,2
+9,"Central Este",904,"Turrialba",3050603,1,7,3,3,2,1
+9,"Central Este",904,"Turrialba",3050701,1,9,7,5,2,3
+9,"Central Este",904,"Turrialba",3050802,1,8,4,3,2,1
+9,"Central Este",904,"Turrialba",3050810,1,10,3,2,2,0
+9,"Central Este",904,"Turrialba",3050902,1,6,5,3,1,2
+9,"Central Este",904,"Turrialba",3050903,1,7,3,2,0,2
+9,"Central Este",904,"Turrialba",3051001,1,9,5,3,2,1
+9,"Central Este",904,"Turrialba",3051101,1,7,4,3,3,0
+9,"Central Este",904,"Turrialba",3051102,1,8,6,6,4,2
+9,"Central Este",904,"Turrialba",3051201,1,5,3,1,1,0
+9,"Central Este",904,"Turrialba",3051202,1,6,5,5,2,3
+9,"Central Este",904,"Turrialba",3051203,1,7,3,1,1,0
+9,"Central Este",904,"Turrialba",7030301,1,7,6,2,1,1

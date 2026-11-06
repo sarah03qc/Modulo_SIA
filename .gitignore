@@ -9,6 +9,8 @@
 
 # Salidas locales; no excluir fuentes institucionales por extensión
 node_modules/
+dist/
+.local/
 __pycache__/
 *.pyc
 coverage/

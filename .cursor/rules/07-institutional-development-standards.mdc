@@ -1,0 +1,55 @@
+---
+description: Aplicar al planificar, diseñar, implementar, validar y documentar incrementos funcionales de SIA-CENCINAI conforme a los lineamientos institucionales adaptados.
+alwaysApply: false
+---
+
+# Lineamientos institucionales de desarrollo — SIA-CENCINAI
+
+## Fuente y autoridad
+
+- Consultar `docs/institutional/DEVELOPMENT_GUIDELINES_DNCC_DI_MET_02.md` cuando corresponda.
+- Es una guía interna derivada de la metodología `DNCC-DI-MET-02`, no una reproducción íntegra de la norma oficial.
+- Respetar la jerarquía de fuentes de `AGENTS.md`: fuente institucional confirmada → especificación funcional vigente → decisiones técnicas aprobadas → implementación → inferencias.
+- La guía contiene referencias históricas: no convertirlas automáticamente en nuevos requisitos ni usarlas para revertir decisiones posteriores confirmadas en la especificación v0.7.
+- Reutilizar las reglas existentes `00-governance`, `01-traceability`, `02-security-privacy` y `04-quality-gates`; esta regla las complementa, no las reemplaza.
+
+## Proceso incremental
+
+Cada incremento debe conectar, en la medida aplicable:
+
+1. Fuente y requerimiento (HU, RF, CU, RN y RNF).
+2. Alcance, actores, ámbito institucional y criterios de aceptación.
+3. Diseño y contratos afectados.
+4. Implementación delimitada.
+5. Pruebas de flujo principal, alternos, excepciones y permisos.
+6. Validación humana/institucional cuando corresponda.
+7. Registro de cambios y documentación actualizada.
+
+Seguir las fases de planificación, requerimientos, diseño, desarrollo, integración/pruebas, implementación y mantenimiento de manera incremental, sin imponer entregables ceremoniales irrelevantes a cada cambio.
+
+## Diseño y documentación
+
+- Mantener modelos conceptuales, lógicos, físicos, diagramas y diccionario de datos consistentes cuando el cambio los afecte.
+- Mantener trazabilidad hasta las pruebas y evidenciar los `NEEDS_VALIDATION` abiertos.
+- Documentar interfaces, operaciones, dependencias, seguridad y procedimientos necesarios para mantenimiento.
+- Conservar una distinción clara entre datos institucionales, snapshots históricos, datos propios de SIA y datos derivados.
+- La documentación útil prevalece sobre duplicar información en múltiples archivos.
+
+## Seguridad y calidad
+
+- Diseñar para confidencialidad, integridad, disponibilidad, acceso multiusuario, auditoría y privilegios por función y ámbito.
+- La sesión/autenticación pertenece al sistema institucional; el detalle de su integración sigue pendiente. No crear un mecanismo paralelo como solución definitiva.
+- Los permisos se aplican en backend y acceso a datos, no solo ocultando controles de la interfaz.
+- Usar únicamente datos sintéticos en desarrollo y pruebas. No exponer secretos ni datos sensibles en logs, fixtures o documentación.
+- Aplicar pruebas funcionales, negativas, de datos, integración y de accesibilidad según el cambio.
+- No declarar cumplimiento o ejecución de pruebas sin evidencia.
+
+## Criterios de cierre
+
+Un incremento solo puede considerarse completado cuando sus requisitos y criterios pertinentes están implementados, las pruebas aplicables han pasado, hay trazabilidad, se registraron las limitaciones y la documentación relevante está actualizada. La aceptación funcional por personas responsables no se presume a partir de un resultado técnico.
+
+## Límites
+
+- No inventar aprobaciones de UTIC, reglas institucionales, catálogos, perfiles ni contratos de integración.
+- No reabrir el diseño de datos consolidado por aplicar retrospectivamente convenciones documentales. Las diferencias se registran y se evalúan mediante un cambio controlado.
+- No exigir integración institucional productiva durante el desarrollo local cuando está identificada como etapa futura.

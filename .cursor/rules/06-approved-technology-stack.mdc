@@ -1,0 +1,44 @@
+---
+description: Stack tecnológico seleccionado de SIA-CENCINAI; aplicar en decisiones de arquitectura, dependencias y desarrollo frontend/backend.
+alwaysApply: true
+---
+
+# Stack tecnológico de SIA-CENCINAI
+
+## Fuente y estado
+
+- Fuente principal: `docs/architecture/TECHNOLOGY_STACK.md`.
+- El equipo del proyecto seleccionó este stack para construir SIA-CENCINAI. No tratarlo como una propuesta pendiente de elección ni atribuirle una aprobación formal de UTIC que no esté documentada.
+- Ante incompatibilidades técnicas verificables, registrar el problema y solicitar una decisión explícita; no sustituir el stack silenciosamente.
+
+## Tecnologías seleccionadas
+
+| Componente | Tecnología |
+| --- | --- |
+| Frontend web | React con JavaScript |
+| Backend | Node.js con Express y JavaScript |
+| Base de datos propia | Microsoft SQL Server (`SIA_CENCINAI`) |
+| Fuente institucional simulada | Microsoft SQL Server (`SIDINACC_LOCAL`), acceso de solo lectura |
+| Contenedores | Docker |
+| Pruebas JavaScript | Jest |
+| Control de versiones | Git y GitHub |
+| IDE documentado | Visual Studio Code; Cursor puede utilizarse como entorno de desarrollo |
+| Autenticación | Integración futura con la sesión institucional de SIDINACC; mecanismo exacto pendiente de UTIC |
+
+## Límites obligatorios
+
+- No sustituir React por Next.js, Angular, Vue u otro framework; ni Express por NestJS u otro backend, sin autorización explícita.
+- No introducir TypeScript, ORMs, servicios externos, colas, nuevas bases de datos, frameworks de UI ni herramientas mayores como decisiones tácitas. Evaluar primero necesidad y autorización.
+- Las dependencias auxiliares imprescindibles sí pueden proponerse: justificar función, compatibilidad, mantenimiento, licencia, superficie de seguridad y alternativas más simples. Mantener dependencias mínimas, versiones controladas y lockfiles.
+- SQL Server es una decisión del proyecto; no proponer otro motor por defecto.
+- La capa de persistencia SIA tiene escritura controlada; el adaptador SIDINACC es de solo lectura y no modifica la réplica.
+- No implementar credenciales o usuarios institucionales paralelos por falta del mecanismo definitivo de sesión. Mantener el contrato de autenticación desacoplado y `NEEDS_VALIDATION` donde corresponda.
+- No instalar, configurar o ejecutar componentes fuera del alcance solicitado.
+
+## Al iniciar tareas técnicas
+
+1. Consultar `TECHNOLOGY_STACK.md` y la arquitectura vigente.
+2. Comprobar las dependencias y versiones ya existentes antes de agregar paquetes.
+3. Mantener la separación frontend, backend, reglas de negocio, adaptador institucional y persistencia propia.
+4. Documentar toda dependencia importante no prevista como decisión técnica y registrar si requiere aprobación.
+5. No modificar SQL Server, migraciones ni bases existentes sin alcance y autorización concretos.

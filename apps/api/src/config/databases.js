@@ -1,0 +1,9 @@
+'use strict';
+
+const SIA_DATABASE = 'SIA_CENCINAI';
+const SIDINACC_DATABASE = 'SIDINACC_LOCAL';
+
+module.exports = {
+  SIA_DATABASE,
+  SIDINACC_DATABASE
+};

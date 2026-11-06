@@ -36,7 +36,7 @@ foreach ($kind in @('rules','agents','skills')) {
         }
         if ($kind -eq 'rules') {
             if ($fields.alwaysApply -notin @('true','false')) { $issues.Add("Invalid alwaysApply: $($file.FullName)") }
-            if ($fields.alwaysApply -eq 'true' -and $file.Name -notin @('c00-sia-context.mdc','00-governance.mdc')) {
+            if ($fields.alwaysApply -eq 'true' -and $file.Name -notin @('c00-sia-context.mdc','00-governance.mdc','06-approved-technology-stack.mdc')) {
                 $issues.Add("Unexpected global rule: $($file.FullName)")
             }
         } else {
@@ -53,8 +53,8 @@ foreach ($path in @('docs/agent-workflow/workflow.md','docs/agent-workflow/quali
     'docs/agent-workflow/templates/handoff.md')) {
     if (!(Test-Path -LiteralPath "$Root/$path" -PathType Leaf)) { $issues.Add("Missing shared reference: $path") }
 }
-if ($counts.rules -ne 7 -or $counts.agents -ne 11 -or $counts.skills -lt 8) {
-    $issues.Add('Expected 7 rules, 11 roles, at least 8 active skills')
+if ($counts.rules -ne 10 -or $counts.agents -ne 11 -or $counts.skills -lt 8) {
+    $issues.Add('Expected 10 rules, 11 roles, at least 8 active skills')
 }
 foreach ($name in @('refine-requirement','plan-implementation','implement-backend',
     'implement-frontend','evolve-data-model','verify-traceability',
@@ -63,4 +63,4 @@ foreach ($name in @('refine-requirement','plan-implementation','implement-backen
 }
 if ($issues.Count) { $issues | ForEach-Object { Write-Output "FAIL: $_" }; exit 1 }
 Write-Output "PASS: rules=$($counts.rules), agents=$($counts.agents), skills=$($counts.skills); flat YAML metadata, unique names, folders, shared references."
-Write-Output 'NOT_RUN: Cursor runtime discovery. Product build/tests NOT_APPLICABLE to bootstrap.'
+Write-Output 'NOT_RUN: Cursor runtime discovery. This script does not execute product build or tests.'

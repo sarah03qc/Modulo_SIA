@@ -18,6 +18,9 @@ despues del maximo ya guardado para ese establecimiento y anio.
 
 Poner @permitir_escala = 1 solo en la base local de desarrollo.
 Cambiar @escala a small, medium o large. @semilla fija la reproducibilidad.
+
+La cobertura minima de un caso por establecimiento activo elegible no sale de estos
+perfiles. Ese pase posterior es seeds/040_territorial_coverage.sql, con la misma semilla.
 */
 USE SIA_CENCINAI;
 GO

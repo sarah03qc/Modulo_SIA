@@ -1,0 +1,17 @@
+{
+  "name": "@sia/api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "API Express de SIA-CENCINAI.",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "node --watch --env-file=.env src/server.js",
+    "start": "node --env-file=.env src/server.js",
+    "test": "node --env-file-if-exists=.env run-tests.js",
+    "verify:config": "node --env-file=.env src/verify-config.js"
+  },
+  "dependencies": {
+    "express": "5.3.0",
+    "mssql": "12.7.14"
+  }
+}

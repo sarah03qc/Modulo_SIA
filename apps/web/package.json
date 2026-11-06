@@ -1,0 +1,15 @@
+{
+  "name": "@sia/web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Aplicación web React de SIA-CENCINAI.",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 5174 --strictPort",
+    "build": "vite build",
+    "test": "jest --runInBand --config jest.config.cjs"
+  },
+  "dependencies": {
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  }
+}

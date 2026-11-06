@@ -11,6 +11,7 @@ Estos archivos no modifican `SIDINACC_LOCAL`.
 | `seeds/010_confirmed_catalogs.sql` | Catálogos confirmados y las nueve filas de RN-009. |
 | `seeds/020_synthetic_dataset.sql` | Expediente pequeño para las pruebas funcionales. No es semilla productiva. |
 | `seeds/030_synthetic_scale.sql` | Generador reproducible `small` / `medium` / `large`. Lee identificadores `SYN-` y no escribe en `SIDINACC_LOCAL`. |
+| `seeds/040_territorial_coverage.sql` | Pase posterior: un caso sintético por establecimiento activo que ya tiene personas elegibles y ningún caso. No inventa personas. |
 | `tests/` | Validación de catálogo, integridad, transacciones, reportería y concurrencia. |
 | `queries/` | Consultas de las visualizaciones y conciliaciones. |
 | `docs/` | Diseño, migraciones, transacciones, seguridad, pruebas y huecos. |
@@ -32,7 +33,8 @@ Solo con autorización explícita, en una instancia que no sea institucional:
 11. `seeds/010_confirmed_catalogs.sql` después de cambiar `@permitir` a 1
 12. `seeds/020_synthetic_dataset.sql` después de cambiar `@permitir_sintetico` a 1, solo en desarrollo
 13. `seeds/030_synthetic_scale.sql` en desarrollo, con `@permitir_escala = 1`, semilla fija y `@escala` en `small`, luego `medium`, luego `large`
-14. Pruebas, en el orden de `docs/TEST_PLAN.md`
+14. `seeds/040_territorial_coverage.sql` en desarrollo, con `@permitir_cobertura = 1` y la misma semilla, solo si la auditoría muestra establecimientos activos elegibles sin caso
+15. Pruebas, en el orden de `docs/TEST_PLAN.md`
 
 Cada archivo de migración es una invocación aparte. `001` crea la base; el resto empieza con `USE SIA_CENCINAI`.
 

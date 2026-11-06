@@ -1,0 +1,51 @@
+---
+description: Convenciones de código, nombres, comentarios y organización; aplicar al escribir o revisar JavaScript, React, Express, SQL y scripts.
+alwaysApply: false
+---
+
+# Convenciones de implementación — SIA-CENCINAI
+
+## Referencias
+
+- `docs/institutional/DEVELOPMENT_GUIDELINES_DNCC_DI_MET_02.md`, especialmente nomenclatura, comentarios, formato, seguridad y estándares de BD.
+- `docs/architecture/TECHNOLOGY_STACK.md` y las convenciones reales del repositorio.
+- Reglas existentes de gobernanza, trazabilidad, privacidad y quality gates.
+
+## Organización y responsabilidades
+
+- Agrupar funcionalidades por dominios y responsabilidades claras, no por una carpeta por cada tabla.
+- Usar nombres de directorio y archivo que expresen propósito: por ejemplo `references`, `cases`, `assessments`, `attentions`, `scheduling` y `reporting` cuando exista código real de esos dominios.
+- Separar rutas/controladores HTTP, validación de entrada, casos de uso/servicios, reglas de negocio, acceso a datos e integración SIDINACC.
+- Mantener los componentes React orientados a presentación y coordinación de interacción, sin consultas directas a SQL Server.
+- No crear módulos, abstracciones o dependencias circulares de forma preventiva sin un caso concreto.
+- Preferir cambios pequeños y específicos que no afecten funcionalidades ajenas.
+
+## Nombres y código
+
+- Utilizar nombres claros, descriptivos y consistentes con el código existente.
+- Preferir verbos y sustantivos para operaciones (`createReferral`, `closeCase`, `searchPerson`); nombres expresivos para datos y estados.
+- Evitar abreviaturas ambiguas, variables de una letra fuera de índices locales, números mágicos y booleanos genéricos como `flag`.
+- Preferir constantes o catálogos versionados cuando una regla pueda cambiar; no codificar supuestos institucionales como literales permanentes.
+- Mantener funciones y componentes de responsabilidad definida; evitar archivos enormes y lógica duplicada.
+- Usar formato uniforme, indentación consistente y separaciones legibles. Configurar formateo/lint solo con herramientas compatibles, justificadas y acordes al stack.
+
+## Comentarios y documentación
+
+- Escribir comentarios para explicar propósito, restricciones y decisiones no evidentes; no repetir lo que el código expresa.
+- Evitar comentarios dirigidos al lector/desarrollador en segunda persona, comentarios conversacionales y mensajes internos al usuario.
+- Mantener un tono técnico breve y profesional. Respetar los encabezados documentales establecidos para objetos y scripts SQL cuando correspondan.
+- No añadir anotaciones de autor, fechas o historial ficticio.
+
+## SQL Server y compatibilidad
+
+- Para **nuevos objetos**, contrastar los estándares de nombres documentados en la guía: tablas descriptivas en singular; convención institucional de mayúsculas/acrónimos, `SP_` para procedimientos, `uV_` para vistas, `TR_` para triggers e `IX_` para índices, cuando sean aplicables y aprobados para el objeto.
+- El esquema `SIA_CENCINAI` ya fue creado y probado con nombres físicos propios (`dbo`, `ops`, tablas e índices existentes). **No renombrar ni regenerar automáticamente objetos existentes para forzar una convención posterior.** Registrar diferencias; todo cambio requiere análisis de impacto y migración explícita.
+- Respetar PK, FK, `CHECK`, índices, historial, transacciones y reglas de seguridad de la arquitectura de datos vigente.
+- Distinguir NULL semánticamente correcto de `DESCONOCIDO`, `NO_APLICA`, `PENDIENTE` o `NO_INGRESADO`; no reemplazar NULL con valores inventados.
+- No desactivar restricciones para pasar pruebas ni alterar `SIDINACC_LOCAL`.
+
+## Validación al entregar
+
+- Ejecutar formateo, lint y pruebas pertinentes cuando existan comandos establecidos; informar lo que realmente se ejecutó.
+- Revisar manejo de errores, validación de entradas, concurrencia, permisos y ausencia de secretos o datos sensibles.
+- Indicar archivos cambiados, comportamiento comprobado, relación con HU/RF/CU cuando aplique y pendientes.
