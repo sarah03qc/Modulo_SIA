@@ -72,7 +72,7 @@ Hay dos pools. Cada uno fija servidor, puerto, base, usuario y `appName`. El nom
 
 | Cliente | Base | Uso en este bootstrap |
 | --- | --- | --- |
-| `sia` | `SIA_CENCINAI` | Comprobación de disponibilidad. El conteo de `dbo.schema_migracion` pertenece solo a la prueba de conectividad |
+| `sia` | `SIA_CENCINAI` | Comprobación de disponibilidad. El conteo de `dbo.schema_migracion` lo leen la prueba de conectividad y la de permisos |
 | `sidinacc` | `SIDINACC_LOCAL` | Comprobación de disponibilidad. El filtro rechaza una segunda sentencia, con o sin punto y coma, `SELECT *`, `alias.*` y verbos que no son una lectura |
 
 El filtro del cliente institucional es una defensa adicional, no un analizador SQL ni un sustituto del permiso en el motor. `writeFilterEnabled` indica que ese filtro está activo. `readOnly` en `/ready` es otra muestra: permisos de `INSERT`, `UPDATE`, `DELETE` y `sysadmin` del login. El pool reabre la conexión en la consulta siguiente si la anterior falló. Los tiempos de conexión y de solicitud salen de la configuración.
@@ -93,11 +93,13 @@ El arranque con `NODE_ENV=production` se rechaza. No hay configuración producti
 
 ## Seguridad de la réplica
 
-La conexión institucional usa el login `sia_sidinacc_app`. Su base predeterminada es `SIDINACC_LOCAL`. No es `sysadmin` ni miembro de otros roles de servidor; el único permiso de servidor concedido es `CONNECT SQL`. El usuario de base, con el mismo nombre, pertenece solo a `sia_sidinacc_reader_role`. Ese rol es miembro de `db_datareader` y conserva los `DENY` de `INSERT`, `UPDATE`, `DELETE` y `ALTER` que ya definía el esquema. `SELECT` cubre la superficie de la réplica porque el rol reutiliza `db_datareader`; no se concedió `SELECT` objeto por objeto ni se amplió el rol.
+La conexión institucional usa el login `sia_sidinacc_app` y abre `SIDINACC_LOCAL`. No es `sysadmin` ni miembro de otros roles de servidor. Sus permisos efectivos de servidor son `CONNECT SQL` y `VIEW ANY DATABASE`; el segundo lo hereda de `public`. El usuario de base, con el mismo nombre, pertenece solo a `sia_sidinacc_reader_role`. Ese rol es miembro de `db_datareader` y conserva los `DENY` de `INSERT`, `UPDATE`, `DELETE` y `ALTER` que ya definía el esquema. `SELECT` cubre la superficie de la réplica porque el rol reutiliza `db_datareader`; no se concedió `SELECT` objeto por objeto ni se amplió el rol.
 
 La contraseña no está en el repositorio. `cencinai_reader` continúa sin usuario en la base y no se reutilizó. `sia_sidinacc_reader` sigue siendo `WITHOUT LOGIN`. `sia_sidinacc_app` no tiene usuario en `SIA_CENCINAI`, `HAS_DBACCESS` devuelve 0 y una consulta de tres partes hacia esa base falla con el error 916. El encadenamiento entre bases está desactivado y `guest` no tiene `CONNECT` en `SIA_CENCINAI`.
 
 `readOnly` sale de la sonda de permisos del login. Con esta cuenta es `true`. `writeFilterEnabled` solo indica que el filtro del adaptador está activo; no sustituye esa sonda. Si las dos conexiones comparten usuario, el arranque lo advierte. La sonda deja de informar solo lectura cuando ese login puede escribir o es `sysadmin`.
+
+La conexión de `SIA_CENCINAI` usa `sia_cencinai_app`. No es la credencial de despliegue. No pertenece a roles fijos de servidor ni a `db_owner`, `db_datawriter`, `db_ddladmin` o `db_datareader`. Tampoco es miembro de `rol_aplicacion`, `rol_establecimiento`, `rol_lectura_regional`, `rol_lectura_nacional`, `rol_catalogo` ni `rol_auditoria`, y no puede ejecutar `ops.cerrar_caso`. En la base del módulo sus permisos efectivos son `CONNECT` y las dos vistas de definición de claves de cifrado que `public` ya trae. El `SELECT` alcanza solo `dbo.schema_migracion`. `INSERT`, `UPDATE`, `DELETE`, `ALTER` y `CREATE TABLE` no están concedidos. No tiene acceso a `SIDINACC_LOCAL`. La suite de permisos usa estas dos cuentas y no abre un pool administrativo.
 
 ## Contrato técnico
 
@@ -129,7 +131,9 @@ Node corre en el host. SQL Server sigue siendo el contenedor existente `sidinacc
 
 ## Riesgos y pendientes
 
-- La conexión de `SIA_CENCINAI` todavía usa la credencial de despliegue. El aislamiento verificado corresponde a la réplica, no a un usuario de escritura de mínimo privilegio para el módulo.
+- `sia_cencinai_app` todavía no tiene la escritura funcional de `rol_aplicacion`. Ese otorgamiento queda para la historia que lo necesite; no se concede para hacer pasar pruebas.
+- `VIEW ANY DATABASE`, concedido a `public`, permite ver nombres de bases. No permite conectarse a la base de la otra cuenta.
+- Cada login entra a `master` como `guest`. Es el comportamiento predeterminado del motor y no se modificó.
 - Contrato de sesión SIDINACC.
 - Identificador institucional definitivo de persona.
 - Logotipo y certificación de accesibilidad.

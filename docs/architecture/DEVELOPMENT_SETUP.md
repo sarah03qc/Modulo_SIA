@@ -49,9 +49,9 @@ El resumen muestra entorno, puertos, nombres de base y si los dos usuarios coinc
 
 ### Lectura institucional
 
-`SIDINACC_DB_USER` debe ser `sia_sidinacc_app`. Ese login tiene como base predeterminada `SIDINACC_LOCAL`, no pertenece a roles de servidor y su único permiso de servidor es `CONNECT SQL`. En `SIDINACC_LOCAL` el usuario del mismo nombre es miembro de `sia_sidinacc_reader_role`. Ese rol ya era miembro de `db_datareader` y ya tenía `DENY` de `INSERT`, `UPDATE`, `DELETE` y `ALTER`. No se agregaron denegaciones nuevas.
+`SIDINACC_DB_USER` debe ser `sia_sidinacc_app`. La API lo conecta a `SIDINACC_LOCAL`. No pertenece a roles de servidor. Sus permisos efectivos de servidor son `CONNECT SQL` y `VIEW ANY DATABASE`; el segundo lo hereda de `public` y no concede acceso a `SIA_CENCINAI`. En `SIDINACC_LOCAL` el usuario del mismo nombre es miembro de `sia_sidinacc_reader_role`. Ese rol ya era miembro de `db_datareader` y ya tenía `DENY` de `INSERT`, `UPDATE`, `DELETE` y `ALTER`. No se agregaron denegaciones nuevas.
 
-La contraseña se genera en el entorno y queda solo en `apps/api/.env`, que Git ignora. `SIA_DB_USER` sigue siendo la credencial de despliegue de la base del módulo. Si ambas variables usan el mismo usuario, la API avisa que el aislamiento no está verificado.
+La contraseña se genera en el entorno y queda solo en `apps/api/.env`, que Git ignora. `SIA_DB_USER` debe ser `sia_cencinai_app`, la cuenta de ejecución del módulo. No es la credencial de despliegue: no pertenece a roles administrativos ni a los roles funcionales de expediente, y hoy solo puede consultar `dbo.schema_migracion`. La credencial de despliegue queda fuera de la API y de la suite cotidiana. Si ambas variables usan el mismo usuario, la API avisa que el aislamiento no está verificado.
 
 `cencinai_reader` sigue sin usuario mapeado y no se reutilizó. El usuario `sia_sidinacc_reader` permanece `WITHOUT LOGIN`; las pruebas de la réplica dependen de ese contrato. No hay usuario `sia_sidinacc_app` en `SIA_CENCINAI`.
 
@@ -87,7 +87,7 @@ docker start sidinacc-local-sql
 
 ## Pruebas
 
-Las pruebas de HTTP, configuración y clientes SQL no escriben en las bases. La prueba de conectividad solo corre cuando `apps/api/.env` existe y compara dos conteos de lectura antes y después. La prueba de permisos del login lector crea y elimina una tabla desechable con la credencial de despliegue; las sentencias de ese login no modifican datos. No repuebla datos.
+Las pruebas de HTTP, configuración y clientes SQL no escriben en las bases. La prueba de conectividad solo corre cuando `apps/api/.env` existe y compara dos conteos de lectura antes y después. La prueba de permisos usa solo `sia_sidinacc_app` y `sia_cencinai_app`. Comprueba permisos efectivos y sentencias de escritura con `WHERE 1 = 0`, que el motor rechaza. No crea ni elimina tablas y no usa la credencial de despliegue. No repuebla datos.
 
 ## Problemas frecuentes
 
