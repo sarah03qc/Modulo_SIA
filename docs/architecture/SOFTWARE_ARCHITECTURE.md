@@ -42,21 +42,23 @@ La identidad visual usa la paleta documentada en `docs/institutional/DESIGN_ACCE
 | `src/config` | Validación de entorno. No hay conexión de respaldo |
 | `src/common` | Errores HTTP, registro y errores asíncronos |
 | `src/modules/technical` | `GET /health` y `GET /ready` |
+| `src/modules/institutional` | Búsqueda contextual y ficha básica. HU-005 a HU-009 |
 | `src/infrastructure/database` | Dos clientes SQL |
-| `src/infrastructure/integrations` | Adaptador SIDINACC |
-| `src/infrastructure/auth` | Frontera de sesión, sin login propio |
+| `src/infrastructure/integrations` | Adaptador SIDINACC, solo lectura |
+| `src/infrastructure/persistence` | Resumen de casos desde la vista autorizada |
+| `src/infrastructure/auth` | Frontera de sesión. Sin login productivo |
 
 `createApp` no abre el puerto. Las pruebas HTTP usan esa instancia sin escuchar.
 
 Errores distinguibles: validación `400`, no autorizado `401`, prohibido `403`, no encontrado `404`, conflicto `409`, infraestructura `503` e interno `500`. La respuesta interna no incluye la excepción del controlador ni la contraseña. Los registros redactan claves cuyo nombre parece un secreto.
 
-## Módulos previstos
+## Módulos
 
-Reservados en este documento hasta la historia que los implemente. No hay carpetas vacías.
+`institutional` implementa la consulta contextual de este lote. El resto sigue reservado hasta su historia. No hay carpetas vacías.
 
-| Módulo futuro | Épica de la especificación v0.7 | Notas |
+| Módulo | Épica de la especificación v0.7 | Notas |
 | --- | --- | --- |
-| `institutional` | EP-01 | Consulta contextual. No es una pantalla general de personas |
+| `institutional` | EP-01 | Implementado para búsqueda y ficha básica. No es una pantalla general de personas |
 | `references` | EP-02 | |
 | `assessments` | EP-03 | |
 | `cases` | EP-04 | |
@@ -70,10 +72,10 @@ Las reglas funcionales irán en servicios del módulo, no en controladores ni en
 
 Hay dos pools. Cada uno fija servidor, puerto, base, usuario y `appName`. El nombre de base tiene que ser `SIA_CENCINAI` o `SIDINACC_LOCAL`; no se arma con datos de la petición.
 
-| Cliente | Base | Uso en este bootstrap |
+| Cliente | Base | Uso |
 | --- | --- | --- |
-| `sia` | `SIA_CENCINAI` | Comprobación de disponibilidad. El conteo de `dbo.schema_migracion` lo leen la prueba de conectividad y la de permisos |
-| `sidinacc` | `SIDINACC_LOCAL` | Comprobación de disponibilidad. El filtro rechaza una segunda sentencia, con o sin punto y coma, `SELECT *`, `alias.*` y verbos que no son una lectura |
+| `sia` | `SIA_CENCINAI` | Disponibilidad, `dbo.schema_migracion` y `SELECT` sobre `dbo.caso_lista_establecimiento` |
+| `sidinacc` | `SIDINACC_LOCAL` | Disponibilidad y consulta de personas, territorio, servicios y persona encargada. El filtro rechaza una segunda sentencia, con o sin punto y coma, `SELECT *`, `alias.*` y verbos que no son una lectura |
 
 El filtro del cliente institucional es una defensa adicional, no un analizador SQL ni un sustituto del permiso en el motor. `writeFilterEnabled` indica que ese filtro está activo. `readOnly` en `/ready` es otra muestra: permisos de `INSERT`, `UPDATE`, `DELETE` y `sysadmin` del login. El pool reabre la conexión en la consulta siguiente si la anterior falló. Los tiempos de conexión y de solicitud salen de la configuración.
 
@@ -81,13 +83,17 @@ El filtro del cliente institucional es una defensa adicional, no un analizador S
 
 ## Adaptador institucional
 
-`createSidinaccAdapter` hoy solo comprueba disponibilidad. Las operaciones futuras —contexto de persona, territorio y relación persona-establecimiento— no están implementadas. `PER_idPersona` es la clave de integración de la réplica v0.1 y no se trata como identificador definitivo (`NEEDS_VALIDATION`, réplica local).
+`createSidinaccAdapter` comprueba disponibilidad y delega la lectura de personas al lector institucional. La ubicación usa `CAF_FAMILIA_DETALLE` del período `SIDINACC_PERIOD_ID`. No usa `CAF_PERSONA_DETALLE`. `PER_idPersona` sigue siendo la clave de integración de la réplica v0.1 y no es el identificador definitivo (`NEEDS_VALIDATION`).
 
-Si la fuente no responde, la API sigue en ejecución y `/ready` queda `unavailable`.
+El contrato HTTP está en `docs/architecture/INSTITUTIONAL_PERSON_API.md`. Si la fuente no responde, la API sigue en ejecución, `/ready` queda `unavailable` y la búsqueda contextual responde `503`.
 
 ## Autenticación
 
-`NEEDS_VALIDATION`: el mecanismo de sesión SIDINACC no está definido. No hay usuarios, contraseñas ni roles del módulo. `GET /api/*` responde `401` con código `AUTHENTICATION_NOT_CONFIGURED`. Ocultar botones no se usa como autorización. Los endpoints técnicos `/health` y `/ready` son públicos y solo escuchan en `127.0.0.1` o `localhost`.
+`NEEDS_VALIDATION`: el mecanismo de sesión SIDINACC no está definido. No hay login, usuarios ni contraseñas del módulo. Sin credencial, `GET /api/*` responde `401` con `AUTHENTICATION_NOT_CONFIGURED`.
+
+En `development` y `test`, el servidor reconoce identidades sintéticas declaradas en código. El cliente presenta `Authorization: Bearer` con el identificador ya asociado por el servidor. Un encabezado de rol, ámbito o establecimiento no cambia esa identidad. Esa vía no es la integración productiva y no existe cuando `NODE_ENV` no es `development` ni `test`. El arranque productivo sigue rechazado.
+
+Ocultar botones no se usa como autorización. Los endpoints técnicos `/health` y `/ready` son públicos y solo escuchan en `127.0.0.1` o `localhost`.
 
 El arranque con `NODE_ENV=production` se rechaza. No hay configuración productiva.
 
@@ -99,7 +105,7 @@ La contraseña no está en el repositorio. `cencinai_reader` continúa sin usuar
 
 `readOnly` sale de la sonda de permisos del login. Con esta cuenta es `true`. `writeFilterEnabled` solo indica que el filtro del adaptador está activo; no sustituye esa sonda. Si las dos conexiones comparten usuario, el arranque lo advierte. La sonda deja de informar solo lectura cuando ese login puede escribir o es `sysadmin`.
 
-La conexión de `SIA_CENCINAI` usa `sia_cencinai_app`. No es la credencial de despliegue. No pertenece a roles fijos de servidor ni a `db_owner`, `db_datawriter`, `db_ddladmin` o `db_datareader`. Tampoco es miembro de `rol_aplicacion`, `rol_establecimiento`, `rol_lectura_regional`, `rol_lectura_nacional`, `rol_catalogo` ni `rol_auditoria`, y no puede ejecutar `ops.cerrar_caso`. En la base del módulo sus permisos efectivos son `CONNECT` y las dos vistas de definición de claves de cifrado que `public` ya trae. El `SELECT` alcanza solo `dbo.schema_migracion`. `INSERT`, `UPDATE`, `DELETE`, `ALTER` y `CREATE TABLE` no están concedidos. No tiene acceso a `SIDINACC_LOCAL`. La suite de permisos usa estas dos cuentas y no abre un pool administrativo.
+La conexión de `SIA_CENCINAI` usa `sia_cencinai_app`. No es la credencial de despliegue. No pertenece a roles fijos de servidor ni a `db_owner`, `db_datawriter`, `db_ddladmin` o `db_datareader`. Tampoco es miembro de `rol_aplicacion`, `rol_establecimiento`, `rol_lectura_regional`, `rol_lectura_nacional`, `rol_catalogo` ni `rol_auditoria`, y no puede ejecutar `ops.cerrar_caso`. En la base del módulo sus permisos efectivos son `CONNECT` y las dos vistas de definición de claves de cifrado que `public` ya trae. El `SELECT` alcanza `dbo.schema_migracion` y `dbo.caso_lista_establecimiento`. Ese segundo permiso lo aplica `database/sia-cencinai/security/010_grant_case_list_to_app.sql`; no abre `ses_valoracion`, `caso_ai`, planes, atenciones, documentos ni `aud_evento`. `INSERT`, `UPDATE`, `DELETE`, `ALTER` y `CREATE TABLE` no están concedidos. No tiene acceso a `SIDINACC_LOCAL`. La suite de permisos usa estas dos cuentas y no abre un pool administrativo.
 
 ## Contrato técnico
 

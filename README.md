@@ -22,6 +22,8 @@ La API escucha en `http://127.0.0.1:3001` y la web en `http://127.0.0.1:5174`. H
 - [Especificación funcional v0.7](docs/functional/FUNCTIONAL_SPEC_v0.7.md)
 - [Casos de uso v0.7](docs/functional/USE_CASES_v0.7.md)
 - [Arquitectura de software](docs/architecture/SOFTWARE_ARCHITECTURE.md)
+- [API de consulta contextual](docs/architecture/INSTITUTIONAL_PERSON_API.md)
+- [Resultado del lote backend 01](docs/architecture/BACKEND_BATCH_01_RESULTS.md)
 - [Stack tecnológico](docs/architecture/TECHNOLOGY_STACK.md)
 - [Dependencias](docs/architecture/DEPENDENCY_DECISIONS.md)
 - [Diseño de datos vigente](docs/architecture/database-design/current/DATABASE_DESIGN_SELECTED.md)

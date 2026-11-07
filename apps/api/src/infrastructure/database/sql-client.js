@@ -17,6 +17,26 @@ function denied(value) {
   return value === 0 || value === '0' || value === false;
 }
 
+function readSqlNumber(error) {
+  if (!error || typeof error !== 'object') {
+    return null;
+  }
+  const candidates = [
+    error.number,
+    error.originalError && error.originalError.info && error.originalError.info.number
+  ];
+  for (const candidate of candidates) {
+    if (candidate === undefined || candidate === null || candidate === '') {
+      continue;
+    }
+    const parsed = Number(candidate);
+    if (Number.isInteger(parsed)) {
+      return parsed;
+    }
+  }
+  return null;
+}
+
 function toMssqlConfig(database, timeouts, poolMax) {
   return {
     server: database.server,
@@ -69,9 +89,17 @@ function createSqlClient(options) {
       if (error instanceof InfrastructureError) {
         throw error;
       }
-      await close();
       const failure = new InfrastructureError('La dependencia de base de datos no está disponible.');
       failure.driverCode = error && error.code ? String(error.code) : 'DB_ERROR';
+      const sqlNumber = readSqlNumber(error);
+      if (sqlNumber !== null) {
+        failure.sqlNumber = sqlNumber;
+      }
+      // 229 y 230 son denegacion de permiso, no una conexion rota. El mensaje no sale al cliente.
+      failure.permissionDenied = sqlNumber === 229 || sqlNumber === 230;
+      if (!failure.permissionDenied) {
+        await close();
+      }
       throw failure;
     }
   }

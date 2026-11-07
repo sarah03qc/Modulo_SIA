@@ -25,7 +25,8 @@ SELECT
 const APP_COUNTS_SQL = `
 SELECT
   (SELECT COUNT(*) FROM dbo.schema_migracion) AS sia_migrations,
-  (SELECT COUNT(*) FROM sys.tables) AS visible_tables
+  (SELECT COUNT(*) FROM sys.tables) AS visible_tables,
+  (SELECT COUNT(*) FROM dbo.caso_lista_establecimiento) AS case_rows
 `;
 
 const APPLIED_MIGRATIONS = [
@@ -343,6 +344,16 @@ describeLive('permisos SQL de las cuentas de aplicación', () => {
         CONVERT(int, HAS_PERMS_BY_NAME('dbo.schema_migracion', 'OBJECT', 'UPDATE')) AS can_update,
         CONVERT(int, HAS_PERMS_BY_NAME('dbo.schema_migracion', 'OBJECT', 'DELETE')) AS can_delete,
         CONVERT(int, HAS_PERMS_BY_NAME('dbo.schema_migracion', 'OBJECT', 'ALTER')) AS can_alter,
+        CONVERT(int, HAS_PERMS_BY_NAME('dbo.caso_lista_establecimiento', 'OBJECT', 'SELECT')) AS case_view_select,
+        CONVERT(int, HAS_PERMS_BY_NAME('dbo.caso_lista_establecimiento', 'OBJECT', 'INSERT')) AS case_view_insert,
+        CONVERT(int, HAS_PERMS_BY_NAME('dbo.caso_lista_establecimiento', 'OBJECT', 'UPDATE')) AS case_view_update,
+        CONVERT(int, HAS_PERMS_BY_NAME('dbo.caso_lista_establecimiento', 'OBJECT', 'DELETE')) AS case_view_delete,
+        CONVERT(int, HAS_PERMS_BY_NAME('dbo.ses_valoracion', 'OBJECT', 'SELECT')) AS valoracion_select,
+        CONVERT(int, HAS_PERMS_BY_NAME('dbo.caso_ai', 'OBJECT', 'SELECT')) AS caso_select,
+        CONVERT(int, HAS_PERMS_BY_NAME('dbo.caso_plan', 'OBJECT', 'SELECT')) AS plan_select,
+        CONVERT(int, HAS_PERMS_BY_NAME('dbo.ate_individual', 'OBJECT', 'SELECT')) AS atencion_select,
+        CONVERT(int, HAS_PERMS_BY_NAME('dbo.doc_documento', 'OBJECT', 'SELECT')) AS documento_select,
+        CONVERT(int, HAS_PERMS_BY_NAME('dbo.aud_evento', 'OBJECT', 'INSERT')) AS audit_insert,
         CONVERT(int, HAS_PERMS_BY_NAME('ops.cerrar_caso', 'OBJECT', 'EXECUTE')) AS can_execute_close,
         CONVERT(int, HAS_PERMS_BY_NAME(DB_NAME(), 'DATABASE', 'CREATE TABLE')) AS can_create_table,
         CONVERT(int, HAS_PERMS_BY_NAME(DB_NAME(), 'DATABASE', 'ALTER')) AS can_alter_database,
@@ -375,6 +386,16 @@ describeLive('permisos SQL de las cuentas de aplicación', () => {
       can_update: 0,
       can_delete: 0,
       can_alter: 0,
+      case_view_select: 1,
+      case_view_insert: 0,
+      case_view_update: 0,
+      case_view_delete: 0,
+      valoracion_select: 0,
+      caso_select: 0,
+      plan_select: 0,
+      atencion_select: 0,
+      documento_select: 0,
+      audit_insert: 0,
       can_execute_close: 0,
       can_create_table: 0,
       can_alter_database: 0,
@@ -414,6 +435,15 @@ describeLive('permisos SQL de las cuentas de aplicación', () => {
     `);
     expect(visibleTables.recordset).toEqual([
       { schema_name: 'dbo', name: 'schema_migracion' }
+    ]);
+
+    const visibleCaseView = await app.request().query(`
+      SELECT SCHEMA_NAME(schema_id) AS schema_name, name
+      FROM sys.views
+      WHERE name = N'caso_lista_establecimiento'
+    `);
+    expect(visibleCaseView.recordset).toEqual([
+      { schema_name: 'dbo', name: 'caso_lista_establecimiento' }
     ]);
 
     const migrations = await app.request().query(`
@@ -456,6 +486,26 @@ describeLive('permisos SQL de las cuentas de aplicación', () => {
     expect(await runStatement(
       app,
       'DELETE FROM dbo.schema_migracion WHERE 1 = 0'
+    )).toEqual({ denied: true, number: 229 });
+    expect(await runStatement(
+      app,
+      'SELECT TOP (0) caso_id AS case_key FROM dbo.caso_lista_establecimiento'
+    )).toEqual({ denied: false, rows: 0 });
+    expect(await runStatement(
+      app,
+      'SELECT TOP (0) caso_id AS case_key FROM dbo.caso_ai'
+    )).toEqual({ denied: true, number: 229 });
+    expect(await runStatement(
+      app,
+      'SELECT TOP (0) valoracion_id AS assessment_key FROM dbo.ses_valoracion'
+    )).toEqual({ denied: true, number: 229 });
+    expect(await runStatement(
+      app,
+      `INSERT INTO dbo.aud_evento (
+         ocurrido_en, usuario, rol, accion, entidad, entidad_id, ambito, codigo_cambio
+       )
+       SELECT SYSUTCDATETIME(), N'probe', N'probe', N'probe', N'probe', N'probe', N'probe', N'probe'
+       WHERE 1 = 0`
     )).toEqual({ denied: true, number: 229 });
     expect(await runStatement(
       app,

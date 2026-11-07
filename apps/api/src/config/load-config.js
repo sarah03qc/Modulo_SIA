@@ -135,7 +135,9 @@ function loadConfig(env) {
     poolMax: requirePositiveInt(source, 'DB_POOL_MAX'),
     sia,
     sidinacc,
-    sameDatabaseUser: sia.user.toLowerCase() === sidinacc.user.toLowerCase()
+    sameDatabaseUser: sia.user.toLowerCase() === sidinacc.user.toLowerCase(),
+    // Periodo de lectura de la replica. El cliente HTTP no puede cambiarlo.
+    sidinaccPeriodId: requirePositiveInt(source, 'SIDINACC_PERIOD_ID')
   };
 }
 
@@ -148,7 +150,8 @@ function publicConfigSummary(config) {
     corsOrigin: config.corsOrigin,
     siaDatabase: config.sia.database,
     sidinaccDatabase: config.sidinacc.database,
-    sameDatabaseUser: config.sameDatabaseUser
+    sameDatabaseUser: config.sameDatabaseUser,
+    sidinaccPeriodId: config.sidinaccPeriodId
   };
 }
 

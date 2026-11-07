@@ -98,7 +98,7 @@ El texto original de esta sección atribuía revisiones independientes a aquella
 
 `sia_sidinacc_app` entra a `SIDINACC_LOCAL`. No pertenece a roles fijos de servidor. En el servidor solo tiene `CONNECT SQL` y `VIEW ANY DATABASE`, este último heredado de `public`. Su único rol de base directo es `sia_sidinacc_reader_role`, que le da `db_datareader`. `SELECT` sobre `dbo.CAF_CAT_SEXO` es 1. `INSERT`, `UPDATE`, `DELETE` y `ALTER` son 0 y las tres sentencias con `WHERE 1 = 0` fallan con 229. `CREATE TABLE` es 0. `HAS_DBACCESS('SIA_CENCINAI')` es 0. La consulta de tres partes y la conexión a esa base se rechazan (916 y `ELOGIN`).
 
-`sia_cencinai_app` entra a `SIA_CENCINAI` como usuario del mismo nombre. No es `sysadmin` ni miembro de `db_owner`, `db_datawriter`, `db_ddladmin`, `db_datareader` ni de los roles funcionales del expediente. No ejecuta `ops.cerrar_caso`. El permiso de base es `CONNECT`, más las dos vistas de claves de cifrado que `public` ya trae. El único objeto visible es `dbo.schema_migracion`, con `SELECT` y sin `INSERT`, `UPDATE`, `DELETE` ni `ALTER`. Esas tres sentencias fallan con 229. `HAS_DBACCESS('SIDINACC_LOCAL')` es 0. La consulta de tres partes y la conexión a la réplica se rechazan. La sonda del gateway informa `readOnly: true`.
+`sia_cencinai_app` entra a `SIA_CENCINAI` como usuario del mismo nombre. No es `sysadmin` ni miembro de `db_owner`, `db_datawriter`, `db_ddladmin`, `db_datareader` ni de los roles funcionales del expediente. No ejecuta `ops.cerrar_caso`. El permiso de base es `CONNECT`, más las dos vistas de claves de cifrado que `public` ya trae. En esta verificación de bootstrap el único objeto visible era `dbo.schema_migracion`, con `SELECT` y sin `INSERT`, `UPDATE`, `DELETE` ni `ALTER`. El `SELECT` posterior sobre `dbo.caso_lista_establecimiento` está en `docs/architecture/BACKEND_BATCH_01_RESULTS.md`. Esas tres sentencias fallan con 229. `HAS_DBACCESS('SIDINACC_LOCAL')` es 0. La consulta de tres partes y la conexión a la réplica se rechazan. La sonda del gateway informa `readOnly: true`.
 
 `VIEW ANY DATABASE` y la entrada a `master` como `guest` son el predeterminado del motor. No se revocaron: afectan a `public` y no conceden acceso a la otra base. No se otorgó escritura funcional.
 
@@ -121,7 +121,7 @@ Las diez migraciones siguen aplicadas, de `001_database_prerequisites` a `090_co
 
 El informe anterior citaba 1305 columnas en `SIDINACC_LOCAL`. Esa cifra no se reproduce: `sys.columns` unido a las 15 tablas da 82, `INFORMATION_SCHEMA.COLUMNS` da 82 y `sys.all_columns` da 11310. Las 15 tablas del script siguen presentes y los conteos de filas que aquel informe nombraba, 3 y 4708, coinciden. No hay señal de tablas eliminadas.
 
-`sia_cencinai_app` no puede ver las 47 tablas, las claves foráneas ni los conteos de casos y referencias. Esos datos quedan fuera de su `SELECT`. Confirmarlos exigiría un principal con más lectura. No se concedió ese permiso en esta tarea. El libro de migraciones, que sí puede leer, permanece intacto.
+En esta tarea `sia_cencinai_app` no podía ver las 47 tablas, las claves foráneas ni los conteos de las tablas de casos y referencias. No se concedió ese permiso. El `SELECT` posterior de la vista de casos no abre esas tablas; su evidencia está en `docs/architecture/BACKEND_BATCH_01_RESULTS.md`. El libro de migraciones permanece intacto.
 
 ### Revisiones independientes
 

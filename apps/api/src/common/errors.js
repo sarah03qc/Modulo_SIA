@@ -50,6 +50,16 @@ class ConflictError extends HttpError {
   }
 }
 
+class AmbiguousInstitutionalLocationError extends HttpError {
+  constructor() {
+    super(
+      409,
+      'INSTITUTIONAL_LOCATION_AMBIGUOUS',
+      'La ubicación institucional del período configurado tiene más de un registro en el ámbito y no se resuelve de forma automática.'
+    );
+  }
+}
+
 class InfrastructureError extends HttpError {
   constructor(message = 'Una dependencia necesaria no está disponible.') {
     super(503, 'INFRASTRUCTURE_UNAVAILABLE', message);
@@ -64,5 +74,6 @@ module.exports = {
   ForbiddenError,
   NotFoundError,
   ConflictError,
+  AmbiguousInstitutionalLocationError,
   InfrastructureError
 };

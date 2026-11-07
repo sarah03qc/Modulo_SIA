@@ -24,6 +24,7 @@ function validEnv(overrides = {}) {
     SIDINACC_DB_PASSWORD: 'reader-secret-value',
     SIDINACC_DB_ENCRYPT: 'false',
     SIDINACC_DB_TRUST_SERVER_CERTIFICATE: 'true',
+    SIDINACC_PERIOD_ID: '2026',
     ...overrides
   };
 }

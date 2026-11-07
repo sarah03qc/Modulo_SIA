@@ -125,5 +125,25 @@ describe('errorHandler', () => {
     expect(res.body.error.message).toBe('Ocurrió un error interno.');
     expect(JSON.stringify(res.body)).not.toContain('sia-secret-value');
     expect(logger.error).toHaveBeenCalled();
+    expect(JSON.stringify(logger.error.mock.calls)).not.toContain('sia-secret-value');
+  });
+
+  test('no registra el identificador de la persona en la ruta', () => {
+    const logger = { error: jest.fn(), info: jest.fn(), warn: jest.fn() };
+    const handler = errorHandler(logger);
+    const res = {
+      headersSent: false,
+      status(code) {
+        this.statusCode = code;
+        return this;
+      },
+      json() {
+        return this;
+      }
+    };
+    const { NotFoundError } = require('../src/common/errors');
+    handler(new NotFoundError(), { path: '/api/institutional/persons/SYN-1100102-01' }, res, jest.fn());
+    expect(JSON.stringify(logger.info.mock.calls)).not.toContain('SYN-1100102-01');
+    expect(JSON.stringify(logger.info.mock.calls)).toContain('/persons/:personId');
   });
 });
