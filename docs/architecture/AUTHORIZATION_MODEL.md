@@ -16,7 +16,7 @@ El objetivo es declarar una capacidad y exigirla en la ruta y en el servicio, si
 | Políticas | `authorization-policy.js` | Denegación por defecto. Exige una capacidad conocida |
 | Ámbito | `territorial-scope.js` | Filtros sobre el ancla ya concedida |
 | Campos | `field-policy.js` | Retira campos que la capacidad no permite |
-| Aplicación | Rutas de `institutional-routes.js` y métodos de `person-query-service.js` | La ruta y el servicio exigen la misma capacidad |
+| Aplicación | Rutas institucionales y de `reference-routes.js`, con sus servicios | La ruta y el servicio exigen la misma capacidad |
 
 `req.access` conserva `principalId`, `accessLevel`, `regionId`, `localOfficeId` y `establishmentIds` para el Lote 01. Agrega `roles`, `grants`, `capabilities` e `identitySource`.
 
@@ -30,7 +30,7 @@ Los códigos son internos. No son nombres de perfil de SIDINACC.
 | `person.profile.read` | sí | sí | sí | sí | Exigida por la ficha del Lote 01 |
 | `territory.options.read` | sí | sí | sí | sí | Exigida por las opciones territoriales |
 | `case.summary.read` | sí | sí | sí | sí | Resumen con identificador, estado, prioridad y fechas |
-| `referral.create`, `referral.read` | sí | sí | no | no | Declaradas. Sin ruta en este incremento |
+| `referral.create`, `referral.read`, `referral.read.detail`, `referral.print`, `referral.import` | sí | sí | no | no | Exigidas por las rutas de referencias del Lote 02. Oficina Local las hereda. No hay subrol |
 | `session.manage` | no | sí | no | no | Declarada. Sin ruta |
 | `assessment.read`, `assessment.write` | no | sí | no | no | Declaradas. Sin ruta |
 | `case.open`, `case.close` | no | sí | no | no | Declaradas. Sin ruta |

@@ -98,6 +98,14 @@ describe('catálogo de capacidades', () => {
 
     expect(hasCapability(establishment, CAPABILITY.PERSON_SEARCH)).toBe(true);
     expect(hasCapability(establishment, CAPABILITY.REFERRAL_CREATE)).toBe(true);
+    expect(hasCapability(establishment, CAPABILITY.REFERRAL_READ_DETAIL)).toBe(true);
+    expect(hasCapability(establishment, CAPABILITY.REFERRAL_PRINT)).toBe(true);
+    expect(hasCapability(establishment, CAPABILITY.REFERRAL_IMPORT)).toBe(true);
+    expect(hasCapability(office, CAPABILITY.REFERRAL_PRINT)).toBe(true);
+    expect(hasCapability(office, CAPABILITY.REFERRAL_IMPORT)).toBe(true);
+    expect(hasCapability(region, CAPABILITY.REFERRAL_CREATE)).toBe(false);
+    expect(hasCapability(region, CAPABILITY.REFERRAL_READ)).toBe(false);
+    expect(hasCapability(national, CAPABILITY.REFERRAL_PRINT)).toBe(false);
     expect(hasCapability(establishment, CAPABILITY.REPORTING_READ)).toBe(false);
     expect(hasCapability(establishment, CAPABILITY.CASE_READ)).toBe(false);
     expect(hasCapability(establishment, CAPABILITY.ASSESSMENT_READ)).toBe(false);

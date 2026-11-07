@@ -1,7 +1,7 @@
 'use strict';
 
 const { loadConfig } = require('../src/config/load-config');
-const { createDatabaseGateway, toMssqlConfig } = require('../src/infrastructure/database/sql-client');
+const { createDatabaseGateway, createSqlClient, toMssqlConfig } = require('../src/infrastructure/database/sql-client');
 const { assertInstitutionalRead } = require('../src/infrastructure/database/institutional-read');
 const { validEnv } = require('./env-fixture');
 
@@ -52,6 +52,27 @@ describe('clientes SQL', () => {
     expect(gateway.sia.writeFilterEnabled).toBe(false);
     expect(gateway.sidinacc.writeFilterEnabled).toBe(true);
     expect(() => assertInstitutionalRead("SELECT COUNT(*) AS total FROM sys.tables WHERE name = 'ejemplo'")).not.toThrow();
+  });
+
+  test('la transacción institucional rechaza una escritura antes de enviarla al motor', async () => {
+    const config = loadConfig(validEnv());
+    const rollback = jest.fn(async () => {});
+    const client = createSqlClient({
+      role: 'sidinacc',
+      databaseName: config.sidinacc.database,
+      writeFilterEnabled: true,
+      mssqlConfig: {},
+      connectPool: async () => ({ close: async () => {} }),
+      beginTransaction: () => ({
+        begin: async () => {},
+        commit: async () => {},
+        rollback
+      })
+    });
+    await expect(client.withTransaction(async (transaction) => {
+      await transaction.query('INSERT INTO dbo.ejemplo (valor) VALUES (1)');
+    })).rejects.toMatchObject({ code: 'INFRASTRUCTURE_UNAVAILABLE' });
+    expect(rollback).toHaveBeenCalledTimes(1);
   });
 
   test('un fallo de conexión no copia el mensaje del controlador a la respuesta de dominio', async () => {

@@ -10,6 +10,7 @@ El gestor es npm, con workspaces `apps/api` y `apps/web`. Un solo `package-lock.
 | --- | --- | --- | --- | --- |
 | `express` | 5.3.0 | API | Servidor HTTP | Framework backend seleccionado. La versión 5 es la estable actual. |
 | `mssql` | 12.7.14 | API | Pools y consultas parametrizadas a SQL Server | Cliente mantenido para el motor ya elegido. No se agregó un ORM. |
+| `exceljs` | 4.4.0 | API | Lectura y escritura del XLSX de la plantilla de referencia | El lote debe entregar y leer un libro. No ejecuta fórmulas: el servicio rechaza fórmulas, macros y enlaces. Licencia MIT. No sustituye el diseño institucional de HU-014, que sigue en propuesta validada. |
 | `react` | 19.3.1 | Web | Interfaz | Frontend seleccionado. |
 | `react-dom` | 19.3.1 | Web | Renderizado en el navegador | Acompaña a React 19. |
 

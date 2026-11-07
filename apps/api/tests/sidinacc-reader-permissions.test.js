@@ -354,6 +354,10 @@ describeLive('permisos SQL de las cuentas de aplicación', () => {
         CONVERT(int, HAS_PERMS_BY_NAME('dbo.ate_individual', 'OBJECT', 'SELECT')) AS atencion_select,
         CONVERT(int, HAS_PERMS_BY_NAME('dbo.doc_documento', 'OBJECT', 'SELECT')) AS documento_select,
         CONVERT(int, HAS_PERMS_BY_NAME('dbo.aud_evento', 'OBJECT', 'INSERT')) AS audit_insert,
+        CONVERT(int, HAS_PERMS_BY_NAME('dbo.ref_referencia', 'OBJECT', 'INSERT')) AS reference_insert,
+        CONVERT(int, HAS_PERMS_BY_NAME('dbo.ref_referencia', 'OBJECT', 'UPDATE')) AS reference_update,
+        CONVERT(int, HAS_PERMS_BY_NAME('dbo.ref_referencia', 'OBJECT', 'DELETE')) AS reference_delete,
+        CONVERT(int, HAS_PERMS_BY_NAME('dbo.caso_ai', 'OBJECT', 'INSERT')) AS caso_insert,
         CONVERT(int, HAS_PERMS_BY_NAME('ops.cerrar_caso', 'OBJECT', 'EXECUTE')) AS can_execute_close,
         CONVERT(int, HAS_PERMS_BY_NAME(DB_NAME(), 'DATABASE', 'CREATE TABLE')) AS can_create_table,
         CONVERT(int, HAS_PERMS_BY_NAME(DB_NAME(), 'DATABASE', 'ALTER')) AS can_alter_database,
@@ -395,7 +399,11 @@ describeLive('permisos SQL de las cuentas de aplicación', () => {
       plan_select: 0,
       atencion_select: 0,
       documento_select: 0,
-      audit_insert: 0,
+      audit_insert: 1,
+      reference_insert: 1,
+      reference_update: 0,
+      reference_delete: 0,
+      caso_insert: 0,
       can_execute_close: 0,
       can_create_table: 0,
       can_alter_database: 0,
@@ -434,7 +442,16 @@ describeLive('permisos SQL de las cuentas de aplicación', () => {
       ORDER BY schema_name, name
     `);
     expect(visibleTables.recordset).toEqual([
-      { schema_name: 'dbo', name: 'schema_migracion' }
+      { schema_name: 'dbo', name: 'aud_evento' },
+      { schema_name: 'dbo', name: 'bor_captura' },
+      { schema_name: 'dbo', name: 'cat_item' },
+      { schema_name: 'dbo', name: 'cat_version' },
+      { schema_name: 'dbo', name: 'ref_contexto' },
+      { schema_name: 'dbo', name: 'ref_impresion' },
+      { schema_name: 'dbo', name: 'ref_motivo' },
+      { schema_name: 'dbo', name: 'ref_referencia' },
+      { schema_name: 'dbo', name: 'schema_migracion' },
+      { schema_name: 'dbo', name: 'vinculo_persona' }
     ]);
 
     const visibleCaseView = await app.request().query(`
@@ -506,6 +523,14 @@ describeLive('permisos SQL de las cuentas de aplicación', () => {
        )
        SELECT SYSUTCDATETIME(), N'probe', N'probe', N'probe', N'probe', N'probe', N'probe', N'probe'
        WHERE 1 = 0`
+    )).toEqual({ denied: false, rows: 0 });
+    expect(await runStatement(
+      app,
+      'UPDATE dbo.ref_referencia SET estado = estado WHERE 1 = 0'
+    )).toEqual({ denied: true, number: 229 });
+    expect(await runStatement(
+      app,
+      'DELETE FROM dbo.ref_referencia WHERE 1 = 0'
     )).toEqual({ denied: true, number: 229 });
     expect(await runStatement(
       app,

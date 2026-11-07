@@ -15,6 +15,13 @@ const { ACCESS_LEVEL } = require('./institutional-roles');
   ACT-05 usa REGION. ACT-06 usa NACIONAL.
   ACT-07 no tiene rol interno: catalog.manage permanece sin concesión.
   ACT-08 no tiene acceso. ACT-09 no es un rol de la operación de A.I.
+
+  Referencias: se amplía el mismo catálogo. No hay códigos `references.*`
+  ni un rol distinto para ACT-02, ACT-03 y ACT-04.
+  referral.create cubre el envío y el borrador.
+  referral.read cubre el listado. referral.read.detail cubre la ficha.
+  referral.print y referral.import cubren el documento y la plantilla.
+  Establecimiento las recibe. Oficina Local las hereda. Región y Nacional no.
 */
 
 const CAPABILITY = Object.freeze({
@@ -24,6 +31,9 @@ const CAPABILITY = Object.freeze({
   CASE_SUMMARY_READ: 'case.summary.read',
   REFERRAL_CREATE: 'referral.create',
   REFERRAL_READ: 'referral.read',
+  REFERRAL_READ_DETAIL: 'referral.read.detail',
+  REFERRAL_PRINT: 'referral.print',
+  REFERRAL_IMPORT: 'referral.import',
   SESSION_MANAGE: 'session.manage',
   ASSESSMENT_READ: 'assessment.read',
   ASSESSMENT_WRITE: 'assessment.write',
@@ -58,7 +68,10 @@ const BASIC_CONSULTATION = Object.freeze([
 const ESTABLISHMENT_CAPABILITIES = Object.freeze([
   ...BASIC_CONSULTATION,
   CAPABILITY.REFERRAL_CREATE,
-  CAPABILITY.REFERRAL_READ
+  CAPABILITY.REFERRAL_READ,
+  CAPABILITY.REFERRAL_READ_DETAIL,
+  CAPABILITY.REFERRAL_PRINT,
+  CAPABILITY.REFERRAL_IMPORT
 ]);
 
 const LOCAL_OFFICE_CAPABILITIES = Object.freeze([

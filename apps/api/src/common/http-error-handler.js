@@ -20,6 +20,17 @@ function errorHandler(logger) {
       return;
     }
 
+    if (err && err.type === 'entity.too.large') {
+      logger.info('Solicitud rechazada', { code: 'VALIDATION_ERROR', status: 413, path: logPath(req.path) });
+      res.status(413).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'El archivo supera el tamaño permitido.'
+        }
+      });
+      return;
+    }
+
     if (err instanceof SyntaxError && err.status === 400) {
       logger.info('Solicitud rechazada', { code: 'VALIDATION_ERROR', status: 400, path: logPath(req.path) });
       res.status(400).json({

@@ -7,6 +7,9 @@ const { createInstitutionalSession } = require('./infrastructure/auth/institutio
 const { createTechnicalRouter } = require('./modules/technical/technical-routes');
 const { createInstitutionalModule } = require('./modules/institutional/create-institutional-module');
 const { createInstitutionalRouter } = require('./modules/institutional/institutional-routes');
+const { createReferenceModule } = require('./modules/references/create-reference-module');
+const { createReferenceRouter } = require('./modules/references/reference-routes');
+const { MAX_TEMPLATE_BYTES } = require('./modules/references/reference-constants');
 
 function applySecurityHeaders(req, res, next) {
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -22,7 +25,7 @@ function applyCors(corsOrigin) {
     if (origin && origin === corsOrigin) {
       res.setHeader('Access-Control-Allow-Origin', origin);
       res.setHeader('Vary', 'Origin');
-      res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
       res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     }
     if (req.method === 'OPTIONS') {
@@ -45,10 +48,23 @@ function createApp(dependencies) {
   });
   app.use(applySecurityHeaders);
   app.use(applyCors(dependencies.config.corsOrigin));
+  app.use('/api/references/template', (req, res, next) => {
+    if (req.method !== 'POST') {
+      next();
+      return;
+    }
+    express.raw({ type: () => true, limit: MAX_TEMPLATE_BYTES })(req, res, next);
+  });
   app.use(express.json({ limit: '100kb' }));
   app.use(createTechnicalRouter({ ...dependencies, logger }));
   app.use('/api', createInstitutionalSession(dependencies.config));
+  const references = dependencies.references || createReferenceModule({
+    periodId: dependencies.config.sidinaccPeriodId,
+    adapter: dependencies.adapter,
+    sia: dependencies.databases && dependencies.databases.sia
+  });
   app.use('/api/institutional', createInstitutionalRouter(institutional));
+  app.use('/api/references', createReferenceRouter(references));
   app.use(notFoundHandler);
   app.use(errorHandler(logger));
   return app;

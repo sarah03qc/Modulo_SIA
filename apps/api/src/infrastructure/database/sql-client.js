@@ -17,6 +17,24 @@ function denied(value) {
   return value === 0 || value === '0' || value === false;
 }
 
+/**
+ * Error de una sentencia SQL ya ejecutada.
+ * Conserva el número del motor para que el servicio distinga duplicado,
+ * interbloqueo o permiso, sin exponer el texto del motor al cliente.
+ */
+class SqlExecutionError extends Error {
+  /**
+   * @param {Error} source Error original del controlador.
+   */
+  constructor(source) {
+    super('La operación de base de datos no se completó.');
+    this.name = 'SqlExecutionError';
+    this.driverCode = source && source.code ? String(source.code) : 'DB_ERROR';
+    this.sqlNumber = readSqlNumber(source);
+    this.permissionDenied = this.sqlNumber === 229 || this.sqlNumber === 230;
+  }
+}
+
 function readSqlNumber(error) {
   if (!error || typeof error !== 'object') {
     return null;
@@ -35,6 +53,40 @@ function readSqlNumber(error) {
     }
   }
   return null;
+}
+
+/**
+ * Indica si el fallo es de conexión y conviene descartar el pool.
+ *
+ * @param {Error} error Error del controlador o de la red.
+ * @returns {boolean} true cuando no se trata de un rechazo de sentencia.
+ */
+function isConnectionFailure(error) {
+  const code = error && error.code;
+  return code === 'ECONNRESET' || code === 'ESOCKET' || code === 'ETIMEOUT' || code === 'ELOGIN';
+}
+
+/**
+ * Asigna parámetros planos o tipados a una solicitud de mssql.
+ * Un valor `{ type, value }` fija el tipo SQL, incluido NULL.
+ *
+ * @param {object} request Solicitud o solicitud de transacción.
+ * @param {object} parameters Mapa de parámetros.
+ * @returns {void}
+ */
+function bindParameters(request, parameters) {
+  for (const [name, value] of Object.entries(parameters || {})) {
+    if (
+      value
+      && typeof value === 'object'
+      && Object.prototype.hasOwnProperty.call(value, 'type')
+      && Object.prototype.hasOwnProperty.call(value, 'value')
+    ) {
+      request.input(name, value.type, value.value);
+    } else {
+      request.input(name, value);
+    }
+  }
 }
 
 function toMssqlConfig(database, timeouts, poolMax) {
@@ -80,9 +132,7 @@ function createSqlClient(options) {
     try {
       const active = await getPool();
       const request = active.request();
-      for (const [name, value] of Object.entries(parameters)) {
-        request.input(name, value);
-      }
+      bindParameters(request, parameters);
       const result = await request.query(sqlText);
       return result.recordset;
     } catch (error) {
@@ -98,6 +148,60 @@ function createSqlClient(options) {
       // 229 y 230 son denegacion de permiso, no una conexion rota. El mensaje no sale al cliente.
       failure.permissionDenied = sqlNumber === 229 || sqlNumber === 230;
       if (!failure.permissionDenied) {
+        await close();
+      }
+      throw failure;
+    }
+  }
+
+  /**
+   * Ejecuta varias sentencias en una transacción READ COMMITTED.
+ * Confirma solo si el trabajo termina. Cualquier error revierte todo.
+ * Si el cliente es de solo lectura, cada sentencia pasa el mismo filtro que `query`.
+ * No cierra el pool por un duplicado o un permiso denegado.
+   *
+   * @param {function} work Recibe `{ query }` ligado a la transacción.
+   * @returns {Promise<*>} Valor devuelto por el trabajo.
+   * @throws {SqlExecutionError} Cuando el motor rechaza la transacción.
+   */
+  async function withTransaction(work) {
+    const active = await getPool();
+    const beginTransaction = options.beginTransaction || ((pool) => new sql.Transaction(pool));
+    const transaction = beginTransaction(active);
+    await transaction.begin();
+    try {
+      const value = await work({
+        async query(sqlText, parameters) {
+          if (writeFilterEnabled) {
+            assertInstitutionalRead(sqlText);
+          }
+          const request = new sql.Request(transaction);
+          bindParameters(request, parameters);
+          const result = await request.query(sqlText);
+          return result.recordset;
+        }
+      });
+      await transaction.commit();
+      return value;
+    } catch (error) {
+      try {
+        await transaction.rollback();
+      } catch {
+        // El motor ya pudo revertir la transacción antes de este punto.
+      }
+      if (
+        error
+        && (
+          error.expose === true
+          || error.domain === true
+          || error instanceof InfrastructureError
+          || error instanceof SqlExecutionError
+        )
+      ) {
+        throw error;
+      }
+      const failure = new SqlExecutionError(error);
+      if (!failure.permissionDenied && isConnectionFailure(error)) {
         await close();
       }
       throw failure;
@@ -134,6 +238,7 @@ function createSqlClient(options) {
     databaseName: options.databaseName,
     writeFilterEnabled,
     query,
+    withTransaction,
     probe,
     close
   };
@@ -178,6 +283,7 @@ function createDatabaseGateway(config, dependencies = {}) {
 
 module.exports = {
   PROBE_SQL,
+  SqlExecutionError,
   toMssqlConfig,
   createSqlClient,
   createDatabaseGateway
