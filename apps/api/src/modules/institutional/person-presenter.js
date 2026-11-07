@@ -1,5 +1,7 @@
 'use strict';
 
+const { applyFieldPolicy } = require('../../infrastructure/auth/field-policy');
+
 const CASE_FIELDS = Object.freeze([
   'caseId',
   'status',
@@ -92,8 +94,15 @@ function provenance(periodId) {
   };
 }
 
+/*
+  Propósito: presentar la página de búsqueda sin campos restringidos
+  Entrada: modo, página, filas, ámbito y contexto de acceso
+  Salida: cuerpo HTTP de la búsqueda contextual
+*/
 function presentSearch(input) {
-  const items = input.rows.map((row) => presentIdentity(row, input.today));
+  const items = input.rows
+    .map((row) => presentIdentity(row, input.today))
+    .map((item) => applyFieldPolicy(item, input.access));
   return {
     query: {
       matchMode: input.matchMode,
@@ -204,10 +213,15 @@ function presentCases(cases) {
   };
 }
 
+/*
+  Propósito: presentar la ficha básica y retirar los campos que el rol no puede ver
+  Entrada: fila institucional, servicios, encargado, resumen de casos y contexto
+  Salida: ficha ya filtrada por la política de campos
+*/
 function presentProfile(input) {
   const identity = presentIdentity(input.person, input.today);
   const cases = presentCases(input.cases);
-  return {
+  return applyFieldPolicy({
     ...identity,
     provenance: provenance(input.periodId),
     familyContext: {
@@ -218,7 +232,7 @@ function presentProfile(input) {
     services: presentServices(input.services),
     guardian: presentGuardian(input.guardianRows, input.person),
     interdisciplinaryAttention: cases
-  };
+  }, input.access);
 }
 
 module.exports = {

@@ -1,52 +1,42 @@
 'use strict';
 
 const { AuthenticationNotConfiguredError, UnauthorizedError } = require('../../common/errors');
-const { findDevelopmentPrincipal } = require('./development-access');
+const { resolvePresentedIdentity } = require('./identity-provider');
+const { adaptInstitutionalIdentity } = require('./institutional-identity-adapter');
 
-const BEARER = /^Bearer ([A-Za-z0-9._-]+)$/;
+/*
+  Frontera HTTP de identidad.
+  Fuera de development y test no interpreta la credencial: responde el contrato SIDINACC.
+  En local, el proveedor sintético y el adaptador arman req.access.
+  Los encabezados de rol, capacidad o establecimiento no se leen.
+*/
 
+/*
+  Propósito: adjuntar el contexto interno a la solicitud, o rechazarla
+  Entrada: configuración con nodeEnv
+  Salida: middleware de Express
+  Sin credencial local responde 401 AUTHENTICATION_NOT_CONFIGURED
+  Con credencial desconocida o mal formada responde 401 UNAUTHORIZED
+*/
 function createInstitutionalSession(config) {
   return function institutionalSession(req, res, next) {
-    const localIdentityAllowed = Boolean(
-      config
-      && (config.nodeEnv === 'development' || config.nodeEnv === 'test')
-    );
-    if (!localIdentityAllowed) {
+    const resolution = resolvePresentedIdentity({
+      nodeEnv: config && config.nodeEnv,
+      authorizationHeader: req.get('authorization')
+    });
+    if (resolution.status === 'unconfigured' || resolution.status === 'anonymous') {
       next(new AuthenticationNotConfiguredError());
       return;
     }
-
-    const header = req.get('authorization');
-    if (!header) {
-      next(new AuthenticationNotConfiguredError());
+    if (resolution.status !== 'authenticated') {
+      next(new UnauthorizedError(resolution.message || 'La credencial de acceso no es válida.'));
       return;
     }
-
-    const match = BEARER.exec(header.trim());
-    if (!match) {
-      next(new UnauthorizedError('La credencial de acceso no es válida.'));
-      return;
-    }
-
-    const principal = findDevelopmentPrincipal(match[1]);
-    if (!principal) {
-      next(new UnauthorizedError('La identidad de desarrollo no está autorizada.'));
-      return;
-    }
-
-    // X-Access-Level, X-Establishment-Id y parametros de rol no se leen.
-    // La autorizacion sale solo de este registro controlado por el servidor.
-    req.access = {
-      principalId: principal.principalId,
-      accessLevel: principal.accessLevel,
-      regionId: principal.regionId,
-      localOfficeId: principal.localOfficeId,
-      establishmentIds: principal.establishmentIds
-        ? principal.establishmentIds.slice()
-        : null
-    };
+    req.access = adaptInstitutionalIdentity(resolution.identity);
     next();
   };
 }
 
-module.exports = { createInstitutionalSession };
+module.exports = {
+  createInstitutionalSession
+};

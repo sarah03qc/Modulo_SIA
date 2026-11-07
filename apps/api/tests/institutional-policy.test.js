@@ -2,6 +2,7 @@
 
 const { ForbiddenError, ValidationError, AmbiguousInstitutionalLocationError } = require('../src/common/errors');
 const { findDevelopmentPrincipal } = require('../src/infrastructure/auth/development-access');
+const { createUserContext } = require('../src/infrastructure/auth/user-context');
 const { resolveTerritorialScope } = require('../src/modules/institutional/territorial-scope');
 const { createPersonQueryService } = require('../src/modules/institutional/person-query-service');
 const { completedYears, CASE_FIELDS } = require('../src/modules/institutional/person-presenter');
@@ -13,14 +14,7 @@ const { assertInstitutionalRead } = require('../src/infrastructure/database/inst
 const TODAY = new Date(2026, 10, 6);
 
 function accessOf(principalId) {
-  const principal = findDevelopmentPrincipal(principalId);
-  return {
-    principalId: principal.principalId,
-    accessLevel: principal.accessLevel,
-    regionId: principal.regionId,
-    localOfficeId: principal.localOfficeId,
-    establishmentIds: principal.establishmentIds ? principal.establishmentIds.slice() : null
-  };
+  return createUserContext(findDevelopmentPrincipal(principalId));
 }
 
 function territory() {

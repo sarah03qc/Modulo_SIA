@@ -32,9 +32,44 @@ No se han acreditado aún contra documentos institucionales del repositorio.
 - NV-06: descubrimiento real en la versión instalada de Cursor pendiente de
   revisión humana en Customize. Validación estática no prueba carga en runtime.
 
+## NEEDS_VALIDATION — autorización interna, 2026-11-06
+
+La consolidación no cierra estos puntos. El comportamiento entregado los deja
+denegados o sin mecanismo, no los resuelve por suposición.
+
+- NV-AUTH-01: mecanismo de sesión SIDINACC, formato de credencial, identificador
+  de usuario y lugar del que se leen perfil y establecimientos. Responsable: UTIC.
+- NV-AUTH-02: correspondencia entre un perfil institucional y un rol interno de
+  SIA. El adaptador rechaza una fuente distinta del registro sintético.
+- NV-AUTH-03: si una misma persona puede tener roles de distinto nivel y cómo se
+  consulta la unión de esos ámbitos. Hoy esa combinación responde 403.
+- NV-AUTH-04: si dos oficinas o dos regiones del mismo rol se consultan juntas.
+  Hoy tampoco se colapsan en una sola consulta.
+- NV-AUTH-05: si Regional y Nacional ven valoración, riesgo, protección, plan,
+  atenciones y documentos al consultar casos. Hoy esos campos se retiran.
+- NV-AUTH-07: visualizaciones y KPI de Reportería para Establecimiento. No se
+  concede `reporting.read` a ese rol.
+- NV-AUTH-08: operaciones concretas de ACT-07. `catalog.manage` existe y ningún
+  rol interno la tiene.
+- NV-AUTH-09: exportación masiva de RF-020. La capacidad `reporting.export`
+  está declarada para Oficina Local, Región y Nacional, y no tiene ruta.
+
 Responsable de cierre: revisión humana institucional/técnica según tema.
 Cada cierre debe añadir fuente, versión, decisión y alcance afectado; no basta
 cambiar una etiqueta. Estos pendientes no impiden completar infraestructura.
+
+## Decisión funcional — actores de Oficina Local, 2026-11-06
+
+NV-AUTH-06 queda cerrado. No se reutiliza ese identificador.
+
+Aclaración del proyecto: ACT-02, ACT-03 y ACT-04 comparten las mismas
+capacidades y permisos en SIA-CENCINAI. ACT-03 es el equipo formado por esos
+profesionales, no un rol adicional. La jefatura, ACT-04, no recibe permisos
+distintos por su liderazgo. El rol interno sigue siendo `OFICINA_LOCAL`.
+
+Fuente: aclaración funcional del 2026-11-06. Registro:
+`docs/decisions/0003-local-office-actors.md`. Alcance: autorización del módulo.
+No cierra la integración con UTIC ni los demás NV-AUTH.
 
 ## Referencias técnicas consultadas
 

@@ -87,13 +87,15 @@ El filtro del cliente institucional es una defensa adicional, no un analizador S
 
 El contrato HTTP está en `docs/architecture/INSTITUTIONAL_PERSON_API.md`. Si la fuente no responde, la API sigue en ejecución, `/ready` queda `unavailable` y la búsqueda contextual responde `503`.
 
-## Autenticación
+## Autenticación y autorización
 
 `NEEDS_VALIDATION`: el mecanismo de sesión SIDINACC no está definido. No hay login, usuarios ni contraseñas del módulo. Sin credencial, `GET /api/*` responde `401` con `AUTHENTICATION_NOT_CONFIGURED`.
 
-En `development` y `test`, el servidor reconoce identidades sintéticas declaradas en código. El cliente presenta `Authorization: Bearer` con el identificador ya asociado por el servidor. Un encabezado de rol, ámbito o establecimiento no cambia esa identidad. Esa vía no es la integración productiva y no existe cuando `NODE_ENV` no es `development` ni `test`. El arranque productivo sigue rechazado.
+La frontera queda separada en proveedor de identidad, adaptador institucional, contexto interno, políticas de capacidad, resolución territorial y comprobación en ruta y servicio. El detalle está en `docs/architecture/AUTHORIZATION_MODEL.md` y en `docs/decisions/0002-authorization-model.md`.
 
-Ocultar botones no se usa como autorización. Los endpoints técnicos `/health` y `/ready` son públicos y solo escuchan en `127.0.0.1` o `localhost`.
+En `development` y `test`, el servidor reconoce identidades sintéticas declaradas en código. El cliente presenta `Authorization: Bearer` con el identificador ya asociado por el servidor. Un encabezado de rol, capacidad, ámbito o establecimiento no cambia esa identidad. Esa vía no es la integración productiva y no existe cuando `NODE_ENV` no es `development` ni `test`. El arranque productivo sigue rechazado.
+
+Las operaciones protegidas exigen una capacidad interna. La denegación es el resultado por defecto. Ocultar botones no se usa como autorización. Los endpoints técnicos `/health` y `/ready` son públicos y solo escuchan en `127.0.0.1` o `localhost`.
 
 El arranque con `NODE_ENV=production` se rechaza. No hay configuración productiva.
 

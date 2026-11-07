@@ -354,8 +354,7 @@ Datos sensibles propios: motivos y especificaciones, acciones y resultados previ
 | Actor | Lectura operativa | Escritura |
 | --- | --- | --- |
 | ACT-01 Establecimiento, ASC2 y ASC3 equivalentes | Referencias de sus establecimientos, posibles referencias, lista mínima de casos | Referencias. No sesión, valoración, plan, atención, cierre ni expediente interno. |
-| ACT-02 y ACT-04 Oficina Local | Ámbito de su Oficina Local | Operación de A.I. |
-| ACT-03 Equipo interdisciplinario | Igual, con valoración y resolución | Sesión, valoración, resolución, apertura |
+| ACT-02, ACT-03 y ACT-04 Oficina Local | Ámbito de su Oficina Local, con las mismas capacidades | La misma operación de A.I. Sin subroles. Decisión `docs/decisions/0003-local-office-actors.md` |
 | ACT-05 Regional | Consulta de su Región | Sin operación de caso ni programación |
 | ACT-06 Nacional | Consulta nacional | Sin operación de caso ni programación |
 | ACT-07 Administración de catálogos | Catálogos | Configuración autorizada |

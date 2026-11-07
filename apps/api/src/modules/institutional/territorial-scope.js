@@ -1,7 +1,14 @@
 'use strict';
 
+/*
+  Resolución del ámbito territorial sobre la jerarquía
+  Establecimiento, Oficina Local, Región y Nacional.
+  Aplica el ancla ya concedida. No elige el rol ni lee la solicitud cruda.
+  RF-012, RF-104 y RNF-001.
+*/
+
 const { ForbiddenError, ValidationError } = require('../../common/errors');
-const { ACCESS_LEVEL } = require('../../infrastructure/auth/development-access');
+const { ACCESS_LEVEL } = require('../../infrastructure/auth/institutional-roles');
 
 const OUTSIDE_SCOPE = 'El filtro territorial está fuera del ámbito autorizado.';
 const INCOMPATIBLE = 'La combinación territorial no es compatible.';
@@ -177,6 +184,26 @@ async function resolveNationalLevel(access, filters, territory) {
   });
 }
 
+/*
+  Propósito: impedir que roles de distinto nivel se consulten como un solo ámbito
+  Entrada: contexto interno
+  Salida: el mismo contexto cuando ya tiene un ancla confirmada
+  Varias concesiones de Establecimiento llegan unidas y no entran en este rechazo
+  La unión entre niveles distintos sigue NEEDS_VALIDATION y no amplía la consulta
+*/
+function assertConfirmedTerritorialAnchor(access) {
+  if (access && access.accessLevel) {
+    return access;
+  }
+  const grantCount = access && Array.isArray(access.grants) ? access.grants.length : 0;
+  if (grantCount > 1) {
+    throw new ForbiddenError(
+      'La combinación de concesiones no tiene una regla de consulta confirmada.'
+    );
+  }
+  throw new ForbiddenError(MISSING_SCOPE);
+}
+
 async function resolveTerritorialScope(access, filters, territory) {
   requireAccess(access);
   const requested = {
@@ -201,5 +228,6 @@ async function resolveTerritorialScope(access, filters, territory) {
 }
 
 module.exports = {
-  resolveTerritorialScope
+  resolveTerritorialScope,
+  assertConfirmedTerritorialAnchor
 };

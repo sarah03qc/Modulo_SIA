@@ -14,15 +14,20 @@ En `development` y `test` el servidor acepta `Authorization: Bearer <principalId
 
 Esas identidades son sintéticas, de alcance local, y no deben presentarse como integración con UTIC. Fuera de `development` y `test` la vía queda cerrada. El proceso tampoco arranca con `NODE_ENV=production`.
 
+Cada operación exige además una capacidad interna. Un encabezado `X-Capability`, `X-Role` o un parámetro `capability` no la concede. Sin capacidades, la identidad conocida responde `403` `FORBIDDEN`. El catálogo y los pendientes de UTIC están en `docs/architecture/AUTHORIZATION_MODEL.md`.
+
 | principalId | Ámbito |
 | --- | --- |
 | `dev-establecimiento-unico` | Establecimiento `1100102` |
-| `dev-establecimiento-multiple` | Establecimientos `1100102` y `1010320` |
+| `dev-establecimiento-multiple` | Establecimientos `1100102` y `1010320` en una sola concesión |
+| `dev-establecimientos-por-rol` | Los mismos dos establecimientos, en dos concesiones del rol Establecimiento |
 | `dev-oficina-hatillo` | Oficina Local `101`, Región `1` |
 | `dev-oficina-perez-zeledon` | Oficina Local `501`, Región `5` |
 | `dev-region-central-sur` | Región `1` |
 | `dev-region-brunca` | Región `5` |
 | `dev-nacional` | Ámbito nacional de la réplica |
+| `dev-roles-heterogeneos` | Establecimiento `1100102` y rol Nacional. La consulta no se ejecuta: la combinación de niveles no está confirmada |
+| `dev-sin-capacidades` | Identidad conocida sin concesiones. Las operaciones responden `403` |
 
 Los identificadores territoriales son del catálogo público ya cargado en la réplica. No son datos de personas reales.
 
@@ -119,7 +124,7 @@ Si el motor niega el `SELECT`, la ficha no cierra el pool y responde `availabili
 | 400 | `VALIDATION_ERROR` | Criterio, página o combinación territorial inválida |
 | 401 | `AUTHENTICATION_NOT_CONFIGURED` | No hay credencial ni sesión institucional |
 | 401 | `UNAUTHORIZED` | La credencial local no está registrada |
-| 403 | `FORBIDDEN` | Filtro fuera del ámbito, o no hay contexto de acceso |
+| 403 | `FORBIDDEN` | Filtro fuera del ámbito, capacidad ausente, o combinación de roles de distinto nivel |
 | 404 | `NOT_FOUND` | La persona no está disponible en el ámbito |
 | 409 | `INSTITUTIONAL_LOCATION_AMBIGUOUS` | Más de un detalle familiar del período dentro del ámbito |
 | 503 | `INFRASTRUCTURE_UNAVAILABLE` | La base no respondió. El cuerpo no incluye el error del motor |

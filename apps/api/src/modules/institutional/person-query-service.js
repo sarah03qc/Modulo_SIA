@@ -1,8 +1,10 @@
 'use strict';
 
 const { NotFoundError, AmbiguousInstitutionalLocationError } = require('../../common/errors');
-const { ACCESS_LEVEL } = require('../../infrastructure/auth/development-access');
-const { resolveTerritorialScope } = require('./territorial-scope');
+const { ACCESS_LEVEL } = require('../../infrastructure/auth/institutional-roles');
+const { CAPABILITY } = require('../../infrastructure/auth/capabilities');
+const { requireCapability } = require('../../infrastructure/auth/authorization-policy');
+const { resolveTerritorialScope, assertConfirmedTerritorialAnchor } = require('./territorial-scope');
 const { presentSearch, presentProfile } = require('./person-presenter');
 
 /*
@@ -46,11 +48,26 @@ function createPersonQueryService(dependencies) {
   const clock = dependencies.clock || (() => new Date());
   const territory = territoryPort(adapter);
 
+  /*
+    Propósito: resolver el ámbito después de comprobar que el ancla territorial es consultable
+    Entrada: contexto interno y filtros ya validados
+    Salida: ámbito efectivo para la lectura institucional
+  */
   async function resolve(access, filters) {
+    if (!access || !access.accessLevel) {
+      assertConfirmedTerritorialAnchor(access);
+    }
     return resolveTerritorialScope(access, filters, territory);
   }
 
+  /*
+    Propósito: buscar personas dentro del ámbito y de la capacidad person.search
+    Entrada: contexto interno y criterio de búsqueda
+    Salida: página contextual. Sin capacidad responde 403 y no consulta la réplica
+    HU-005 a HU-008, CU-02, RF-009 y RF-012
+  */
   async function searchPersons(access, criteria) {
+    requireCapability(access, CAPABILITY.PERSON_SEARCH);
     const scope = await resolve(access, criteria);
     const exact = await adapter.searchPersons({
       mode: 'identification',
@@ -81,11 +98,20 @@ function createPersonQueryService(dependencies) {
       rows: chosen.result.items,
       scope: presentableScope(access, scope),
       periodId,
-      today: clock()
+      today: clock(),
+      access
     });
   }
 
+  /*
+    Propósito: devolver la ficha básica de una persona localizable en el ámbito
+    Entrada: contexto interno e identificador institucional de la réplica
+    Salida: ficha proyectada con la política de campos
+    Sin person.profile.read responde 403. Fuera de ámbito responde 404
+    HU-009, CU-03 y RF-012
+  */
   async function getPerson(access, personId) {
+    requireCapability(access, CAPABILITY.PERSON_PROFILE_READ);
     const scope = await resolve(access, {
       regionId: null,
       localOfficeId: null,
@@ -114,11 +140,19 @@ function createPersonQueryService(dependencies) {
       guardianRows,
       cases: caseSummary,
       periodId,
-      today: clock()
+      today: clock(),
+      access
     });
   }
 
+  /*
+    Propósito: listar solo las opciones territoriales que el ámbito autoriza
+    Entrada: contexto interno y filtros solicitados
+    Salida: opciones de región, oficina y establecimiento
+    Exige territory.options.read. Un filtro ajeno no amplía el catálogo
+  */
   async function listTerritoryOptions(access, filters) {
+    requireCapability(access, CAPABILITY.TERRITORY_OPTIONS_READ);
     const scope = await resolve(access, filters);
     const regions = await regionsFor(access, scope);
     const offices = await officesFor(access, scope);
