@@ -57,13 +57,13 @@ Los códigos son internos. No son nombres de perfil de SIDINACC.
 
 Varios establecimientos del rol Establecimiento se unen. Es la regla de RF-104. Dos concesiones o una sola lista producen el mismo ancla.
 
-Roles de distinto nivel, o dos oficinas, o dos regiones, no se convierten en una consulta más amplia. El contexto conserva la lista de capacidades de esos roles, pero `scopeConfirmed` queda en falso. `hasCapability` y `requireCapability` no las conceden. La operación responde `403` antes de consultar. Esa composición queda en `NEEDS_VALIDATION`.
+Roles de distinto nivel, o dos oficinas, o dos regiones, no se convierten en una consulta más amplia. El contexto conserva la lista de capacidades de esos roles, pero `scopeConfirmed` queda en falso. `TieneCapacidad` y `ExigirCapacidad` no las conceden. La operación responde `403` antes de consultar. Esa composición queda en `NEEDS_VALIDATION`.
 
 ## Cómo agregar una capacidad
 
 1. Declarar el código en `CAPABILITY`.
 2. Concederlo solo en los roles que la especificación confirmada autoriza.
-3. Exigirlo con `createCapabilityGuard` en la ruta y con `requireCapability` en el servicio.
+3. Exigirlo con `CrearControlCapacidad` en la ruta y con `ExigirCapacidad` en el servicio.
 4. Si la respuesta puede incluir un campo sensible, registrarlo en `RESTRICTED_FIELDS`.
 5. Reutilizar `resolveTerritorialScope` para el ámbito. No leer rol ni establecimiento desde la solicitud.
 6. Agregar una prueba que concede la operación y otra que la rechaza, incluida la ausencia de la capacidad.

@@ -1,5 +1,11 @@
 'use strict';
 
+/*
+  Validación de las consultas institucionales.
+  Estos campos piden un filtro. No conceden permiso.
+  El servicio decide después si ese filtro cabe en el acceso autorizado.
+*/
+
 const { ValidationError } = require('../../common/errors');
 
 const SEARCH_LIMITS = Object.freeze({
@@ -19,6 +25,10 @@ function validationError(message) {
   return new ValidationError(message);
 }
 
+/**
+ * Lee un identificador opcional de región, oficina o establecimiento.
+ * Vacío significa que el filtro no se pidió. Un texto que no sea un entero positivo se rechaza.
+ */
 function readOptionalId(value, label) {
   if (value === undefined || value === null || value === '') {
     return null;
@@ -52,6 +62,12 @@ function readPageSize(value) {
   return pageSize;
 }
 
+/**
+ * Interpreta la búsqueda de personas.
+ *
+ * Exige un texto de al menos dos caracteres. La página y el tamaño tienen tope
+ * para no pedir un recorrido ilimitado. Los filtros territoriales son opcionales.
+ */
 function readSearchQuery(query) {
   const source = query || {};
   if (typeof source.q !== 'string') {
@@ -81,6 +97,10 @@ function readSearchQuery(query) {
   };
 }
 
+/**
+ * Lee los filtros territoriales de las opciones de catálogo.
+ * Ninguno es obligatorio: el ámbito concedido completa lo que falte.
+ */
 function readTerritoryQuery(query) {
   const source = query || {};
   return {
@@ -90,6 +110,9 @@ function readTerritoryQuery(query) {
   };
 }
 
+/**
+ * Acepta el identificador de persona de la ruta si usa letras, números o guiones.
+ */
 function readPersonId(value) {
   if (typeof value !== 'string' || !PERSON_ID.test(value) || value.length > SEARCH_LIMITS.maxPersonIdLength) {
     throw validationError('El identificador de la persona no es válido.');

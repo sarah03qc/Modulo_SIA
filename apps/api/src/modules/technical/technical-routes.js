@@ -3,6 +3,14 @@
 const express = require('express');
 const { asyncHandler } = require('../../common/async-handler');
 
+/**
+ * Rutas de diagnóstico. No exigen sesión.
+ *
+ * /health indica que el proceso responde.
+ * /ready comprueba SIA_CENCINAI y la réplica. En la réplica informa
+ * si la cuenta se ve como solo lectura. Si una dependencia falla,
+ * responde no disponible y no incluye el detalle del error.
+ */
 function createTechnicalRouter(dependencies) {
   const router = express.Router();
   const logger = dependencies.logger;

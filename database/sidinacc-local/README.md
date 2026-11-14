@@ -6,7 +6,7 @@
 de datos SIDINACC/CAH que SIA-CENCINAI v0.1 necesita consumir.
 
 Contrato fuente: [`docs/architecture/SIDINACC_LOCAL_REPLICA_SPEC.md`](../../docs/architecture/SIDINACC_LOCAL_REPLICA_SPEC.md)
-(v0.1, **pendiente de validación contra el DDL real de UTIC**). Ante cualquier diferencia
+(v0.2, **pendiente de validación contra el DDL real de UTIC**). Ante cualquier diferencia
 entre este README y la especificación, prevalece la especificación.
 
 ## 2. Qué representa y qué NO representa
@@ -28,8 +28,9 @@ Doce provienen de spec §20. Tres más (`CAF_MENOR`, `CAF_EVALUACION_MENOR`,
 y `FAD_telefonoDos` amplían la superficie que SIA consulta hoy. Sus tipos salen de
 las fichas del análisis CAH, no de un DDL productivo.
 
-`NEEDS_VALIDATION`: `docs/architecture/SIDINACC_LOCAL_REPLICA_SPEC.md` v0.1 todavía
-excluye esas tres tablas y no declara dirección ni teléfonos. No se reescribió la spec.
+La especificación v0.2 documenta esas tres tablas y los campos de contacto familiar.
+`NEEDS_VALIDATION`: UTIC debe confirmar la superficie de lectura, los tipos, las claves
+y la semántica de esos campos en el entorno institucional.
 
 Todas en esquema `dbo`, definidas en `010_schema_core.sql`.
 
@@ -402,19 +403,18 @@ prueba no es `PASS` lanza `THROW 50090`; si no se evaluaron exactamente 61 prueb
 `THROW 50091`. Con `sqlcmd -b` ambos producen un código de salida distinto de cero. En éxito
 imprime `SIDINACC_LOCAL smoke tests PASSED (61/61)`. Ese `61/61` es el contrato del script.
 
-Las pruebas de ámbito por usuario (Establecimiento, multiestablecimiento, OL, Regional) pertenecen
-al futuro adapter, porque la autorización local vive fuera de la BD (spec §16).
+Las pruebas de ámbito por usuario se ejecutan en la API. La autorización territorial se evalúa
+fuera de la réplica (spec §16).
 
 ## 17. Relación futura con SIA_CENCINAI
 
 - `SIDINACC_LOCAL` y `SIA_CENCINAI` son bases separadas; estos scripts no tocan `SIA_CENCINAI`.
 - SIA guardará solo `PER_idPersona` para vincular entidades A.I.; no copiará datos maestros
   salvo snapshot, denormalización o caché justificados (spec §8).
-- El acceso será mediante un futuro adaptador `SidinaccReader`.
+- La API de desarrollo consulta la réplica mediante el adaptador de
+  `apps/api/src/infrastructure/integrations/`.
 
-**No implementado todavía:** `SidinaccReader`, `SqlSidinaccReader`, `MockInstitutionalAuthProvider`,
-`users.json`, backend ni frontend. Este directorio solo contiene los scripts SQL de `SIDINACC_LOCAL`,
-el catálogo territorial derivado, el generador y este README.
+La autenticación y el acceso al entorno institucional siguen pendientes de validación con UTIC.
 
 ## 18. Estado de validación
 

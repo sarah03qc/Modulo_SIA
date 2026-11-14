@@ -2,7 +2,7 @@
 
 const request = require('supertest');
 const { createApp } = require('../src/app');
-const { errorHandler } = require('../src/common/http-error-handler');
+const { CrearControlErrores } = require('../src/common/http-error-handler');
 const { loadConfig } = require('../src/config/load-config');
 const { validEnv } = require('./env-fixture');
 
@@ -95,17 +95,22 @@ describe('API técnica', () => {
   });
 
   test('responde 404 controlado', async () => {
-    const { app } = createTestApp();
-    const response = await request(app).get('/recurso-desconocido');
+    const { app, logger } = createTestApp();
+    const response = await request(app).get('/recurso-desconocido/dato-sintetico');
     expect(response.status).toBe(404);
     expect(response.body.error.code).toBe('NOT_FOUND');
+    expect(logger.info).toHaveBeenCalledWith('Solicitud fallida', {
+      code: 'NOT_FOUND',
+      status: 404,
+      path: 'SIN_RUTA'
+    });
   });
 });
 
-describe('errorHandler', () => {
+describe('control central de errores HTTP', () => {
   test('oculta fallos internos y conserva los errores previstos', () => {
     const logger = { error: jest.fn(), info: jest.fn(), warn: jest.fn() };
-    const handler = errorHandler(logger);
+    const handler = CrearControlErrores(logger);
     const res = {
       headersSent: false,
       statusCode: 0,
@@ -130,7 +135,7 @@ describe('errorHandler', () => {
 
   test('no registra el identificador de la persona en la ruta', () => {
     const logger = { error: jest.fn(), info: jest.fn(), warn: jest.fn() };
-    const handler = errorHandler(logger);
+    const handler = CrearControlErrores(logger);
     const res = {
       headersSent: false,
       status(code) {
@@ -142,7 +147,11 @@ describe('errorHandler', () => {
       }
     };
     const { NotFoundError } = require('../src/common/errors');
-    handler(new NotFoundError(), { path: '/api/institutional/persons/SYN-1100102-01' }, res, jest.fn());
+    const req = {
+      path: '/api/institutional/persons/SYN-1100102-01',
+      route: { path: '/persons/:personId' }
+    };
+    handler(new NotFoundError(), req, res, jest.fn());
     expect(JSON.stringify(logger.info.mock.calls)).not.toContain('SYN-1100102-01');
     expect(JSON.stringify(logger.info.mock.calls)).toContain('/persons/:personId');
   });

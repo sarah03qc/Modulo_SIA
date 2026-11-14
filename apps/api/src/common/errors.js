@@ -1,5 +1,12 @@
 'use strict';
 
+/*
+  Errores HTTP que la API sí puede mostrar al cliente.
+  Cuando expose es verdadero, el manejador envía el mensaje.
+  Los fallos de base se traducen a estos tipos antes de salir,
+  para no revelar el texto del motor.
+*/
+
 class HttpError extends Error {
   constructor(status, code, message) {
     super(message);
@@ -22,6 +29,10 @@ class UnauthorizedError extends HttpError {
   }
 }
 
+/**
+ * La sesión institucional todavía no está integrada.
+ * No describe un token ni un perfil de SIDINACC.
+ */
 class AuthenticationNotConfiguredError extends HttpError {
   constructor() {
     super(
@@ -50,6 +61,10 @@ class ConflictError extends HttpError {
   }
 }
 
+/**
+ * Hay más de una ubicación en el periodo y el ámbito.
+ * No se elige una de forma automática.
+ */
 class AmbiguousInstitutionalLocationError extends HttpError {
   constructor() {
     super(

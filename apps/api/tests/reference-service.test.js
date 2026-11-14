@@ -5,7 +5,7 @@ const { findDevelopmentPrincipal } = require('../src/infrastructure/auth/develop
 const { ConflictError, NotFoundError, ValidationError } = require('../src/common/errors');
 const { createReferenceService } = require('../src/modules/references/reference-service');
 const { createReferenceRepository } = require('../src/modules/references/reference-repository');
-const { buildTemplateWorkbook, readTemplateWorkbook } = require('../src/modules/references/reference-template');
+const { GenerarLibroPlantilla, LeerLibroPlantilla } = require('../src/modules/references/reference-template');
 const { ACTIVE_CASE_MESSAGE } = require('../src/modules/references/reference-constants');
 
 function access(principalId) {
@@ -341,7 +341,7 @@ describe('servicio de referencias', () => {
   });
 
   test('la plantilla precarga y el envío reutiliza la misma confirmación', async () => {
-    const workbook = await buildTemplateWorkbook();
+    const workbook = await GenerarLibroPlantilla();
     const ExcelJS = require('exceljs');
     const book = new ExcelJS.Workbook();
     await book.xlsx.load(workbook);
@@ -384,7 +384,7 @@ describe('servicio de referencias', () => {
     const file = await service.downloadTemplate(access('dev-establecimiento-unico'));
     expect(file.contentType).toContain('spreadsheetml.sheet');
     expect(file.fileName).toBe('referencia-plantilla.xlsx');
-    const downloaded = await readTemplateWorkbook(file.body);
+    const downloaded = await LeerLibroPlantilla(file.body);
     expect(downloaded.templateVersion).toBe('SIA-REF-PLANTILLA-1');
     expect(downloaded.referral.personId).toBe('');
 
@@ -397,32 +397,32 @@ describe('servicio de referencias', () => {
   });
 
   test('rechaza plantilla dañada, versión ajena, fórmula y tamaño', async () => {
-    await expect(readTemplateWorkbook(Buffer.from('no-es-xlsx'))).rejects.toThrow(ValidationError);
-    await expect(readTemplateWorkbook(Buffer.concat([
+    await expect(LeerLibroPlantilla(Buffer.from('no-es-xlsx'))).rejects.toThrow(ValidationError);
+    await expect(LeerLibroPlantilla(Buffer.concat([
       Buffer.from('PK'),
       Buffer.from('esto-no-es-un-libro-de-excel')
     ]))).rejects.toThrow(/no pudo leerse|contenido activo|no es un libro/);
 
-    const workbook = await buildTemplateWorkbook();
+    const workbook = await GenerarLibroPlantilla();
     const ExcelJS = require('exceljs');
     const book = new ExcelJS.Workbook();
     await book.xlsx.load(workbook);
     book.getWorksheet('Referencia').getRow(2).getCell(1).value = 'OTRA-VERSION';
     const other = Buffer.from(await book.xlsx.writeBuffer());
-    await expect(readTemplateWorkbook(other)).rejects.toThrow(/versión/);
+    await expect(LeerLibroPlantilla(other)).rejects.toThrow(/versión/);
 
     const formulaBook = new ExcelJS.Workbook();
     await formulaBook.xlsx.load(workbook);
     formulaBook.getWorksheet('Referencia').getRow(2).getCell(6).value = { formula: '1+1', result: 2 };
     const withFormula = Buffer.from(await formulaBook.xlsx.writeBuffer());
-    await expect(readTemplateWorkbook(withFormula)).rejects.toThrow(/fórmulas/);
+    await expect(LeerLibroPlantilla(withFormula)).rejects.toThrow(/fórmulas/);
 
     const huge = Buffer.alloc(1024 * 1024 + 1, 1);
-    await expect(readTemplateWorkbook(huge)).rejects.toThrow(/tamaño/);
+    await expect(LeerLibroPlantilla(huge)).rejects.toThrow(/tamaño/);
     const active = Buffer.concat([workbook, Buffer.from('vbaProject')]);
-    await expect(readTemplateWorkbook(active)).rejects.toThrow(/contenido activo/);
+    await expect(LeerLibroPlantilla(active)).rejects.toThrow(/contenido activo/);
     const activeX = Buffer.concat([workbook, Buffer.from('xl/activeX')]);
-    await expect(readTemplateWorkbook(activeX)).rejects.toThrow(/contenido activo/);
+    await expect(LeerLibroPlantilla(activeX)).rejects.toThrow(/contenido activo/);
 
     const linked = new ExcelJS.Workbook();
     await linked.xlsx.load(workbook);
@@ -432,7 +432,7 @@ describe('servicio de referencias', () => {
       hyperlink: 'https://example.invalid/referencia'
     };
     const withLink = Buffer.from(await linked.xlsx.writeBuffer());
-    await expect(readTemplateWorkbook(withLink)).rejects.toThrow(/enlaces/);
+    await expect(LeerLibroPlantilla(withLink)).rejects.toThrow(/enlaces/);
 
     const orphan = new ExcelJS.Workbook();
     await orphan.xlsx.load(workbook);
@@ -441,7 +441,20 @@ describe('servicio de referencias', () => {
     orphanRow.getCell(7).value = 'CONDICION_MALNUTRICION';
     orphanRow.getCell(8).value = 'EDIN_II_RIESGO_RETRASO_ROJO=no seleccionada';
     const orphanFile = Buffer.from(await orphan.xlsx.writeBuffer());
-    await expect(readTemplateWorkbook(orphanFile)).rejects.toThrow(/no está seleccionado/);
+    await expect(LeerLibroPlantilla(orphanFile)).rejects.toThrow(/no está seleccionado/);
+  });
+
+  test.each([
+    ['A4', /una referencia por archivo/],
+    ['M1', /columnas que no pertenecen/],
+    ['M2', /columnas que no pertenecen/]
+  ])('la plantilla rechaza contenido fuera de la estructura en %s', async (celda, mensaje) => {
+    const ExcelJS = require('exceljs');
+    const libro = new ExcelJS.Workbook();
+    await libro.xlsx.load(await GenerarLibroPlantilla());
+    libro.getWorksheet('Referencia').getCell(celda).value = 'Dato sintético';
+    const archivo = Buffer.from(await libro.xlsx.writeBuffer());
+    await expect(LeerLibroPlantilla(archivo)).rejects.toThrow(mensaje);
   });
 
   test('lista por ámbito y niega el detalle ajeno sin confirmar existencia', async () => {

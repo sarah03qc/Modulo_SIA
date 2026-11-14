@@ -17,7 +17,9 @@ flowchart LR
   api -->|"pool institucional"| replica
 ```
 
-El navegador no abre conexiones SQL. Las rutas bajo `/api` quedan cerradas hasta integrar la sesión institucional.
+El navegador no abre conexiones SQL. Las rutas bajo `/api` requieren sesión.
+En desarrollo y pruebas usan identidades sintéticas. La sesión institucional
+sigue pendiente de validación e integración.
 
 ## Frontend
 
@@ -25,7 +27,8 @@ El navegador no abre conexiones SQL. Las rutas bajo `/api` quedan cerradas hasta
 
 - arranque, variables públicas y estados de carga, éxito, dependencia no disponible y error de conexión;
 - presentación accesible, sin datos personales ni flujos institucionales;
-- llamada HTTP a la API mediante `loadTechnicalStatus`.
+- llamada HTTP a la API mediante `ConsultarEstadoTecnico` en
+  `apps/web/src/servicios/estado-tecnico.js`.
 
 No hay gestor global de estado ni biblioteca de componentes. Los módulos de expediente, referencia, valoración, atención, programación y reportería no tienen pantallas.
 
@@ -54,12 +57,14 @@ Errores distinguibles: validación `400`, no autorizado `401`, prohibido `403`, 
 
 ## Módulos
 
-`institutional` implementa la consulta contextual de este lote. El resto sigue reservado hasta su historia. No hay carpetas vacías.
+`institutional` implementa la consulta contextual. `references` implementa el
+registro y la consulta de referencias. Los demás módulos quedan reservados para
+sus historias.
 
 | Módulo | Épica de la especificación v0.7 | Notas |
 | --- | --- | --- |
 | `institutional` | EP-01 | Implementado para búsqueda y ficha básica. No es una pantalla general de personas |
-| `references` | EP-02 | |
+| `references` | EP-02 | Borradores, envío, consulta, plantilla y documento de referencia. |
 | `assessments` | EP-03 | |
 | `cases` | EP-04 | |
 | `attentions` | EP-05 | |
@@ -74,7 +79,7 @@ Hay dos pools. Cada uno fija servidor, puerto, base, usuario y `appName`. El nom
 
 | Cliente | Base | Uso |
 | --- | --- | --- |
-| `sia` | `SIA_CENCINAI` | Disponibilidad, `dbo.schema_migracion` y `SELECT` sobre `dbo.caso_lista_establecimiento` |
+| `sia` | `SIA_CENCINAI` | Disponibilidad, registro de migraciones, vista de casos y operaciones de referencias según los permisos de objeto. |
 | `sidinacc` | `SIDINACC_LOCAL` | Disponibilidad y consulta de personas, territorio, servicios y persona encargada. El filtro rechaza una segunda sentencia, con o sin punto y coma, `SELECT *`, `alias.*` y verbos que no son una lectura |
 
 El filtro del cliente institucional es una defensa adicional, no un analizador SQL ni un sustituto del permiso en el motor. `writeFilterEnabled` indica que ese filtro está activo. `readOnly` en `/ready` es otra muestra: permisos de `INSERT`, `UPDATE`, `DELETE` y `sysadmin` del login. El pool reabre la conexión en la consulta siguiente si la anterior falló. Los tiempos de conexión y de solicitud salen de la configuración.

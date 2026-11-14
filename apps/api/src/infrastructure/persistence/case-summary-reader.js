@@ -11,6 +11,10 @@ const { InfrastructureError } = require('../../common/errors');
   la consulta se informa como bloqueada y no se simulan casos.
 */
 
+/**
+ * Convierte una lista de establecimientos en parámetros nombrados.
+ * El ámbito entra a SQL sin pegar los identificadores en el texto.
+ */
 function bindIdList(columnSql, ids, parameters) {
   const names = ids.map((id, index) => {
     const name = `establishment${index}`;
@@ -20,6 +24,12 @@ function bindIdList(columnSql, ids, parameters) {
   return `${columnSql} IN (${names.join(', ')})`;
 }
 
+/**
+ * Arma la consulta del resumen de casos para una persona y un ámbito.
+ *
+ * Recibe el ámbito ya resuelto. Filtra por persona y, según el nivel,
+ * por región, oficina o establecimientos. No trae valoración, riesgo ni plan.
+ */
 function buildCaseSummarySql(scope) {
   const parameters = {};
   const clauses = ['case_list.per_id_persona = @personId'];
@@ -50,6 +60,10 @@ ORDER BY case_list.fecha_apertura, case_list.caso_id
   };
 }
 
+/**
+ * Pasa una fila de la vista al resumen que usa el servicio.
+ * Las fechas ya vienen como texto de año, mes y día.
+ */
 function mapCase(row) {
   return {
     caseId: row.caso_id,
@@ -60,8 +74,18 @@ function mapCase(row) {
   };
 }
 
+/**
+ * Lee resúmenes de caso en SIA_CENCINAI.
+ * El ámbito lo aplica esta consulta. El permiso SQL es el de la cuenta técnica.
+ */
 function createCaseSummaryReader(client) {
   return {
+    /**
+     * Lista los casos visibles de la persona dentro del ámbito.
+     *
+     * Si la cuenta no tiene permiso de lectura, no inventa casos:
+     * informa la consulta como bloqueada. Otro error de base se propaga.
+     */
     async listAuthorizedSummaries(personId, scope) {
       if (!client || typeof client.query !== 'function') {
         throw new InfrastructureError('La base del módulo no está disponible.');

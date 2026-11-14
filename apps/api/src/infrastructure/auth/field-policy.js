@@ -1,7 +1,7 @@
 'use strict';
 
 const { CAPABILITY } = require('./capabilities');
-const { hasCapability } = require('./authorization-policy');
+const { TieneCapacidad } = require('./authorization-policy');
 
 /*
   Proyección de campos según capacidad.
@@ -43,13 +43,13 @@ function applyFieldPolicy(record, access) {
   }
   const copy = { ...record };
   for (const field of Object.keys(RESTRICTED_FIELDS)) {
-    if (Object.prototype.hasOwnProperty.call(copy, field) && !hasCapability(access, RESTRICTED_FIELDS[field])) {
+    if (Object.prototype.hasOwnProperty.call(copy, field) && !TieneCapacidad(access, RESTRICTED_FIELDS[field])) {
       delete copy[field];
     }
   }
   if (copy.interdisciplinaryAttention && typeof copy.interdisciplinaryAttention === 'object') {
     const attention = { ...copy.interdisciplinaryAttention };
-    if (!hasCapability(access, CAPABILITY.CASE_SUMMARY_READ)) {
+    if (!TieneCapacidad(access, CAPABILITY.CASE_SUMMARY_READ)) {
       attention.availability = 'BLOCKED';
       attention.reasonCode = 'PERMISSION_PENDING';
       attention.source = null;

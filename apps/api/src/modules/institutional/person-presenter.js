@@ -17,6 +17,9 @@ function cleanPart(value) {
   return value.trim();
 }
 
+/**
+ * Une nombre y apellidos y deja fuera las partes vacías.
+ */
 function fullName(row) {
   return [row.given_name, row.first_surname, row.second_surname]
     .map(cleanPart)
@@ -35,8 +38,12 @@ function isoDate(value) {
   return text;
 }
 
+/**
+ * Calcula los años cumplidos con la fecha local del proceso.
+ * Si la fecha no es usable, o la edad queda fuera de un rango razonable, devuelve vacío.
+ * La zona horaria institucional sigue pendiente de validación.
+ */
 function completedYears(iso, today) {
-  // Edad con la fecha local del proceso. La zona institucional sigue NEEDS_VALIDATION.
   if (!iso) {
     return null;
   }
@@ -72,6 +79,10 @@ function territoryUnit(id, name) {
   };
 }
 
+/**
+ * Arma la identidad visible de una persona a partir de la fila institucional.
+ * La edad usa la fecha del proceso. Si la fecha de nacimiento no sirve, la edad queda vacía.
+ */
 function presentIdentity(row, today) {
   const birthDate = isoDate(row.birth_date);
   return {
@@ -86,6 +97,10 @@ function presentIdentity(row, today) {
   };
 }
 
+/**
+ * Marca de dónde salen los datos de persona: la réplica local y el periodo configurado.
+ * El estado de la integración institucional sigue pendiente de validación.
+ */
 function provenance(periodId) {
   return {
     source: 'SIDINACC_LOCAL',
@@ -122,6 +137,10 @@ function presentSearch(input) {
   };
 }
 
+/**
+ * Clasifica la relación cuando el encargado coincide con la madre o el padre.
+ * Otra relación no se inventa: la réplica no trae un catálogo para esos casos.
+ */
 function guardianRelationship(row) {
   if (row.guardian_id && row.mother_id && row.guardian_id === row.mother_id) {
     return 'MADRE';
@@ -133,6 +152,11 @@ function guardianRelationship(row) {
   return null;
 }
 
+/**
+ * Presenta al encargado cuando hay una sola fila.
+ * Sin filas queda ausente. Con más de una no elige una: informa que la relación
+ * necesita validación. El contacto es el de la familia en el periodo.
+ */
 function presentGuardian(rows, contact) {
   if (!rows || rows.length === 0) {
     return {
@@ -172,6 +196,10 @@ function presentGuardian(rows, contact) {
   };
 }
 
+/**
+ * Lista los servicios leídos de la réplica.
+ * No los traduce a una regla de atención: su interpretación sigue pendiente de validación.
+ */
 function presentServices(rows) {
   return {
     availability: 'AVAILABLE',
@@ -183,6 +211,10 @@ function presentServices(rows) {
   };
 }
 
+/**
+ * Presenta el resumen de casos de SIA_CENCINAI.
+ * Si la lectura vino bloqueada por permiso, no inventa filas ni un conteo.
+ */
 function presentCases(cases) {
   if (!cases || cases.availability === 'BLOCKED') {
     return {

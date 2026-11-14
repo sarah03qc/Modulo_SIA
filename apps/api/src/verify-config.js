@@ -1,5 +1,10 @@
 'use strict';
 
+/*
+  Comprueba la configuración y escribe un resumen sin secretos.
+  Un fallo deja un código de salida distinto de cero.
+*/
+
 const { loadConfig, publicConfigSummary } = require('./config/load-config');
 
 try {

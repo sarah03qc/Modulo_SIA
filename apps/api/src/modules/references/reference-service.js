@@ -9,8 +9,8 @@ const {
   ValidationError
 } = require('../../common/errors');
 const { CAPABILITY } = require('../../infrastructure/auth/capabilities');
-const { requireCapability } = require('../../infrastructure/auth/authorization-policy');
-const { buildTemplateWorkbook, readTemplateWorkbook } = require('./reference-template');
+const { ExigirCapacidad } = require('../../infrastructure/auth/authorization-policy');
+const { GenerarLibroPlantilla, LeerLibroPlantilla } = require('./reference-template');
 const { resolveTerritorialScope } = require('../institutional/territorial-scope');
 const {
   ACTIVE_CASE_MESSAGE,
@@ -365,43 +365,28 @@ function createReferenceService(dependencies) {
   }
 
   /**
-   * Publica el catálogo de referencia y la ausencia confirmada de factores de riesgo.
-   *
-   * Requisitos: HU-013 CA-06, CA-07 y CA-10 a CA-13; RF-022 y RF-024.
-   *
-   * @param {object} access Contexto interno.
-   * @returns {Promise<object>} Catálogo agrupado.
-   */
-  /**
-   * Lee la plantilla y devuelve la precarga. No envía ni reserva el consecutivo.
-   * Si la validación de negocio falla, el archivo igual no queda registrado.
-   *
-   * Requisitos: HU-014 CA-02 a CA-05 y RF-036.
-   *
-   * @param {object} access Contexto interno.
-   * @param {Buffer} buffer Archivo XLSX.
-   * @returns {Promise<object>} Precarga para revisión humana.
-   */
-  /**
    * Entrega el libro de la plantilla compatible.
-   *
-   * Requisito: HU-014 CA-01.
-   *
-   * @param {object} access Contexto interno.
-   * @returns {Promise<object>} Archivo y tipo de contenido.
+   * No incluye datos de una persona ni reserva un consecutivo.
+   * Requisito: HU-014.
    */
   async function downloadTemplate(access) {
-    requireCapability(access, CAPABILITY.REFERRAL_IMPORT);
+    ExigirCapacidad(access, CAPABILITY.REFERRAL_IMPORT);
     return {
       contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       fileName: 'referencia-plantilla.xlsx',
-      body: await buildTemplateWorkbook()
+      body: await GenerarLibroPlantilla()
     };
   }
 
+  /**
+   * Lee la plantilla y devuelve la precarga para revisión.
+   * No envía la referencia ni reserva el consecutivo.
+   * Si la validación de negocio falla, el archivo no queda registrado
+   * y se devuelven los problemas encontrados.
+   */
   async function preloadTemplate(access, buffer) {
-    requireCapability(access, CAPABILITY.REFERRAL_IMPORT);
-    const parsed = await readTemplateWorkbook(buffer);
+    ExigirCapacidad(access, CAPABILITY.REFERRAL_IMPORT);
+    const parsed = await LeerLibroPlantilla(buffer);
     const command = {
       ...parsed.referral,
       responsibleProvided: false,
@@ -440,8 +425,12 @@ function createReferenceService(dependencies) {
     };
   }
 
+  /**
+   * Publica el catálogo vigente de vías, orígenes y motivos.
+   * Los factores de riesgo no están confirmados: se informan vacíos, sin inventar códigos.
+   */
   async function listCatalogs(access) {
-    requireCapability(access, CAPABILITY.REFERRAL_CREATE);
+    ExigirCapacidad(access, CAPABILITY.REFERRAL_CREATE);
     const catalog = await loadCatalog();
     const motives = [...catalog.motives.values()].map((item) => ({
       ...item,
@@ -468,7 +457,7 @@ function createReferenceService(dependencies) {
    * @returns {Promise<object>} Resultado de validación.
    */
   async function validateReferral(access, command) {
-    requireCapability(access, CAPABILITY.REFERRAL_CREATE);
+    ExigirCapacidad(access, CAPABILITY.REFERRAL_CREATE);
     const catalog = await loadCatalog();
     const prepared = await prepare(access, command, catalog);
     return {
@@ -493,7 +482,7 @@ function createReferenceService(dependencies) {
    * @throws {ConflictError} Cuando hay caso activo o consecutivo duplicado.
    */
   async function submitReferral(access, command) {
-    requireCapability(access, CAPABILITY.REFERRAL_CREATE);
+    ExigirCapacidad(access, CAPABILITY.REFERRAL_CREATE);
     const catalog = await loadCatalog();
     const prepared = await prepare(access, command, catalog);
     if (prepared.activeCase) {
@@ -585,7 +574,7 @@ function createReferenceService(dependencies) {
    * @returns {Promise<object>} Página y conteo.
    */
   async function listReferences(access, criteria) {
-    requireCapability(access, CAPABILITY.REFERRAL_READ);
+    ExigirCapacidad(access, CAPABILITY.REFERRAL_READ);
     if (criteria.categoryHasNoConfirmedCodes) {
       return {
         query: presentQuery(criteria),
@@ -749,7 +738,7 @@ function createReferenceService(dependencies) {
    * @throws {NotFoundError} Cuando no está en el ámbito o no existe.
    */
   async function getReference(access, referenceId) {
-    requireCapability(access, CAPABILITY.REFERRAL_READ_DETAIL);
+    ExigirCapacidad(access, CAPABILITY.REFERRAL_READ_DETAIL);
     const scope = await resolveScope(access, {});
     let header;
     let motives;
@@ -776,7 +765,7 @@ function createReferenceService(dependencies) {
    * @returns {Promise<{contentType: string, fileName: string, body: string, generatedAt: string}>} Documento.
    */
   async function printReference(access, referenceId) {
-    requireCapability(access, CAPABILITY.REFERRAL_PRINT);
+    ExigirCapacidad(access, CAPABILITY.REFERRAL_PRINT);
     const detail = await getReference(access, referenceId);
     const responsible = requireResponsible(access);
     let printed;
@@ -837,7 +826,7 @@ function createReferenceService(dependencies) {
    * @returns {Promise<object>} Borrador guardado.
    */
   async function saveDraft(access, command) {
-    requireCapability(access, CAPABILITY.REFERRAL_CREATE);
+    ExigirCapacidad(access, CAPABILITY.REFERRAL_CREATE);
     const responsible = requireResponsible(access);
     const content = draftContent(command.content);
     const serialized = JSON.stringify({
@@ -882,7 +871,7 @@ function createReferenceService(dependencies) {
    * @returns {Promise<object>} Lista de borradores no enviados.
    */
   async function listDrafts(access) {
-    requireCapability(access, CAPABILITY.REFERRAL_CREATE);
+    ExigirCapacidad(access, CAPABILITY.REFERRAL_CREATE);
     const responsible = requireResponsible(access);
     let rows;
     try {
@@ -921,7 +910,7 @@ function createReferenceService(dependencies) {
    * @throws {NotFoundError} Cuando el borrador no es del autor.
    */
   async function deleteDraft(access, draftId) {
-    requireCapability(access, CAPABILITY.REFERRAL_CREATE);
+    ExigirCapacidad(access, CAPABILITY.REFERRAL_CREATE);
     const responsible = requireResponsible(access);
     let removed = false;
     try {

@@ -1,5 +1,13 @@
 'use strict';
 
+/*
+  Carga la configuración del proceso desde variables de entorno.
+  Solo admite development y test. Producción no arranca por aquí.
+  Exige los nombres SIA_CENCINAI y SIDINACC_LOCAL, y no acepta
+  la contraseña de ejemplo. El periodo de la réplica queda fijo
+  en el servidor: la solicitud HTTP no puede cambiarlo.
+*/
+
 const { SIA_DATABASE, SIDINACC_DATABASE } = require('./databases');
 
 const ALLOWED_ENVIRONMENTS = new Set(['development', 'test']);
@@ -7,6 +15,10 @@ const ALLOWED_LOG_LEVELS = new Set(['error', 'warn', 'info']);
 const ALLOWED_HOSTS = new Set(['127.0.0.1', 'localhost']);
 const EXAMPLE_SECRET = 'CHANGE_ME';
 
+/**
+ * Error de arranque cuando una variable falta o no es utilizable.
+ * El mensaje nombra la variable y no incluye el secreto.
+ */
 class ConfigError extends Error {
   constructor(message) {
     super(message);
@@ -23,6 +35,9 @@ function requireText(env, key) {
   return value.trim();
 }
 
+/**
+ * Lee un secreto obligatorio y rechaza el valor de ejemplo CHANGE_ME.
+ */
 function requireSecret(env, key) {
   const value = env[key];
   if (typeof value !== 'string' || value.length === 0) {
@@ -90,6 +105,10 @@ function requireDatabaseName(env, key, expected) {
   return name;
 }
 
+/**
+ * Lee la conexión de una base. El nombre tiene que coincidir con el esperado:
+ * SIA_CENCINAI o SIDINACC_LOCAL, según el prefijo.
+ */
 function loadDatabase(env, prefix, expectedName) {
   return {
     server: requireText(env, `${prefix}_DB_SERVER`),
@@ -102,6 +121,15 @@ function loadDatabase(env, prefix, expectedName) {
   };
 }
 
+/**
+ * Construye la configuración del proceso.
+ *
+ * Recibe el entorno, normalmente process.env. Devuelve host, puertos,
+ * las dos conexiones y el periodo de lectura de la réplica.
+ * Rechaza producción, un host que no sea local y un origen CORS con ruta,
+ * consulta o credenciales. Si las dos bases usan el mismo usuario, lo marca
+ * para que el arranque pueda advertirlo.
+ */
 function loadConfig(env) {
   const source = env || {};
   const nodeEnv = requireText(source, 'NODE_ENV');
@@ -141,6 +169,9 @@ function loadConfig(env) {
   };
 }
 
+/**
+ * Resume la configuración para diagnóstico, sin usuarios ni contraseñas.
+ */
 function publicConfigSummary(config) {
   return {
     nodeEnv: config.nodeEnv,

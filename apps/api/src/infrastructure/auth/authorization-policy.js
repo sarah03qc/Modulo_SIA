@@ -10,8 +10,8 @@ const { isKnownCapability } = require('./capabilities');
   RNF-001 y RNF-002.
 */
 
-const DENIED = 'La operación no está permitida.';
-const UNCONFIRMED_SCOPE = 'La combinación de concesiones no tiene una regla de consulta confirmada.';
+const OPERACION_DENEGADA = 'La operación no está permitida.';
+const AMBITO_NO_CONFIRMADO = 'La combinación de concesiones no tiene una regla de consulta confirmada.';
 
 /*
   Propósito: impedir que una unión de concesiones sin ancla confirmada autorice operaciones
@@ -19,10 +19,10 @@ const UNCONFIRMED_SCOPE = 'La combinación de concesiones no tiene una regla de 
   Salida: ninguna. Si hay varias concesiones y no quedaron en un solo ámbito, responde 403
   Varios establecimientos del mismo rol ya llegan unidos y no entran aquí
 */
-function assertConfirmedScope(access) {
-  const grantCount = access && Array.isArray(access.grants) ? access.grants.length : 0;
-  if (grantCount > 1 && (!access || access.scopeConfirmed === false || !access.accessLevel)) {
-    throw new ForbiddenError(UNCONFIRMED_SCOPE);
+function ExigirAmbitoConfirmado(contexto) {
+  const totalConcesiones = contexto && Array.isArray(contexto.grants) ? contexto.grants.length : 0;
+  if (totalConcesiones > 1 && (contexto.scopeConfirmed === false || !contexto.accessLevel)) {
+    throw new ForbiddenError(AMBITO_NO_CONFIRMADO);
   }
 }
 
@@ -31,15 +31,15 @@ function assertConfirmedScope(access) {
   Entrada: contexto de usuario y código de capacidad
   Salida: true solo cuando el código existe y fue concedido por un rol interno
 */
-function hasCapability(access, capability) {
-  if (access && access.scopeConfirmed === false) {
+function TieneCapacidad(contexto, capacidad) {
+  if (contexto && contexto.scopeConfirmed === false) {
     return false;
   }
   return Boolean(
-    isKnownCapability(capability)
-    && access
-    && Array.isArray(access.capabilities)
-    && access.capabilities.includes(capability)
+    isKnownCapability(capacidad)
+    && contexto
+    && Array.isArray(contexto.capabilities)
+    && contexto.capabilities.includes(capacidad)
   );
 }
 
@@ -49,12 +49,12 @@ function hasCapability(access, capability) {
   Salida: el mismo contexto cuando la capacidad está concedida
   Si falta, responde 403 sin indicar qué capacidad se pidió
 */
-function requireCapability(access, capability) {
-  assertConfirmedScope(access);
-  if (!hasCapability(access, capability)) {
-    throw new ForbiddenError(DENIED);
+function ExigirCapacidad(contexto, capacidad) {
+  ExigirAmbitoConfirmado(contexto);
+  if (!TieneCapacidad(contexto, capacidad)) {
+    throw new ForbiddenError(OPERACION_DENEGADA);
   }
-  return access;
+  return contexto;
 }
 
 /*
@@ -62,10 +62,10 @@ function requireCapability(access, capability) {
   Entrada: código de capacidad
   Salida: middleware que deja pasar solo un contexto ya concedido
 */
-function createCapabilityGuard(capability) {
-  return function guardCapability(req, res, next) {
+function CrearControlCapacidad(capacidad) {
+  return function ComprobarCapacidad(req, res, next) {
     try {
-      requireCapability(req.access, capability);
+      ExigirCapacidad(req.access, capacidad);
       next();
     } catch (error) {
       next(error);
@@ -74,7 +74,7 @@ function createCapabilityGuard(capability) {
 }
 
 module.exports = {
-  hasCapability,
-  requireCapability,
-  createCapabilityGuard
+  TieneCapacidad,
+  ExigirCapacidad,
+  CrearControlCapacidad
 };

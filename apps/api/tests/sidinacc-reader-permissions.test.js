@@ -4,6 +4,7 @@ const sql = require('mssql');
 const { loadConfig } = require('../src/config/load-config');
 const { toMssqlConfig, createDatabaseGateway } = require('../src/infrastructure/database/sql-client');
 const { createSidinaccAdapter } = require('../src/infrastructure/integrations/sidinacc-adapter');
+const { PermitirEscriturasSqlLocales } = require('./escrituras-sql-locales');
 
 const READER_LOGIN = 'sia_sidinacc_app';
 const APP_LOGIN = 'sia_cencinai_app';
@@ -13,7 +14,9 @@ const liveReady = Boolean(process.env.SIDINACC_DB_PASSWORD)
   && Boolean(process.env.SIA_DB_PASSWORD)
   && process.env.SIA_DB_PASSWORD !== 'CHANGE_ME';
 
-const describeLive = liveReady ? describe : describe.skip;
+// Las comprobaciones negativas envían DDL y DML al motor de pruebas.
+const escriturasAutorizadas = PermitirEscriturasSqlLocales(process.env);
+const describeLive = liveReady && escriturasAutorizadas ? describe : describe.skip;
 
 const READER_COUNTS_SQL = `
 SELECT

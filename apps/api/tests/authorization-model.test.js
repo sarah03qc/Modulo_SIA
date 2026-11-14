@@ -10,7 +10,7 @@ const { findDevelopmentPrincipal } = require('../src/infrastructure/auth/develop
 const { resolvePresentedIdentity } = require('../src/infrastructure/auth/identity-provider');
 const { adaptInstitutionalIdentity } = require('../src/infrastructure/auth/institutional-identity-adapter');
 const { createUserContext } = require('../src/infrastructure/auth/user-context');
-const { hasCapability, requireCapability } = require('../src/infrastructure/auth/authorization-policy');
+const { TieneCapacidad, ExigirCapacidad } = require('../src/infrastructure/auth/authorization-policy');
 const { applyFieldPolicy } = require('../src/infrastructure/auth/field-policy');
 const { resolveSidinaccSession } = require('../src/infrastructure/auth/sidinacc-session-contract');
 const { createPersonQueryService } = require('../src/modules/institutional/person-query-service');
@@ -96,32 +96,32 @@ describe('catálogo de capacidades', () => {
     const national = contextOf('dev-nacional');
     const office = contextOf('dev-oficina-hatillo');
 
-    expect(hasCapability(establishment, CAPABILITY.PERSON_SEARCH)).toBe(true);
-    expect(hasCapability(establishment, CAPABILITY.REFERRAL_CREATE)).toBe(true);
-    expect(hasCapability(establishment, CAPABILITY.REFERRAL_READ_DETAIL)).toBe(true);
-    expect(hasCapability(establishment, CAPABILITY.REFERRAL_PRINT)).toBe(true);
-    expect(hasCapability(establishment, CAPABILITY.REFERRAL_IMPORT)).toBe(true);
-    expect(hasCapability(office, CAPABILITY.REFERRAL_PRINT)).toBe(true);
-    expect(hasCapability(office, CAPABILITY.REFERRAL_IMPORT)).toBe(true);
-    expect(hasCapability(region, CAPABILITY.REFERRAL_CREATE)).toBe(false);
-    expect(hasCapability(region, CAPABILITY.REFERRAL_READ)).toBe(false);
-    expect(hasCapability(national, CAPABILITY.REFERRAL_PRINT)).toBe(false);
-    expect(hasCapability(establishment, CAPABILITY.REPORTING_READ)).toBe(false);
-    expect(hasCapability(establishment, CAPABILITY.CASE_READ)).toBe(false);
-    expect(hasCapability(establishment, CAPABILITY.ASSESSMENT_READ)).toBe(false);
-    expect(hasCapability(establishment, CAPABILITY.SESSION_MANAGE)).toBe(false);
+    expect(TieneCapacidad(establishment, CAPABILITY.PERSON_SEARCH)).toBe(true);
+    expect(TieneCapacidad(establishment, CAPABILITY.REFERRAL_CREATE)).toBe(true);
+    expect(TieneCapacidad(establishment, CAPABILITY.REFERRAL_READ_DETAIL)).toBe(true);
+    expect(TieneCapacidad(establishment, CAPABILITY.REFERRAL_PRINT)).toBe(true);
+    expect(TieneCapacidad(establishment, CAPABILITY.REFERRAL_IMPORT)).toBe(true);
+    expect(TieneCapacidad(office, CAPABILITY.REFERRAL_PRINT)).toBe(true);
+    expect(TieneCapacidad(office, CAPABILITY.REFERRAL_IMPORT)).toBe(true);
+    expect(TieneCapacidad(region, CAPABILITY.REFERRAL_CREATE)).toBe(false);
+    expect(TieneCapacidad(region, CAPABILITY.REFERRAL_READ)).toBe(false);
+    expect(TieneCapacidad(national, CAPABILITY.REFERRAL_PRINT)).toBe(false);
+    expect(TieneCapacidad(establishment, CAPABILITY.REPORTING_READ)).toBe(false);
+    expect(TieneCapacidad(establishment, CAPABILITY.CASE_READ)).toBe(false);
+    expect(TieneCapacidad(establishment, CAPABILITY.ASSESSMENT_READ)).toBe(false);
+    expect(TieneCapacidad(establishment, CAPABILITY.SESSION_MANAGE)).toBe(false);
 
-    expect(hasCapability(region, CAPABILITY.REPORTING_READ)).toBe(true);
-    expect(hasCapability(region, CAPABILITY.CASE_READ)).toBe(true);
-    expect(hasCapability(region, CAPABILITY.ASSESSMENT_READ)).toBe(false);
-    expect(hasCapability(region, CAPABILITY.CASE_CLOSE)).toBe(false);
-    expect(hasCapability(national, CAPABILITY.SCHEDULING_MANAGE)).toBe(false);
-    expect(hasCapability(office, CAPABILITY.CASE_CLOSE)).toBe(true);
-    expect(hasCapability(office, CAPABILITY.ASSESSMENT_WRITE)).toBe(true);
+    expect(TieneCapacidad(region, CAPABILITY.REPORTING_READ)).toBe(true);
+    expect(TieneCapacidad(region, CAPABILITY.CASE_READ)).toBe(true);
+    expect(TieneCapacidad(region, CAPABILITY.ASSESSMENT_READ)).toBe(false);
+    expect(TieneCapacidad(region, CAPABILITY.CASE_CLOSE)).toBe(false);
+    expect(TieneCapacidad(national, CAPABILITY.SCHEDULING_MANAGE)).toBe(false);
+    expect(TieneCapacidad(office, CAPABILITY.CASE_CLOSE)).toBe(true);
+    expect(TieneCapacidad(office, CAPABILITY.ASSESSMENT_WRITE)).toBe(true);
 
     expect(capabilitiesForRoles(['ESTABLECIMIENTO', 'NACIONAL'])).not.toContain(CAPABILITY.CATALOG_MANAGE);
-    expect(() => requireCapability(national, CAPABILITY.CATALOG_MANAGE)).toThrow(ForbiddenError);
-    expect(() => requireCapability(national, 'person.search.extra')).toThrow(ForbiddenError);
+    expect(() => ExigirCapacidad(national, CAPABILITY.CATALOG_MANAGE)).toThrow(ForbiddenError);
+    expect(() => ExigirCapacidad(national, 'person.search.extra')).toThrow(ForbiddenError);
   });
 
   test('una identidad sin concesiones autentica y no recibe capacidades', () => {
@@ -129,7 +129,7 @@ describe('catálogo de capacidades', () => {
     expect(access.principalId).toBe('dev-sin-capacidades');
     expect(access.capabilities).toEqual([]);
     expect(access.accessLevel).toBeNull();
-    expect(() => requireCapability(access, CAPABILITY.PERSON_SEARCH)).toThrow(ForbiddenError);
+    expect(() => ExigirCapacidad(access, CAPABILITY.PERSON_SEARCH)).toThrow(ForbiddenError);
   });
 });
 
@@ -214,8 +214,8 @@ describe('ámbito de varios roles', () => {
       CAPABILITY.REFERRAL_CREATE
     ]));
     expect(access.scopeConfirmed).toBe(false);
-    expect(hasCapability(access, CAPABILITY.REPORTING_READ)).toBe(false);
-    expect(hasCapability(access, CAPABILITY.REFERRAL_CREATE)).toBe(false);
+    expect(TieneCapacidad(access, CAPABILITY.REPORTING_READ)).toBe(false);
+    expect(TieneCapacidad(access, CAPABILITY.REFERRAL_CREATE)).toBe(false);
     expect(access.accessLevel).toBeNull();
 
     const search = await request(app)
@@ -243,7 +243,7 @@ describe('ámbito de varios roles', () => {
     expect(access.roles).toEqual(['OFICINA_LOCAL']);
     expect(access.accessLevel).toBeNull();
     expect(access.scopeConfirmed).toBe(false);
-    expect(() => requireCapability(access, CAPABILITY.PERSON_SEARCH)).toThrow(ForbiddenError);
+    expect(() => ExigirCapacidad(access, CAPABILITY.PERSON_SEARCH)).toThrow(ForbiddenError);
     return expect(queryService().service.searchPersons(access, {
       text: 'Ana',
       page: 1,

@@ -1,6 +1,9 @@
 /*
 SIA-CENCINAI
 Permisos minimos del Lote 02 para sia_cencinai_app.
+Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
+Primer registro en Git: 2026-11-07 (f289a6c).
+2026-11-14: Las guardas y los permisos se ejecutan en un lote transaccional.
 
 Este script NO es una migracion de esquema y la API no lo ejecuta.
 Lo aplica, por separado, un principal administrativo del ambiente local.
@@ -17,7 +20,14 @@ Revocacion:
   REVOKE INSERT, SELECT ON dbo.ref_motivo FROM sia_cencinai_app;
   REVOKE INSERT, SELECT ON dbo.ref_impresion FROM sia_cencinai_app;
   REVOKE SELECT, INSERT, DELETE ON dbo.bor_captura FROM sia_cencinai_app;
-  REVOKE UPDATE ON dbo.bor_captura FROM sia_cencinai_app;
+  REVOKE UPDATE ON dbo.bor_captura (
+      contenido,
+      actualizado_en,
+      clave_negocio,
+      ambito_nivel,
+      oficina_local_id,
+      establecimiento_id
+  ) FROM sia_cencinai_app;
   REVOKE SELECT, INSERT ON dbo.aud_evento FROM sia_cencinai_app;
   REVOKE SELECT ON dbo.cat_item FROM sia_cencinai_app;
   REVOKE SELECT ON dbo.cat_version FROM sia_cencinai_app;
@@ -27,33 +37,47 @@ GO
 
 IF DB_NAME() <> N'SIA_CENCINAI'
     THROW 51020, N'Este script solo debe ejecutarse sobre SIA_CENCINAI.', 1;
-GO
 
 IF DATABASE_PRINCIPAL_ID(N'sia_cencinai_app') IS NULL
     THROW 51021, N'Falta el usuario sia_cencinai_app.', 1;
-GO
 
 IF IS_ROLEMEMBER(N'db_owner', N'sia_cencinai_app') = 1
     OR IS_ROLEMEMBER(N'db_datawriter', N'sia_cencinai_app') = 1
+    OR IS_ROLEMEMBER(N'db_datareader', N'sia_cencinai_app') = 1
     OR IS_ROLEMEMBER(N'rol_aplicacion', N'sia_cencinai_app') = 1
-    THROW 51022, N'La cuenta de aplicacion no debe recibir estos GRANT por medio de un rol amplio.', 1;
-GO
+    THROW 51022, N'La cuenta de aplicacion no debe pertenecer a un rol amplio.', 1;
 
-GRANT SELECT, INSERT ON dbo.vinculo_persona TO sia_cencinai_app;
-GRANT SELECT, INSERT ON dbo.ref_referencia TO sia_cencinai_app;
-GRANT SELECT, INSERT ON dbo.ref_contexto TO sia_cencinai_app;
-GRANT SELECT, INSERT ON dbo.ref_motivo TO sia_cencinai_app;
-GRANT SELECT, INSERT ON dbo.ref_impresion TO sia_cencinai_app;
-GRANT SELECT, INSERT, DELETE ON dbo.bor_captura TO sia_cencinai_app;
-GRANT UPDATE ON dbo.bor_captura (
-    contenido,
-    actualizado_en,
-    clave_negocio,
-    ambito_nivel,
-    oficina_local_id,
-    establecimiento_id
-) TO sia_cencinai_app;
-GRANT SELECT, INSERT ON dbo.aud_evento TO sia_cencinai_app;
-GRANT SELECT ON dbo.cat_item TO sia_cencinai_app;
-GRANT SELECT ON dbo.cat_version TO sia_cencinai_app;
+IF @@TRANCOUNT <> 0
+    THROW 51023, N'Ejecute este script fuera de una transaccion existente.', 1;
+
+SET XACT_ABORT ON;
+
+BEGIN TRY
+    BEGIN TRANSACTION;
+
+    GRANT SELECT, INSERT ON dbo.vinculo_persona TO sia_cencinai_app;
+    GRANT SELECT, INSERT ON dbo.ref_referencia TO sia_cencinai_app;
+    GRANT SELECT, INSERT ON dbo.ref_contexto TO sia_cencinai_app;
+    GRANT SELECT, INSERT ON dbo.ref_motivo TO sia_cencinai_app;
+    GRANT SELECT, INSERT ON dbo.ref_impresion TO sia_cencinai_app;
+    GRANT SELECT, INSERT, DELETE ON dbo.bor_captura TO sia_cencinai_app;
+    GRANT UPDATE ON dbo.bor_captura (
+        contenido,
+        actualizado_en,
+        clave_negocio,
+        ambito_nivel,
+        oficina_local_id,
+        establecimiento_id
+    ) TO sia_cencinai_app;
+    GRANT SELECT, INSERT ON dbo.aud_evento TO sia_cencinai_app;
+    GRANT SELECT ON dbo.cat_item TO sia_cencinai_app;
+    GRANT SELECT ON dbo.cat_version TO sia_cencinai_app;
+
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    IF XACT_STATE() <> 0
+        ROLLBACK TRANSACTION;
+    THROW;
+END CATCH
 GO

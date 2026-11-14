@@ -1,27 +1,54 @@
+/*
+ * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
+ * Primer registro del archivo en Git: 2026-11-06 (5fabddc).
+ * Modificación del 2026-11-14: exclusión de rutas con datos de solicitudes en el registro.
+ */
 'use strict';
 
 const { NotFoundError } = require('./errors');
 
-function logPath(path) {
-  if (typeof path !== 'string') {
-    return path;
-  }
-  return path.replace(/\/persons\/[^/]+/g, '/persons/:personId');
+/**
+ * Obtiene el patrón registrado en Express para el diagnóstico.
+ * Una solicitud sin ruta reconocida se registra con un valor fijo.
+ *
+ * @param {object} req Solicitud de Express.
+ * @returns {string} Patrón declarado por el servidor, sin valores de la solicitud.
+ */
+function ObtenerPatronRuta(req) {
+  const patron = req.route?.path;
+  return typeof patron === 'string' ? patron : 'SIN_RUTA';
 }
 
-function notFoundHandler(req, res, next) {
+/**
+ * Convierte una ruta desconocida en el error de recurso no encontrado.
+ */
+function ResponderRutaNoEncontrada(req, res, next) {
   next(new NotFoundError());
 }
 
-function errorHandler(logger) {
-  return function handleError(err, req, res, next) {
+/**
+ * Responde los errores sin filtrar detalles internos.
+ *
+ * Si el error está marcado para mostrarse, usa su código y su mensaje.
+ * En cualquier otro caso responde con un mensaje genérico.
+ * Un archivo demasiado grande o un JSON inválido se tratan como error de validación.
+ *
+ * @param {object} registro Registro con operaciones info y error.
+ * @returns {Function} Middleware de errores de Express.
+ */
+function CrearControlErrores(registro) {
+  return function ControlarError(err, req, res, next) {
     if (res.headersSent) {
       next(err);
       return;
     }
 
     if (err && err.type === 'entity.too.large') {
-      logger.info('Solicitud rechazada', { code: 'VALIDATION_ERROR', status: 413, path: logPath(req.path) });
+      registro.info('Solicitud rechazada', {
+        code: 'VALIDATION_ERROR',
+        status: 413,
+        path: ObtenerPatronRuta(req)
+      });
       res.status(413).json({
         error: {
           code: 'VALIDATION_ERROR',
@@ -32,7 +59,11 @@ function errorHandler(logger) {
     }
 
     if (err instanceof SyntaxError && err.status === 400) {
-      logger.info('Solicitud rechazada', { code: 'VALIDATION_ERROR', status: 400, path: logPath(req.path) });
+      registro.info('Solicitud rechazada', {
+        code: 'VALIDATION_ERROR',
+        status: 400,
+        path: ObtenerPatronRuta(req)
+      });
       res.status(400).json({
         error: {
           code: 'VALIDATION_ERROR',
@@ -46,10 +77,10 @@ function errorHandler(logger) {
     const status = exposed ? err.status : 500;
     const code = exposed ? err.code : 'INTERNAL_ERROR';
     const message = exposed ? err.message : 'Ocurrió un error interno.';
-    const log = status >= 500 ? logger.error.bind(logger) : logger.info.bind(logger);
-    log('Solicitud fallida', { code, status, path: logPath(req.path) });
+    const registrar = status >= 500 ? registro.error.bind(registro) : registro.info.bind(registro);
+    registrar('Solicitud fallida', { code, status, path: ObtenerPatronRuta(req) });
     res.status(status).json({ error: { code, message } });
   };
 }
 
-module.exports = { notFoundHandler, errorHandler };
+module.exports = { ResponderRutaNoEncontrada, CrearControlErrores };

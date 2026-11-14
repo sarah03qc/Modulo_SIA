@@ -9,7 +9,7 @@ const {
   MAX_TEMPLATE_BYTES
 } = require('./reference-constants');
 
-const INSTRUCTIONS = [
+const INSTRUCCIONES = [
   'Plantilla técnica de precarga. No es el formulario gráfico institucional definitivo.',
   'Cargar este archivo no envía la referencia, no reserva el consecutivo y no asigna responsable.',
   'El responsable se toma de la sesión al confirmar. No agregue una columna de responsable.',
@@ -31,7 +31,7 @@ const INSTRUCTIONS = [
  * @returns {void}
  * @throws {ValidationError} Cuando hay macros, enlaces externos u hojas de macro.
  */
-function assertInactivePackage(buffer) {
+function ValidarPaqueteInactivo(buffer) {
   const latin = buffer.toString('latin1');
   if (
     latin.includes('vbaProject')
@@ -51,7 +51,7 @@ function assertInactivePackage(buffer) {
  * @returns {string} Texto plano.
  * @throws {ValidationError} Cuando la celda no es un valor plano.
  */
-function plainCell(cell) {
+function LeerTextoCelda(cell) {
   if (cell && cell.hyperlink) {
     throw new ValidationError('La plantilla contiene fórmulas o enlaces y no se procesa.');
   }
@@ -86,7 +86,7 @@ function plainCell(cell) {
  * @returns {Map<string, string>} Especificación por código de motivo.
  * @throws {ValidationError} Cuando un par no tiene código.
  */
-function parseSpecifications(text) {
+function InterpretarEspecificaciones(text) {
   const specifications = new Map();
   if (!text) {
     return specifications;
@@ -114,7 +114,7 @@ function parseSpecifications(text) {
  *
  * @returns {Promise<Buffer>} Libro XLSX.
  */
-async function buildTemplateWorkbook() {
+async function GenerarLibroPlantilla() {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'SIA-CENCINAI';
   const sheet = workbook.addWorksheet(TEMPLATE_SHEET);
@@ -122,7 +122,7 @@ async function buildTemplateWorkbook() {
   sheet.addRow([TEMPLATE_VERSION, '', '', '', '', '', '', '', '', '', '']);
   sheet.getRow(1).font = { bold: true };
   const help = workbook.addWorksheet('Instrucciones');
-  for (const line of INSTRUCTIONS) {
+  for (const line of INSTRUCCIONES) {
     help.addRow([line]);
   }
   const raw = await workbook.xlsx.writeBuffer();
@@ -139,7 +139,7 @@ async function buildTemplateWorkbook() {
  * @returns {Promise<object>} Cuerpo compatible con el envío, sin responsable.
  * @throws {ValidationError} Cuando el tipo, el tamaño, la versión o la estructura no corresponden.
  */
-async function readTemplateWorkbook(buffer) {
+async function LeerLibroPlantilla(buffer) {
   if (!Buffer.isBuffer(buffer) || buffer.length === 0) {
     throw new ValidationError('No se recibió un archivo de plantilla.');
   }
@@ -149,7 +149,7 @@ async function readTemplateWorkbook(buffer) {
   if (buffer[0] !== 0x50 || buffer[1] !== 0x4b) {
     throw new ValidationError('El archivo no es un libro de Excel compatible.');
   }
-  assertInactivePackage(buffer);
+  ValidarPaqueteInactivo(buffer);
   const workbook = new ExcelJS.Workbook();
   try {
     await workbook.xlsx.load(buffer);
@@ -160,21 +160,12 @@ async function readTemplateWorkbook(buffer) {
   if (!sheet) {
     throw new ValidationError('La plantilla no contiene la hoja Referencia.');
   }
-  const headers = TEMPLATE_HEADERS.map((header, index) => plainCell(sheet.getRow(1).getCell(index + 1)));
+  const headers = TEMPLATE_HEADERS.map((header, index) => LeerTextoCelda(sheet.getRow(1).getCell(index + 1)));
   if (headers.some((header, index) => header !== TEMPLATE_HEADERS[index])) {
     throw new ValidationError('La estructura de la plantilla no corresponde a la versión compatible.');
   }
-  const extraHeader = plainCell(sheet.getRow(1).getCell(TEMPLATE_HEADERS.length + 1));
-  if (extraHeader) {
-    throw new ValidationError('La plantilla tiene columnas que no pertenecen a la versión compatible.');
-  }
-  const values = TEMPLATE_HEADERS.map((header, index) => plainCell(sheet.getRow(2).getCell(index + 1)));
-  if (sheet.rowCount > 2) {
-    const third = TEMPLATE_HEADERS.some((header, index) => plainCell(sheet.getRow(3).getCell(index + 1)) !== '');
-    if (third) {
-      throw new ValidationError('La plantilla solo admite una referencia por archivo.');
-    }
-  }
+  ValidarDimensionesPlantilla(sheet);
+  const values = TEMPLATE_HEADERS.map((header, index) => LeerTextoCelda(sheet.getRow(2).getCell(index + 1)));
   const [
     version,
     personId,
@@ -192,7 +183,7 @@ async function readTemplateWorkbook(buffer) {
     throw new ValidationError('La versión de la plantilla no es compatible.');
   }
   const motiveCodes = motiveText.split('|').map((code) => code.trim()).filter((code) => code.length > 0);
-  const specifications = parseSpecifications(specificationText);
+  const specifications = InterpretarEspecificaciones(specificationText);
   const motives = motiveCodes.map((code) => ({
     code,
     specification: specifications.get(code) || null
@@ -220,7 +211,33 @@ async function readTemplateWorkbook(buffer) {
   };
 }
 
+/**
+ * Verifica las celdas con contenido fuera de las dos filas y columnas definidas.
+ * El formato de celdas vacías no amplía la estructura de HU-014 y RF-036.
+ *
+ * @param {ExcelJS.Worksheet} hoja Hoja de referencia del libro recibido.
+ * @throws {ValidationError} Cuando hay datos fuera de la estructura de la plantilla.
+ */
+function ValidarDimensionesPlantilla(hoja) {
+  hoja.eachRow((fila, numeroFila) => {
+    fila.eachCell((celda, numeroColumna) => {
+      if (numeroFila <= 2 && numeroColumna <= TEMPLATE_HEADERS.length) {
+        return;
+      }
+      if (LeerTextoCelda(celda) === '') {
+        return;
+      }
+      if (numeroFila > 2) {
+        throw new ValidationError('La plantilla solo admite una referencia por archivo.');
+      }
+      throw new ValidationError(
+        'La plantilla tiene columnas que no pertenecen a la versión compatible.'
+      );
+    });
+  });
+}
+
 module.exports = {
-  buildTemplateWorkbook,
-  readTemplateWorkbook
+  GenerarLibroPlantilla,
+  LeerLibroPlantilla
 };

@@ -3,7 +3,7 @@
 const { NotFoundError, AmbiguousInstitutionalLocationError } = require('../../common/errors');
 const { ACCESS_LEVEL } = require('../../infrastructure/auth/institutional-roles');
 const { CAPABILITY } = require('../../infrastructure/auth/capabilities');
-const { requireCapability } = require('../../infrastructure/auth/authorization-policy');
+const { ExigirCapacidad } = require('../../infrastructure/auth/authorization-policy');
 const { resolveTerritorialScope, assertConfirmedTerritorialAnchor } = require('./territorial-scope');
 const { presentSearch, presentProfile } = require('./person-presenter');
 
@@ -13,6 +13,10 @@ const { presentSearch, presentProfile } = require('./person-presenter');
   Sin criterio no hay listado. El periodo no viaja en la solicitud.
 */
 
+/**
+ * Expone solo las búsquedas de territorio que el ámbito necesita.
+ * El adaptador sigue siendo de lectura.
+ */
 function territoryPort(adapter) {
   return {
     findEstablishment: (establishmentId) => adapter.findEstablishment(establishmentId),
@@ -21,6 +25,10 @@ function territoryPort(adapter) {
   };
 }
 
+/**
+ * Copia el ámbito que se puede devolver al cliente, junto con la identidad de la sesión.
+ * No incluye capacidades ni concesiones.
+ */
 function presentableScope(access, scope) {
   return {
     accessLevel: scope.accessLevel,
@@ -32,6 +40,10 @@ function presentableScope(access, scope) {
   };
 }
 
+/**
+ * Describe un filtro territorial: si se puede elegir, si ya quedó aplicado
+ * y si falta elegir el nivel anterior antes de ver opciones.
+ */
 function filterGroup(selectable, appliedAutomatically, requiresParent, options) {
   return {
     selectable,
@@ -67,7 +79,7 @@ function createPersonQueryService(dependencies) {
     HU-005 a HU-008, CU-02, RF-009 y RF-012
   */
   async function searchPersons(access, criteria) {
-    requireCapability(access, CAPABILITY.PERSON_SEARCH);
+    ExigirCapacidad(access, CAPABILITY.PERSON_SEARCH);
     const scope = await resolve(access, criteria);
     const exact = await adapter.searchPersons({
       mode: 'identification',
@@ -111,7 +123,7 @@ function createPersonQueryService(dependencies) {
     HU-009, CU-03 y RF-012
   */
   async function getPerson(access, personId) {
-    requireCapability(access, CAPABILITY.PERSON_PROFILE_READ);
+    ExigirCapacidad(access, CAPABILITY.PERSON_PROFILE_READ);
     const scope = await resolve(access, {
       regionId: null,
       localOfficeId: null,
@@ -152,7 +164,7 @@ function createPersonQueryService(dependencies) {
     Exige territory.options.read. Un filtro ajeno no amplía el catálogo
   */
   async function listTerritoryOptions(access, filters) {
-    requireCapability(access, CAPABILITY.TERRITORY_OPTIONS_READ);
+    ExigirCapacidad(access, CAPABILITY.TERRITORY_OPTIONS_READ);
     const scope = await resolve(access, filters);
     const regions = await regionsFor(access, scope);
     const offices = await officesFor(access, scope);
@@ -190,6 +202,11 @@ function createPersonQueryService(dependencies) {
     };
   }
 
+  /**
+   * Regiones que el nivel puede ver.
+   * Nacional lista todas. Establecimiento las deduce de sus establecimientos.
+   * Los demás niveles ven solo la región de su ámbito, o ninguna si todavía no hay región.
+   */
   async function regionsFor(access, scope) {
     if (access.accessLevel === ACCESS_LEVEL.NATIONAL) {
       const rows = await adapter.listRegions({});
@@ -206,6 +223,11 @@ function createPersonQueryService(dependencies) {
     return rows.map((row) => ({ id: row.regionId, name: row.name }));
   }
 
+  /**
+   * Oficinas visibles dentro del ámbito.
+   * Establecimiento las deduce de sus establecimientos y Oficina Local ve la suya.
+   * Región y Nacional no listan oficinas mientras no haya una región resuelta.
+   */
   async function officesFor(access, scope) {
     if (access.accessLevel === ACCESS_LEVEL.ESTABLISHMENT) {
       const rows = await adapter.listEstablishments({ establishmentIds: access.establishmentIds });
@@ -222,6 +244,11 @@ function createPersonQueryService(dependencies) {
     return rows.map((row) => ({ id: row.localOfficeId, name: row.name }));
   }
 
+  /**
+   * Establecimientos visibles.
+   * El nivel Establecimiento usa su lista concedida. Los demás niveles necesitan
+   * una oficina ya resuelta; si no la hay, la lista queda vacía.
+   */
   async function establishmentsFor(access, scope) {
     if (access.accessLevel === ACCESS_LEVEL.ESTABLISHMENT) {
       const rows = await adapter.listEstablishments({ establishmentIds: access.establishmentIds });
@@ -250,6 +277,9 @@ function establishmentOption(row) {
   };
 }
 
+/**
+ * Deja una opción por identificador cuando varias filas repiten la misma región u oficina.
+ */
 function unique(rows, idKey, nameKey) {
   const seen = new Map();
   for (const row of rows) {

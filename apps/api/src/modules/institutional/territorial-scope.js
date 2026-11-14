@@ -16,16 +16,27 @@ const INACTIVE = 'El filtro territorial no corresponde a una unidad activa.';
 const ESTABLISHMENT_FILTER_ONLY = 'El nivel Establecimiento solo admite filtro por establecimiento autorizado.';
 const MISSING_SCOPE = 'El ámbito autorizado no está disponible.';
 
+/**
+ * Rechaza un filtro que cae fuera del ámbito ya concedido.
+ */
 function outsideScope() {
   return new ForbiddenError(OUTSIDE_SCOPE);
 }
 
+/**
+ * Exige un contexto con nivel de acceso. Sin ese nivel no hay consulta territorial.
+ */
 function requireAccess(access) {
   if (!access || !access.accessLevel) {
     throw new ForbiddenError('No hay un contexto de acceso institucional.');
   }
 }
 
+/**
+ * Arma el ámbito efectivo que usarán las consultas.
+ * establishmentAppliedAutomatically indica que había un solo establecimiento
+ * y no hizo falta elegirlo.
+ */
 function baseScope(access, extra) {
   return {
     accessLevel: access.accessLevel,
@@ -36,6 +47,13 @@ function baseScope(access, extra) {
   };
 }
 
+/**
+ * Resuelve el ámbito de un acceso de Establecimiento.
+ *
+ * Solo admite filtrar por un establecimiento de su lista. Un filtro de región
+ * u oficina se rechaza. Si la lista tiene un solo establecimiento, ese filtro
+ * queda aplicado aunque la solicitud no lo envíe.
+ */
 function resolveEstablishmentLevel(access, filters) {
   if (filters.regionId !== null || filters.localOfficeId !== null) {
     throw new ValidationError(ESTABLISHMENT_FILTER_ONLY);
@@ -56,6 +74,10 @@ function resolveEstablishmentLevel(access, filters) {
   });
 }
 
+/**
+ * Comprueba que la oficina exista y pertenezca a la región indicada.
+ * Quien llama decide si el fallo es un ámbito ajeno o una combinación incompatible.
+ */
 async function officeWithin(territory, localOfficeId, regionId, reject) {
   const office = await territory.findLocalOffice(localOfficeId);
   if (!office || office.regionId !== regionId) {
@@ -64,6 +86,9 @@ async function officeWithin(territory, localOfficeId, regionId, reject) {
   return office;
 }
 
+/**
+ * Comprueba que el establecimiento exista y pertenezca a la región indicada.
+ */
 async function establishmentWithin(territory, establishmentId, regionId, reject) {
   const establishment = await territory.findEstablishment(establishmentId);
   if (!establishment || establishment.regionId !== regionId) {
@@ -72,6 +97,11 @@ async function establishmentWithin(territory, establishmentId, regionId, reject)
   return establishment;
 }
 
+/**
+ * Fija la región y la oficina concedidas.
+ * Un establecimiento solo se acepta si pertenece a esa oficina.
+ * Pedir otra región u otra oficina se rechaza como fuera de ámbito.
+ */
 async function resolveLocalOfficeLevel(access, filters, territory) {
   if (!Number.isInteger(access.regionId) || !Number.isInteger(access.localOfficeId)) {
     throw new ForbiddenError(MISSING_SCOPE);
@@ -102,6 +132,10 @@ async function resolveLocalOfficeLevel(access, filters, territory) {
   });
 }
 
+/**
+ * Fija la región concedida y permite estrechar por oficina o establecimiento de esa región.
+ * Si la oficina y el establecimiento no coinciden, la combinación se rechaza.
+ */
 async function resolveRegionLevel(access, filters, territory) {
   if (!Number.isInteger(access.regionId)) {
     throw new ForbiddenError(MISSING_SCOPE);
@@ -140,6 +174,11 @@ async function resolveRegionLevel(access, filters, territory) {
   });
 }
 
+/**
+ * Parte sin ancla territorial fija y acepta filtros de región, oficina y establecimiento,
+ * siempre que existan y sean compatibles entre sí.
+ * Una unidad inactiva o inexistente no se usa como filtro.
+ */
 async function resolveNationalLevel(access, filters, territory) {
   let regionId = null;
   let localOfficeId = null;
@@ -204,6 +243,13 @@ function assertConfirmedTerritorialAnchor(access) {
   throw new ForbiddenError(MISSING_SCOPE);
 }
 
+/**
+ * Elige la regla de ámbito según el nivel ya concedido.
+ *
+ * Recibe el contexto interno, los filtros pedidos y las búsquedas de territorio.
+ * Devuelve el ámbito efectivo de la consulta. No lee el rol desde la solicitud
+ * ni amplía el acceso: un filtro solo puede estrecharlo.
+ */
 async function resolveTerritorialScope(access, filters, territory) {
   requireAccess(access);
   const requested = {

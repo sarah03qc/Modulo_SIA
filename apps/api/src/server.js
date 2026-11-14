@@ -6,6 +6,13 @@ const { createApp } = require('./app');
 const { createDatabaseGateway } = require('./infrastructure/database/sql-client');
 const { createSidinaccAdapter } = require('./infrastructure/integrations/sidinacc-adapter');
 
+/**
+ * Arranca la API con la configuración del entorno.
+ *
+ * Abre las dos bases, conecta el adaptador de la réplica y escucha en local.
+ * Si SIA y SIDINACC usan el mismo usuario, deja una advertencia:
+ * el aislamiento de permisos no queda demostrado.
+ */
 function startServer(env = process.env) {
   const config = loadConfig(env);
   const logger = createLogger(config.logLevel);
@@ -33,6 +40,9 @@ function startServer(env = process.env) {
   });
 
   let closing = false;
+  /**
+   * Cierra el puerto y las dos bases. Una segunda señal no repite el cierre.
+   */
   async function shutdown() {
     if (closing) {
       return;

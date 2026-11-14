@@ -1,6 +1,9 @@
 /*
 SIA-CENCINAI
 Permiso minimo para HU-009 CA-06 / RF-017.
+Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
+Primer registro en Git: 2026-11-06 (6d4d784).
+2026-11-14: Las guardas y el permiso se ejecutan en un mismo lote.
 
 Este script NO es una migracion y la API no lo ejecuta.
 Lo aplica, por separado, un principal administrativo del ambiente que corresponda.
@@ -26,15 +29,12 @@ GO
 
 IF DB_NAME() <> N'SIA_CENCINAI'
     THROW 51010, N'Este script solo debe ejecutarse sobre SIA_CENCINAI.', 1;
-GO
 
 IF OBJECT_ID(N'dbo.caso_lista_establecimiento', N'V') IS NULL
     THROW 51011, N'Falta dbo.caso_lista_establecimiento.', 1;
-GO
 
 IF DATABASE_PRINCIPAL_ID(N'sia_cencinai_app') IS NULL
     THROW 51012, N'Falta el usuario sia_cencinai_app.', 1;
-GO
 
 GRANT SELECT ON dbo.caso_lista_establecimiento TO sia_cencinai_app;
 GO

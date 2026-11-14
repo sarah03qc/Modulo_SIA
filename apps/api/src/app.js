@@ -1,17 +1,25 @@
+/*
+ * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
+ * Primer registro del archivo en Git: 2026-11-06 (5fabddc).
+ * Modificación del 2026-11-14: orden de autorización y lectura de cuerpos, y CORS.
+ */
 'use strict';
 
 const express = require('express');
 const { createLogger } = require('./common/logger');
-const { notFoundHandler, errorHandler } = require('./common/http-error-handler');
+const { ResponderRutaNoEncontrada, CrearControlErrores } = require('./common/http-error-handler');
 const { createInstitutionalSession } = require('./infrastructure/auth/institutional-session');
 const { createTechnicalRouter } = require('./modules/technical/technical-routes');
 const { createInstitutionalModule } = require('./modules/institutional/create-institutional-module');
 const { createInstitutionalRouter } = require('./modules/institutional/institutional-routes');
 const { createReferenceModule } = require('./modules/references/create-reference-module');
 const { createReferenceRouter } = require('./modules/references/reference-routes');
-const { MAX_TEMPLATE_BYTES } = require('./modules/references/reference-constants');
 
-function applySecurityHeaders(req, res, next) {
+/**
+ * Aplica encabezados para que el navegador no interprete mal el contenido,
+ * no incruste la API en un marco y no guarde la respuesta en caché.
+ */
+function AplicarEncabezadosSeguridad(req, res, next) {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Referrer-Policy', 'no-referrer');
   res.setHeader('X-Frame-Options', 'DENY');
@@ -19,12 +27,19 @@ function applySecurityHeaders(req, res, next) {
   next();
 }
 
-function applyCors(corsOrigin) {
-  return function cors(req, res, next) {
-    const origin = req.headers.origin;
-    if (origin && origin === corsOrigin) {
-      res.setHeader('Access-Control-Allow-Origin', origin);
-      res.setHeader('Vary', 'Origin');
+/**
+ * Habilita en el navegador el acceso entre orígenes para el origen configurado.
+ * Las verificaciones previas se responden antes de iniciar una sesión.
+ *
+ * @param {string} origenPermitido Origen autorizado en la configuración.
+ * @returns {Function} Middleware de Express para los encabezados CORS.
+ */
+function ConfigurarCors(origenPermitido) {
+  return function AplicarCors(req, res, next) {
+    const origen = req.headers.origin;
+    res.vary('Origin');
+    if (origen && origen === origenPermitido) {
+      res.setHeader('Access-Control-Allow-Origin', origen);
       res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
       res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     }
@@ -36,6 +51,16 @@ function applyCors(corsOrigin) {
   };
 }
 
+/**
+ * Monta los módulos HTTP de la aplicación.
+ *
+ * Las rutas de salud quedan fuera de la sesión. A partir de /api se exige identidad.
+ * La consulta institucional y las referencias comparten el adaptador de la réplica.
+ * Cada módulo lee el cuerpo de una solicitud únicamente en las rutas que lo requieren.
+ *
+ * @param {object} dependencies Configuración y dependencias de los módulos.
+ * @returns {express.Express} Aplicación HTTP sin iniciar el servidor.
+ */
 function createApp(dependencies) {
   const logger = dependencies.logger || createLogger(dependencies.config.logLevel);
   const app = express();
@@ -46,17 +71,10 @@ function createApp(dependencies) {
     sia: dependencies.databases && dependencies.databases.sia,
     cases: dependencies.cases
   });
-  app.use(applySecurityHeaders);
-  app.use(applyCors(dependencies.config.corsOrigin));
-  app.use('/api/references/template', (req, res, next) => {
-    if (req.method !== 'POST') {
-      next();
-      return;
-    }
-    express.raw({ type: () => true, limit: MAX_TEMPLATE_BYTES })(req, res, next);
-  });
-  app.use(express.json({ limit: '100kb' }));
+  app.use(AplicarEncabezadosSeguridad);
+  app.use(ConfigurarCors(dependencies.config.corsOrigin));
   app.use(createTechnicalRouter({ ...dependencies, logger }));
+  // Salud y disponibilidad no exigen sesión. El resto de /api sí.
   app.use('/api', createInstitutionalSession(dependencies.config));
   const references = dependencies.references || createReferenceModule({
     periodId: dependencies.config.sidinaccPeriodId,
@@ -65,8 +83,8 @@ function createApp(dependencies) {
   });
   app.use('/api/institutional', createInstitutionalRouter(institutional));
   app.use('/api/references', createReferenceRouter(references));
-  app.use(notFoundHandler);
-  app.use(errorHandler(logger));
+  app.use(ResponderRutaNoEncontrada);
+  app.use(CrearControlErrores(logger));
   return app;
 }
 

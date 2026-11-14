@@ -45,6 +45,21 @@ function serviceDouble() {
 }
 
 describe('HTTP de referencias', () => {
+  test('comprueba sesión y capacidad antes de leer una plantilla', async () => {
+    const servicio = serviceDouble();
+    const { app } = createTestApp(servicio);
+    const cargar = () => request(app)
+      .post('/api/references/template')
+      .set('Content-Type', 'application/octet-stream')
+      .set('Content-Encoding', 'formato-no-admitido')
+      .send(Buffer.from('PK'));
+
+    expect((await cargar()).status).toBe(401);
+    expect((await cargar().set('Authorization', 'Bearer dev-region-central-sur')).status)
+      .toBe(403);
+    expect(servicio.preloadTemplate).not.toHaveBeenCalled();
+  });
+
   test('exige sesión y no acepta un rol enviado por el cliente', async () => {
     const service = serviceDouble();
     const { app } = createTestApp(service);

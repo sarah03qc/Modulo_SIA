@@ -8,6 +8,7 @@ const { loadConfig } = require('../src/config/load-config');
 const { createDatabaseGateway } = require('../src/infrastructure/database/sql-client');
 const { createSidinaccAdapter } = require('../src/infrastructure/integrations/sidinacc-adapter');
 const { createReferenceRepository } = require('../src/modules/references/reference-repository');
+const { PermitirEscriturasSqlLocales } = require('./escrituras-sql-locales');
 
 const placeholder = !process.env.SIA_DB_PASSWORD
   || !process.env.SIDINACC_DB_PASSWORD
@@ -15,7 +16,9 @@ const placeholder = !process.env.SIA_DB_PASSWORD
   || process.env.SIDINACC_DB_PASSWORD === 'CHANGE_ME'
   || !process.env.SIDINACC_PERIOD_ID;
 
-const describeLive = placeholder ? describe.skip : describe;
+// Esta suite escribe referencias y ejecuta una limpieza con privilegios de administración.
+const escriturasAutorizadas = PermitirEscriturasSqlLocales(process.env);
+const describeLive = !placeholder && escriturasAutorizadas ? describe : describe.skip;
 const PROBE_CONSECUTIVE = 'DNCC-DRCS-OL101-1100102-REF-891-2026';
 const PROBE_PERSON = 'SYN-1100102-05';
 
@@ -25,11 +28,14 @@ describeLive('referencias contra SQL Server local', () => {
   let app;
   let gateway;
   let config;
+  let conexionVerificada = false;
   const createdIds = [];
 
-  beforeAll(() => {
+  beforeAll(async () => {
     config = loadConfig(process.env);
     gateway = createDatabaseGateway(config);
+    await gateway.sia.probe();
+    conexionVerificada = true;
     app = createApp({
       config,
       databases: gateway,
@@ -39,6 +45,10 @@ describeLive('referencias contra SQL Server local', () => {
   });
 
   afterAll(async () => {
+    if (!conexionVerificada) {
+      if (gateway) await gateway.close();
+      return;
+    }
     const cleanupFile = path.resolve(
       __dirname,
       '../../../database/sia-cencinai/security/021_cleanup_reference_probe.sql'
@@ -57,9 +67,11 @@ describeLive('referencias contra SQL Server local', () => {
         'SQLCMD=/opt/mssql-tools18/bin/sqlcmd; "$SQLCMD" -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -C -b -I -d SIA_CENCINAI -i /tmp/021_cleanup_reference_probe.sql'
       ], { stdio: 'pipe' });
     } catch {
-      throw new Error('No se pudo revertir la referencia de prueba. Ejecute security/021_cleanup_reference_probe.sql.');
-    }
-    if (gateway) {
+      throw new Error(
+        'No se pudo revertir la referencia de prueba. '
+        + 'Revise security/021_cleanup_reference_probe.sql.'
+      );
+    } finally {
       await gateway.close();
     }
   });

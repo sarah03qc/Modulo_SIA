@@ -4,6 +4,16 @@ const sql = require('mssql');
 const { InfrastructureError } = require('../../common/errors');
 const { assertInstitutionalRead } = require('./institutional-read');
 
+/*
+  Cliente compartido de SQL Server.
+  El acceso a SIA_CENCINAI puede escribir. El de SIDINACC_LOCAL
+  pasa cada sentencia por el filtro de lectura antes de enviarla.
+*/
+
+/**
+ * Consulta de diagnóstico. Confirma el nombre de la base y si la cuenta
+ * puede insertar, actualizar, borrar o es administradora del servidor.
+ */
 const PROBE_SQL = `
 SELECT
   DB_NAME() AS database_name,
@@ -13,6 +23,10 @@ SELECT
   CONVERT(int, IS_SRVROLEMEMBER('sysadmin')) AS is_sysadmin
 `;
 
+/**
+ * Interpreta el resultado del permiso como denegado.
+ * El motor puede devolver 0, el texto "0" o false.
+ */
 function denied(value) {
   return value === 0 || value === '0' || value === false;
 }
@@ -35,6 +49,10 @@ class SqlExecutionError extends Error {
   }
 }
 
+/**
+ * Extrae el número de error de SQL Server, si el controlador lo trae.
+ * Sirve para distinguir permiso, duplicado o interbloqueo sin mostrar el texto del motor.
+ */
 function readSqlNumber(error) {
   if (!error || typeof error !== 'object') {
     return null;
@@ -89,6 +107,10 @@ function bindParameters(request, parameters) {
   }
 }
 
+/**
+ * Arma la configuración del controlador a partir de la base ya validada.
+ * No elige la base: usa el nombre, el usuario y los tiempos que entregó la configuración.
+ */
 function toMssqlConfig(database, timeouts, poolMax) {
   return {
     server: database.server,
@@ -112,10 +134,21 @@ function toMssqlConfig(database, timeouts, poolMax) {
   };
 }
 
+/**
+ * Crea un cliente para una sola base.
+ *
+ * Si el filtro de escritura está activo, cada sentencia se rechaza cuando no es de lectura.
+ * Ese filtro se usa en la réplica institucional. La base propia no lo activa.
+ * El conjunto de conexiones se abre en la primera consulta y se cierra si la conexión
+ * falla o cuando el proceso pide el cierre. Un permiso denegado no lo descarta.
+ */
 function createSqlClient(options) {
   const writeFilterEnabled = Boolean(options.writeFilterEnabled);
   let pool = null;
 
+  /**
+   * Devuelve el conjunto de conexiones abierto, o lo crea si todavía no existe.
+   */
   async function getPool() {
     if (pool) {
       return pool;
@@ -125,6 +158,13 @@ function createSqlClient(options) {
     return pool;
   }
 
+  /**
+   * Ejecuta una consulta y devuelve las filas.
+   *
+   * En el cliente de la réplica, la sentencia pasa primero el filtro de lectura.
+   * Si el motor niega el permiso, se conserva el número SQL y no se cierra la conexión.
+   * Cualquier otro fallo sí la cierra, para no reutilizarla.
+   */
   async function query(sqlText, parameters = {}) {
     if (writeFilterEnabled) {
       assertInstitutionalRead(sqlText);
@@ -155,14 +195,13 @@ function createSqlClient(options) {
   }
 
   /**
-   * Ejecuta varias sentencias en una transacción READ COMMITTED.
- * Confirma solo si el trabajo termina. Cualquier error revierte todo.
- * Si el cliente es de solo lectura, cada sentencia pasa el mismo filtro que `query`.
- * No cierra el pool por un duplicado o un permiso denegado.
+   * Ejecuta varias sentencias en una sola transacción.
+   * El controlador la abre con lectura confirmada, su aislamiento por defecto.
    *
-   * @param {function} work Recibe `{ query }` ligado a la transacción.
-   * @returns {Promise<*>} Valor devuelto por el trabajo.
-   * @throws {SqlExecutionError} Cuando el motor rechaza la transacción.
+   * Confirma solo si el trabajo termina. Cualquier error revierte todo.
+   * Si el cliente es de solo lectura, cada sentencia pasa el mismo filtro que una consulta suelta.
+   * No cierra la conexión por un duplicado o un permiso denegado.
+   * Un fallo de conexión sí la cierra. El texto del motor no se reenvía al cliente.
    */
   async function withTransaction(work) {
     const active = await getPool();
@@ -208,6 +247,13 @@ function createSqlClient(options) {
     }
   }
 
+  /**
+   * Comprueba que la conexión responde y que apunta a la base configurada.
+   *
+   * Devuelve el papel del cliente, el nombre de la base y si la cuenta
+   * no puede insertar, actualizar, borrar ni actuar como administradora.
+   * Ese indicador describe el permiso visto en el momento; no cambia la cuenta.
+   */
   async function probe() {
     const rows = await query(PROBE_SQL);
     const row = rows && rows[0];
@@ -225,6 +271,10 @@ function createSqlClient(options) {
     };
   }
 
+  /**
+   * Cierra el conjunto de conexiones si estaba abierto.
+   * Una segunda llamada no intenta cerrarlo de nuevo.
+   */
   async function close() {
     const current = pool;
     pool = null;
@@ -244,6 +294,12 @@ function createSqlClient(options) {
   };
 }
 
+/**
+ * Abre los dos clientes que usa el proceso.
+ *
+ * sia escribe en SIA_CENCINAI. sidinacc lee SIDINACC_LOCAL y activa el filtro
+ * de solo lectura. No comparten conexiones. close cierra ambos.
+ */
 function createDatabaseGateway(config, dependencies = {}) {
   const timeouts = {
     connectionTimeoutMs: config.connectionTimeoutMs,

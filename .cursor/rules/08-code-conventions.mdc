@@ -14,7 +14,7 @@ alwaysApply: false
 ## Organización y responsabilidades
 
 - Agrupar funcionalidades por dominios y responsabilidades claras, no por una carpeta por cada tabla.
-- Usar nombres de directorio y archivo que expresen propósito: por ejemplo `references`, `cases`, `assessments`, `attentions`, `scheduling` y `reporting` cuando exista código real de esos dominios.
+- Usar nombres descriptivos en español para archivos y carpetas propios nuevos, por ejemplo `referencias`, `casos` y `valoraciones`. Verificar importaciones y herramientas antes de renombrar archivos existentes.
 - Separar rutas/controladores HTTP, validación de entrada, casos de uso/servicios, reglas de negocio, acceso a datos e integración SIDINACC.
 - Mantener los componentes React orientados a presentación y coordinación de interacción, sin consultas directas a SQL Server.
 - No crear módulos, abstracciones o dependencias circulares de forma preventiva sin un caso concreto.
@@ -22,12 +22,12 @@ alwaysApply: false
 
 ## Nombres y código
 
-- Utilizar nombres claros, descriptivos y consistentes con el código existente.
-- Preferir verbos y sustantivos para operaciones (`createReferral`, `closeCase`, `searchPerson`); nombres expresivos para datos y estados.
+- Utilizar nombres claros y descriptivos en español para código propio. Conservar las APIs de dependencias, los contratos HTTP y de ejecución y los identificadores institucionales de integración.
+- Preferir verbo y sustantivo para operaciones (`CrearReferencia`, `BuscarPersona`), PascalCase cuando aplique la convención institucional y camelCase para variables. Respetar las convenciones obligatorias de cada tecnología.
 - Evitar abreviaturas ambiguas, variables de una letra fuera de índices locales, números mágicos y booleanos genéricos como `flag`.
 - Preferir constantes o catálogos versionados cuando una regla pueda cambiar; no codificar supuestos institucionales como literales permanentes.
 - Mantener funciones y componentes de responsabilidad definida; evitar archivos enormes y lógica duplicada.
-- Usar formato uniforme, indentación consistente y separaciones legibles. Configurar formateo/lint solo con herramientas compatibles, justificadas y acordes al stack.
+- Mantener un máximo de 100 caracteres por línea de código o comentario. Registrar las excepciones al revisar el cambio si dividir una línea alteraría un contrato o una sintaxis. Conservar una sangría y un estilo de llaves uniformes.
 
 ## Comentarios y documentación
 

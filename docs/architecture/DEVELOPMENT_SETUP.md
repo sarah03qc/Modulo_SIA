@@ -91,6 +91,15 @@ docker start sidinacc-local-sql
 
 Las pruebas de HTTP, configuración y clientes SQL no escriben en las bases. La prueba de conectividad solo corre cuando `apps/api/.env` existe y compara dos conteos de lectura antes y después. La prueba de permisos usa solo `sia_sidinacc_app` y `sia_cencinai_app`. Comprueba permisos efectivos y sentencias de escritura con `WHERE 1 = 0`, que el motor rechaza. No crea ni elimina tablas y no usa la credencial de despliegue. No repuebla datos.
 
+Las suites `reference-live.test.js` y `sidinacc-reader-permissions.test.js`
+requieren `SIA_TEST_ENABLE_SQL_WRITES=1`, `NODE_ENV=development` o `test`
+y que los dos servidores configurados sean de loopback.
+Actívelas únicamente para una instancia SQL local sintética autorizada. La
+primera crea registros de prueba y ejecuta una limpieza administrativa en
+`sidinacc-local-sql`. La segunda envía sentencias DDL y DML que espera que SQL
+Server rechace. Con las credenciales locales configuradas, las demás pruebas de
+integración de lectura siguen comprobando la conectividad.
+
 ## Problemas frecuentes
 
 | Síntoma | Revisión |
