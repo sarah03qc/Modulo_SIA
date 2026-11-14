@@ -1,0 +1,935 @@
+/*
+ * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
+ * Creación: 2026-11-14.
+ * HU-001, HU-002 y HU-018 a HU-025. El equipo decide; RN-009 calcula la prioridad.
+ */
+'use strict';
+
+const {
+  ErrorConflicto,
+  ErrorInfraestructura,
+  ErrorNoEncontrado,
+  ErrorProhibido,
+  ErrorValidacion
+} = require('../../common/errors');
+const { CAPABILITY } = require('../../infrastructure/auth/capabilities');
+const { ExigirCapacidad, TieneCapacidad } = require('../../infrastructure/auth/authorization-policy');
+const { ACCESS_LEVEL } = require('../../infrastructure/auth/institutional-roles');
+const { ResolverAmbitoTerritorial } = require('../institutional/territorial-scope');
+const { NombreCompleto } = require('../references/reference-snapshot');
+const {
+  CalcularPrioridadRn009,
+  ETIQUETA_PRIORIDAD,
+  ETIQUETA_PROTECCION,
+  ETIQUETA_RIESGO
+} = require('./reglas-prioridad');
+
+const NO_ENCONTRADO = 'El recurso solicitado no existe.';
+const CASO_ACTIVO = 'No se puede abrir el caso porque la persona ya tiene un caso de Atención Interdisciplinaria activo.';
+const INTENTOS = 3;
+const LIMITE_NOMBRES = 100;
+const ETIQUETA_EJE = Object.freeze({
+  PROTECTOR: 'Factor protector',
+  RIESGO: 'Factor de riesgo',
+  SIGNO_ALERTA: 'Signo de alerta'
+});
+const ETIQUETA_AMBITO = Object.freeze({
+  INDIVIDUAL: 'Individual',
+  HOGAR_FAMILIAR: 'Hogar/Familiar',
+  COMUNITARIO: 'Comunitario'
+});
+
+function PuertoTerritorial(adaptador) {
+  return {
+    BuscarEstablecimiento: (id) => adaptador.BuscarEstablecimiento(id),
+    BuscarOficinaLocal: (id) => adaptador.BuscarOficinaLocal(id),
+    BuscarRegion: (id) => adaptador.BuscarRegion(id)
+  };
+}
+
+function ExigirResponsable(acceso) {
+  if (!acceso || typeof acceso.principalId !== 'string' || acceso.principalId.length === 0) {
+    throw new ErrorProhibido('La identidad de la sesión no puede usarse como responsable.');
+  }
+  return acceso.principalId;
+}
+
+function TraducirPersistencia(error, mensajes) {
+  if (error && error.expose === true) {
+    throw error;
+  }
+  if (error && error.code === 'CASO_ACTIVO') {
+    throw new ErrorConflicto(CASO_ACTIVO);
+  }
+  if (error && error.code === 'SITUACION_DUPLICADA') {
+    throw new ErrorConflicto('Esa referencia o ese caso ya está en la sesión.');
+  }
+  if (error && error.code === 'ESTADO_INVALIDO') {
+    throw new ErrorConflicto('La operación no corresponde al estado actual.');
+  }
+  if (error && error.code === 'DUPLICADO') {
+    throw new ErrorConflicto(mensajes.duplicado || 'El registro entra en conflicto con uno existente.');
+  }
+  if (error && error.code === 'PERMISO') {
+    throw new ErrorInfraestructura('La operación no está disponible para la cuenta técnica actual.');
+  }
+  if (error && error.code === 'INTERBLOQUEO') {
+    return 'REINTENTAR';
+  }
+  if (error instanceof ErrorInfraestructura) {
+    throw error;
+  }
+  throw new ErrorInfraestructura('La operación de base de datos no se completó.');
+}
+
+async function SiPermiso(trabajo, bloqueado) {
+  try {
+    return await trabajo();
+  } catch (error) {
+    if (error && error.code === 'PERMISO') {
+      return bloqueado;
+    }
+    return TraducirPersistencia(error, {});
+  }
+}
+
+function IndicadorNoDisponible(motivo) {
+  return { disponibilidad: 'NO_DISPONIBLE', cantidad: null, motivo };
+}
+
+function FechaHoy() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function EtiquetaCategoria(categoria) {
+  const eje = ETIQUETA_EJE[categoria.eje] || categoria.eje;
+  const ambito = ETIQUETA_AMBITO[categoria.ambito] || categoria.ambito;
+  return `${eje} — ${ambito}`;
+}
+
+function AgruparInstrumento(filas) {
+  if (!filas || filas.length === 0) {
+    return {
+      disponibilidad: 'NEEDS_VALIDATION',
+      mensaje: 'No hay una versión vigente del instrumento de valoración. No se inventan factores.'
+    };
+  }
+  const versiones = new Set(filas.map((fila) => Number(fila.instrumento_version_id)));
+  if (versiones.size !== 1) {
+    return {
+      disponibilidad: 'NEEDS_VALIDATION',
+      mensaje: 'Hay más de una versión vigente del instrumento. No se elige una automáticamente.'
+    };
+  }
+  const categorias = new Map();
+  for (const fila of filas) {
+    const categoriaId = Number(fila.categoria_id);
+    if (!categorias.has(categoriaId)) {
+      categorias.set(categoriaId, {
+        categoriaId,
+        eje: fila.eje,
+        ambito: fila.ambito,
+        esRequerida: fila.es_requerida === true || fila.es_requerida === 1,
+        orden: Number(fila.orden_categoria),
+        etiqueta: EtiquetaCategoria(fila),
+        factores: []
+      });
+    }
+    if (fila.factor_id !== null && fila.factor_id !== undefined) {
+      categorias.get(categoriaId).factores.push({
+        factorId: Number(fila.factor_id),
+        codigo: fila.codigo,
+        etiqueta: fila.etiqueta,
+        esAbierto: fila.es_abierto === true || fila.es_abierto === 1
+      });
+    }
+  }
+  return {
+    disponibilidad: 'DISPONIBLE',
+    instrumentoVersionId: Number(filas[0].instrumento_version_id),
+    numeroVersion: Number(filas[0].numero_version),
+    categorias: [...categorias.values()]
+  };
+}
+
+function AgruparMatriz(filas) {
+  if (!filas || filas.length === 0) {
+    return {
+      disponibilidad: 'NEEDS_VALIDATION',
+      mensaje: 'No hay una matriz vigente de prioridad. La valoración no puede confirmarse.'
+    };
+  }
+  const versiones = new Set(filas.map((fila) => Number(fila.cat_version_id)));
+  if (versiones.size !== 1 || filas.length !== 9) {
+    return {
+      disponibilidad: 'NEEDS_VALIDATION',
+      mensaje: 'La matriz vigente no tiene las nueve combinaciones de RN-009.'
+    };
+  }
+  return {
+    disponibilidad: 'DISPONIBLE',
+    versionId: Number(filas[0].cat_version_id),
+    filas: filas.map((fila) => ({
+      riesgo: fila.riesgo_codigo,
+      proteccion: fila.proteccion_codigo,
+      prioridad: fila.prioridad_codigo
+    }))
+  };
+}
+
+function PresentarCatalogo(filas, codigo) {
+  const items = filas
+    .filter((fila) => fila.codigo_catalogo === codigo)
+    .filter((fila) => fila.codigo !== 'OTRA' && fila.codigo !== 'OTRO')
+    .map((fila) => ({
+      itemId: Number(fila.cat_item_id),
+      codigo: fila.codigo,
+      etiqueta: fila.etiqueta
+    }));
+  if (items.length === 0) {
+    return {
+      disponibilidad: 'NEEDS_VALIDATION',
+      items: [],
+      mensaje: `No hay ítems vigentes de ${codigo}. No se inventan valores.`
+    };
+  }
+  return { disponibilidad: 'DISPONIBLE', items };
+}
+
+function ResolverPrioridad(matriz, riesgo, proteccion) {
+  if (matriz.disponibilidad !== 'DISPONIBLE') {
+    throw new ErrorValidacion(matriz.mensaje);
+  }
+  const calculada = CalcularPrioridadRn009(riesgo, proteccion);
+  const fila = matriz.filas.find((item) => item.riesgo === riesgo && item.proteccion === proteccion);
+  if (!calculada || !fila || fila.prioridad !== calculada) {
+    throw new ErrorConflicto(
+      'La matriz vigente no coincide con la regla RN-009. La prioridad no se registró.'
+    );
+  }
+  return { prioridadCodigo: calculada, matrizVersionId: matriz.versionId };
+}
+
+function ValidarCategorias(instrumento, respuestas) {
+  if (instrumento.disponibilidad !== 'DISPONIBLE') {
+    throw new ErrorValidacion(instrumento.mensaje);
+  }
+  const porId = new Map(respuestas.map((respuesta) => [respuesta.categoriaId, respuesta]));
+  const conocidas = new Set(instrumento.categorias.map((categoria) => categoria.categoriaId));
+  for (const categoriaId of porId.keys()) {
+    if (!conocidas.has(categoriaId)) {
+      throw new ErrorValidacion('Una categoría no pertenece al instrumento vigente.');
+    }
+  }
+  const pendientes = [];
+  const categorias = [];
+  for (const categoria of instrumento.categorias) {
+    const respuesta = porId.get(categoria.categoriaId);
+    if (!respuesta) {
+      if (categoria.esRequerida) {
+        pendientes.push(categoria.etiqueta);
+      }
+      continue;
+    }
+    const catalogo = new Map(categoria.factores.map((factor) => [factor.factorId, factor]));
+    const vistos = new Set();
+    const factores = respuesta.factores.map((factor) => {
+      const definido = catalogo.get(factor.factorId);
+      if (!definido || vistos.has(factor.factorId)) {
+        throw new ErrorValidacion('Un factor no pertenece a la categoría o está repetido.');
+      }
+      vistos.add(factor.factorId);
+      if (!definido.esAbierto && factor.especificacion) {
+        throw new ErrorValidacion('Ese factor no admite una especificación.');
+      }
+      return factor;
+    });
+    categorias.push({
+      categoriaId: categoria.categoriaId,
+      respuesta: respuesta.respuesta,
+      factores
+    });
+  }
+  if (pendientes.length > 0) {
+    throw new ErrorValidacion(`Falta responder: ${pendientes.join(', ')}.`);
+  }
+  return categorias;
+}
+
+function PresentarCasoLista(fila, nombre) {
+  return {
+    casoId: Number(fila.caso_id),
+    identificacion: fila.per_id_persona,
+    nombre: nombre ? nombre.fullName : null,
+    origenNombre: nombre ? 'VIGENTE' : 'NO_DISPONIBLE',
+    establecimientoId: Number(fila.establecimiento_id),
+    estado: fila.estado,
+    prioridadCodigo: fila.prioridad_codigo,
+    prioridadEtiqueta: ETIQUETA_PRIORIDAD[fila.prioridad_codigo] || fila.prioridad_codigo,
+    fechaApertura: fila.fecha_apertura,
+    fechaCierre: fila.fecha_cierre
+  };
+}
+
+/**
+ * Servicio del proceso interdisciplinario.
+ * Vuelve a exigir capacidad y ámbito. No calcula riesgo ni protección.
+ *
+ * @param {object} dependencias Repositorio, adaptador y periodo.
+ * @returns {object} Operaciones del módulo.
+ */
+function CrearServicioProceso(dependencias) {
+  const repositorio = dependencias.repositorio;
+  const adaptador = dependencias.adaptador;
+  const periodoId = dependencias.periodId;
+  const territorio = PuertoTerritorial(adaptador);
+
+  async function Ambito(acceso, establecimientoId) {
+    return ResolverAmbitoTerritorial(acceso, {
+      regionId: null,
+      localOfficeId: null,
+      establishmentId: establecimientoId ?? null
+    }, territorio);
+  }
+
+  function ExigirOficina(acceso, capacidad) {
+    ExigirCapacidad(acceso, capacidad);
+    if (!acceso || acceso.accessLevel !== ACCESS_LEVEL.LOCAL_OFFICE) {
+      throw new ErrorProhibido('La operación no está permitida.');
+    }
+  }
+
+  async function Nombres(ambito, identificaciones) {
+    const nombres = new Map();
+    await Promise.all(identificaciones.map(async (identificacion) => {
+      try {
+        const filas = await adaptador.BuscarPersonaEnAmbito({
+          periodId: periodoId,
+          personId: identificacion,
+          scope: ambito
+        });
+        if (filas.length === 1 && Number(filas[0].location_count) === 1) {
+          nombres.set(identificacion, { fullName: NombreCompleto(filas[0]) });
+        }
+      } catch (error) {
+        if (error && error.expose === true) {
+          throw error;
+        }
+      }
+    }));
+    return nombres;
+  }
+
+  async function IdentificacionesPorNombre(ambito, nombre) {
+    const resultado = await adaptador.BuscarPersonas({
+      mode: 'name',
+      periodId: periodoId,
+      text: nombre,
+      scope: ambito,
+      offset: 0,
+      pageSize: LIMITE_NOMBRES
+    });
+    if (resultado.total > LIMITE_NOMBRES) {
+      throw new ErrorValidacion('La búsqueda por nombre es demasiado amplia. Precise el criterio.');
+    }
+    return resultado.items.map((fila) => fila.person_id);
+  }
+
+  async function Reintentar(operacion, mensajes) {
+    for (let intento = 1; intento <= INTENTOS; intento += 1) {
+      try {
+        return await operacion();
+      } catch (error) {
+        const traduccion = TraducirPersistencia(error, mensajes);
+        if (traduccion === 'REINTENTAR' && intento < INTENTOS) {
+          continue;
+        }
+        if (traduccion === 'REINTENTAR') {
+          throw new ErrorConflicto('La operación no pudo confirmarse por concurrencia. Intente de nuevo.');
+        }
+      }
+    }
+    throw new ErrorInfraestructura('La operación de base de datos no se completó.');
+  }
+
+  async function CargarMatriz() {
+    return AgruparMatriz(await repositorio.ListarMatrizVigente());
+  }
+
+  return {
+    ObtenerContexto(acceso) {
+      const nivel = acceso && acceso.accessLevel ? acceso.accessLevel : null;
+      return {
+        identidad: acceso && acceso.principalId ? acceso.principalId : null,
+        nivel,
+        puedeBuscarPersonas: TieneCapacidad(acceso, CAPABILITY.PERSON_SEARCH),
+        puedeCrearReferencia: TieneCapacidad(acceso, CAPABILITY.REFERRAL_CREATE),
+        puedeConsultarReferencias: TieneCapacidad(acceso, CAPABILITY.REFERRAL_READ),
+        puedeGestionarSesiones: TieneCapacidad(acceso, CAPABILITY.SESSION_MANAGE)
+          && nivel === ACCESS_LEVEL.LOCAL_OFFICE,
+        puedeRegistrarValoracion: TieneCapacidad(acceso, CAPABILITY.ASSESSMENT_WRITE)
+          && nivel === ACCESS_LEVEL.LOCAL_OFFICE,
+        puedeAbrirCaso: TieneCapacidad(acceso, CAPABILITY.CASE_OPEN)
+          && nivel === ACCESS_LEVEL.LOCAL_OFFICE,
+        puedeVerListaSimplificada: TieneCapacidad(acceso, CAPABILITY.CASE_SUMMARY_READ)
+          && nivel === ACCESS_LEVEL.ESTABLISHMENT,
+        puedeVerCasosOficina: TieneCapacidad(acceso, CAPABILITY.CASE_READ)
+          && nivel === ACCESS_LEVEL.LOCAL_OFFICE,
+        puedeVerDetalleCaso: TieneCapacidad(acceso, CAPABILITY.CASE_READ)
+          && nivel === ACCESS_LEVEL.LOCAL_OFFICE,
+        puedeExportarCasos: TieneCapacidad(acceso, CAPABILITY.CASE_READ)
+          && nivel === ACCESS_LEVEL.LOCAL_OFFICE
+      };
+    },
+
+    async ObtenerResumen(acceso) {
+      const contexto = this.ObtenerContexto(acceso);
+      if (contexto.nivel !== ACCESS_LEVEL.ESTABLISHMENT && contexto.nivel !== ACCESS_LEVEL.LOCAL_OFFICE) {
+        return {
+          nivel: contexto.nivel,
+          indicadores: {
+            posiblesReferencias: IndicadorNoDisponible(
+              'La detección de posibles referencias no forma parte de este lote.'
+            ),
+            actividadesVencidas: IndicadorNoDisponible(
+              'La programación operativa no forma parte de este lote.'
+            ),
+            proximasAcciones: IndicadorNoDisponible(
+              'El seguimiento de atenciones no forma parte de este lote.'
+            )
+          },
+          mensaje: 'El resumen regional y nacional no forma parte de este lote.'
+        };
+      }
+      const ambito = await Ambito(acceso, null);
+      const referencias = await Reintentar(
+        () => repositorio.ContarReferencias(ambito, null),
+        {}
+      );
+      const pendientes = await Reintentar(
+        () => repositorio.ContarReferencias(ambito, 'PENDIENTE_REVISION'),
+        {}
+      );
+      let casos = { disponibilidad: 'DISPONIBLE', cantidad: null, personas: null };
+      try {
+        const conteo = await repositorio.ContarCasos(ambito, 'ACTIVO');
+        casos = { disponibilidad: 'DISPONIBLE', cantidad: conteo.total, personas: conteo.personas };
+      } catch (error) {
+        if (error && error.code === 'PERMISO') {
+          casos = {
+            disponibilidad: 'BLOQUEADO',
+            cantidad: null,
+            personas: null,
+            motivo: 'La consulta de casos no está disponible para la cuenta técnica actual.'
+          };
+        } else {
+          TraducirPersistencia(error, {});
+        }
+      }
+      const resumen = {
+        nivel: contexto.nivel,
+        referencias: { disponibilidad: 'DISPONIBLE', cantidad: referencias },
+        referenciasPendientes: { disponibilidad: 'DISPONIBLE', cantidad: pendientes },
+        casosActivos: casos,
+        posiblesReferencias: IndicadorNoDisponible(
+          'La detección de posibles referencias no forma parte de este lote.'
+        ),
+        actividadesVencidas: IndicadorNoDisponible(
+          'La programación operativa no forma parte de este lote.'
+        ),
+        proximasAcciones: IndicadorNoDisponible(
+          'El seguimiento de atenciones no forma parte de este lote.'
+        )
+      };
+      if (contexto.nivel === ACCESS_LEVEL.LOCAL_OFFICE) {
+        try {
+          const sesiones = await repositorio.ListarProximasSesiones(ambito.localOfficeId, FechaHoy());
+          resumen.proximasSesiones = {
+            disponibilidad: 'DISPONIBLE',
+            items: sesiones.map((fila) => ({
+              sesionId: Number(fila.sesion_id),
+              fecha: fila.fecha,
+              horaInicio: fila.hora_inicio,
+              lugar: fila.lugar
+            }))
+          };
+        } catch (error) {
+          if (error && error.code === 'PERMISO') {
+            resumen.proximasSesiones = {
+              disponibilidad: 'BLOQUEADO',
+              items: null,
+              motivo: 'La consulta de sesiones no está disponible para la cuenta técnica actual.'
+            };
+          } else {
+            TraducirPersistencia(error, {});
+          }
+        }
+      }
+      return resumen;
+    },
+
+    async ListarCatalogos(acceso) {
+      ExigirOficina(acceso, CAPABILITY.SESSION_MANAGE);
+      const bloqueado = {
+        disponibilidad: 'BLOQUEADO',
+        items: [],
+        mensaje: 'El catálogo no está disponible para la cuenta técnica actual.'
+      };
+      const [filas, instrumento, matriz] = await Promise.all([
+        SiPermiso(
+          () => repositorio.ListarCatalogo(['DISCIPLINA', 'ESTRATEGIA', 'FRECUENCIA']),
+          null
+        ),
+        SiPermiso(
+          () => repositorio.ListarInstrumentoVigente().then(AgruparInstrumento),
+          {
+            disponibilidad: 'BLOQUEADO',
+            mensaje: 'El instrumento no está disponible para la cuenta técnica actual.'
+          }
+        ),
+        SiPermiso(
+          () => repositorio.ListarMatrizVigente().then(AgruparMatriz),
+          {
+            disponibilidad: 'BLOQUEADO',
+            mensaje: 'La matriz de prioridad no está disponible para la cuenta técnica actual.'
+          }
+        )
+      ]);
+      return {
+        disciplinas: filas ? PresentarCatalogo(filas, 'DISCIPLINA') : bloqueado,
+        estrategias: filas ? PresentarCatalogo(filas, 'ESTRATEGIA') : bloqueado,
+        frecuencias: filas ? PresentarCatalogo(filas, 'FRECUENCIA') : bloqueado,
+        instrumento,
+        matriz: {
+          disponibilidad: matriz.disponibilidad,
+          mensaje: matriz.mensaje || null
+        }
+      };
+    },
+
+    async CalcularPrioridad(acceso, solicitud) {
+      ExigirOficina(acceso, CAPABILITY.ASSESSMENT_WRITE);
+      const matriz = await CargarMatriz();
+      const prioridad = ResolverPrioridad(matriz, solicitud.riesgoCodigo, solicitud.proteccionCodigo);
+      return {
+        riesgoCodigo: solicitud.riesgoCodigo,
+        riesgoEtiqueta: ETIQUETA_RIESGO[solicitud.riesgoCodigo],
+        proteccionCodigo: solicitud.proteccionCodigo,
+        proteccionEtiqueta: ETIQUETA_PROTECCION[solicitud.proteccionCodigo],
+        prioridadCodigo: prioridad.prioridadCodigo,
+        prioridadEtiqueta: ETIQUETA_PRIORIDAD[prioridad.prioridadCodigo],
+        editable: false
+      };
+    },
+
+    async CrearSesion(acceso, solicitud) {
+      ExigirOficina(acceso, CAPABILITY.SESSION_MANAGE);
+      const catalogo = await repositorio.ListarCatalogo(['DISCIPLINA']);
+      const disciplinas = PresentarCatalogo(catalogo, 'DISCIPLINA');
+      const permitidas = new Set((disciplinas.items || []).map((item) => item.itemId));
+      for (const disciplinaId of solicitud.disciplinas) {
+        if (!permitidas.has(disciplinaId)) {
+          throw new ErrorValidacion('Una disciplina no pertenece al catálogo vigente.');
+        }
+      }
+      const ambito = await Ambito(acceso, null);
+      const sesionId = await Reintentar(() => repositorio.CrearSesion({
+        oficinaLocalId: ambito.localOfficeId,
+        fecha: solicitud.fecha,
+        horaInicio: solicitud.horaInicio,
+        horaFin: solicitud.horaFin,
+        lugar: solicitud.lugar,
+        disciplinas: solicitud.disciplinas,
+        responsable: ExigirResponsable(acceso),
+        rol: acceso.accessLevel,
+        ambitoTexto: `OL-${ambito.localOfficeId}`
+      }), { duplicado: 'No se pudo registrar la sesión.' });
+      return {
+        sesionId,
+        advertencia: disciplinas.disponibilidad === 'DISPONIBLE' ? null : disciplinas.mensaje
+      };
+    },
+
+    async ListarSesiones(acceso) {
+      ExigirOficina(acceso, CAPABILITY.SESSION_MANAGE);
+      const ambito = await Ambito(acceso, null);
+      const filas = await SiPermiso(
+        () => repositorio.ListarSesiones(ambito.localOfficeId),
+        null
+      );
+      if (!filas) {
+        return {
+          disponibilidad: 'BLOQUEADO',
+          total: null,
+          items: [],
+          motivo: 'La consulta de sesiones no está disponible para la cuenta técnica actual.'
+        };
+      }
+      return {
+        disponibilidad: 'DISPONIBLE',
+        total: filas.length,
+        items: filas.map((fila) => ({
+          sesionId: Number(fila.sesion_id),
+          fecha: fila.fecha,
+          horaInicio: fila.hora_inicio,
+          horaFin: fila.hora_fin,
+          lugar: fila.lugar
+        }))
+      };
+    },
+
+    async ObtenerSesion(acceso, sesionId) {
+      ExigirOficina(acceso, CAPABILITY.SESSION_MANAGE);
+      const ambito = await Ambito(acceso, null);
+      const encontrada = await repositorio.ObtenerSesion(sesionId, ambito.localOfficeId);
+      if (!encontrada) {
+        throw new ErrorNoEncontrado(NO_ENCONTRADO);
+      }
+      return {
+        sesionId: Number(encontrada.sesion.sesion_id),
+        fecha: encontrada.sesion.fecha,
+        horaInicio: encontrada.sesion.hora_inicio,
+        horaFin: encontrada.sesion.hora_fin,
+        lugar: encontrada.sesion.lugar,
+        disciplinas: encontrada.disciplinas.map((fila) => ({
+          itemId: Number(fila.disciplina_item_id),
+          codigo: fila.codigo,
+          etiqueta: fila.etiqueta
+        })),
+        situaciones: encontrada.situaciones.map((fila) => ({
+          situacionId: Number(fila.situacion_id),
+          referenciaId: fila.referencia_id === null ? null : Number(fila.referencia_id),
+          casoId: fila.caso_id === null ? null : Number(fila.caso_id)
+        }))
+      };
+    },
+
+    async AsociarSituacion(acceso, sesionId, solicitud) {
+      ExigirOficina(acceso, CAPABILITY.SESSION_MANAGE);
+      const ambito = await Ambito(acceso, null);
+      const sesion = await repositorio.ObtenerSesion(sesionId, ambito.localOfficeId);
+      if (!sesion) {
+        throw new ErrorNoEncontrado(NO_ENCONTRADO);
+      }
+      if (solicitud.referenciaId !== null) {
+        const referencia = await repositorio.BuscarReferencia(solicitud.referenciaId, ambito);
+        if (!referencia || referencia.estado !== 'PENDIENTE_REVISION') {
+          throw new ErrorNoEncontrado(NO_ENCONTRADO);
+        }
+      } else {
+        const caso = await repositorio.BuscarCasoActivo(solicitud.casoId, ambito);
+        if (!caso) {
+          throw new ErrorNoEncontrado(NO_ENCONTRADO);
+        }
+      }
+      const situacionId = await Reintentar(() => repositorio.AsociarSituacion({
+        sesionId,
+        referenciaId: solicitud.referenciaId,
+        casoId: solicitud.casoId
+      }), {});
+      return { situacionId, sesionId };
+    },
+
+    async RegistrarValoracion(acceso, solicitud) {
+      ExigirOficina(acceso, CAPABILITY.ASSESSMENT_WRITE);
+      const ambito = await Ambito(acceso, null);
+      const situacion = await repositorio.ObtenerSituacion(solicitud.situacionId, ambito.localOfficeId);
+      if (!situacion) {
+        throw new ErrorNoEncontrado(NO_ENCONTRADO);
+      }
+      let referenciaId = situacion.referencia_id === null ? null : Number(situacion.referencia_id);
+      let casoId = situacion.caso_id === null ? null : Number(situacion.caso_id);
+      if (referenciaId !== null) {
+        const referencia = await repositorio.BuscarReferencia(referenciaId, ambito);
+        if (!referencia || referencia.estado !== 'PENDIENTE_REVISION') {
+          throw new ErrorConflicto('La referencia no está pendiente de revisión.');
+        }
+      } else {
+        const caso = await repositorio.BuscarCasoActivo(casoId, ambito);
+        if (!caso) {
+          throw new ErrorNoEncontrado(NO_ENCONTRADO);
+        }
+        referenciaId = Number(caso.referencia_id);
+      }
+      const instrumento = AgruparInstrumento(await repositorio.ListarInstrumentoVigente());
+      const categorias = ValidarCategorias(instrumento, solicitud.categorias);
+      const prioridad = ResolverPrioridad(
+        AgruparMatriz(await repositorio.ListarMatrizVigente()),
+        solicitud.riesgoCodigo,
+        solicitud.proteccionCodigo
+      );
+      const anteriores = await repositorio.ContarValoraciones(referenciaId, casoId);
+      const valoracionId = await Reintentar(() => repositorio.RegistrarValoracion({
+        situacionId: solicitud.situacionId,
+        casoId,
+        referenciaId,
+        instrumentoVersionId: instrumento.instrumentoVersionId,
+        numero: anteriores + 1,
+        matrizVersionId: prioridad.matrizVersionId,
+        riesgoCodigo: solicitud.riesgoCodigo,
+        proteccionCodigo: solicitud.proteccionCodigo,
+        prioridadCodigo: prioridad.prioridadCodigo,
+        categorias,
+        responsable: ExigirResponsable(acceso),
+        rol: acceso.accessLevel,
+        fecha: situacion.fecha,
+        ambitoTexto: `OL-${ambito.localOfficeId}`
+      }), { duplicado: 'Ya existe una valoración vigente para esa situación.' });
+      return {
+        valoracionId,
+        prioridadCodigo: prioridad.prioridadCodigo,
+        prioridadEtiqueta: ETIQUETA_PRIORIDAD[prioridad.prioridadCodigo],
+        editable: false
+      };
+    },
+
+    async RegistrarResolucion(acceso, solicitud) {
+      ExigirOficina(acceso, CAPABILITY.ASSESSMENT_WRITE);
+      const ambito = await Ambito(acceso, null);
+      const referencia = await repositorio.BuscarReferencia(solicitud.referenciaId, ambito);
+      if (!referencia || referencia.estado !== 'PENDIENTE_REVISION') {
+        throw new ErrorNoEncontrado(NO_ENCONTRADO);
+      }
+      const valoracion = await repositorio.ObtenerValoracionEnSesion(
+        solicitud.valoracionId,
+        solicitud.referenciaId,
+        solicitud.sesionId
+      );
+      if (!valoracion || valoracion.caso_id !== null) {
+        throw new ErrorConflicto('La valoración no corresponde a la referencia en esa sesión.');
+      }
+      const resolucionId = await Reintentar(() => repositorio.RegistrarResolucion({
+        ...solicitud,
+        fecha: FechaHoy(),
+        responsable: ExigirResponsable(acceso),
+        rol: acceso.accessLevel,
+        ambitoTexto: `OL-${ambito.localOfficeId}`
+      }), { duplicado: 'La referencia ya tiene una resolución.' });
+      return {
+        resolucionId,
+        decision: solicitud.decision,
+        casoAbierto: false
+      };
+    },
+
+    async AbrirCaso(acceso, solicitud) {
+      ExigirOficina(acceso, CAPABILITY.CASE_OPEN);
+      const ambito = await Ambito(acceso, null);
+      const catalogo = await repositorio.ListarCatalogo(['ESTRATEGIA', 'DISCIPLINA', 'FRECUENCIA']);
+      const estrategias = PresentarCatalogo(catalogo, 'ESTRATEGIA');
+      const disciplinas = PresentarCatalogo(catalogo, 'DISCIPLINA');
+      const frecuencias = PresentarCatalogo(catalogo, 'FRECUENCIA');
+      if (estrategias.disponibilidad !== 'DISPONIBLE' || disciplinas.disponibilidad !== 'DISPONIBLE') {
+        throw new ErrorValidacion(
+          'Falta el catálogo vigente de estrategias o disciplinas. La apertura queda pendiente de validación y no se inventan valores.'
+        );
+      }
+      const frecuencia = (frecuencias.items || []).find((item) => item.codigo === solicitud.frecuenciaCodigo);
+      if (!frecuencia) {
+        throw new ErrorValidacion('La frecuencia no pertenece al catálogo vigente.');
+      }
+      const estrategiasValidas = new Set(estrategias.items.map((item) => item.itemId));
+      const disciplinasValidas = new Set(disciplinas.items.map((item) => item.itemId));
+      for (const itemId of solicitud.estrategias) {
+        if (!estrategiasValidas.has(itemId)) {
+          throw new ErrorValidacion('Una estrategia no pertenece al catálogo vigente.');
+        }
+      }
+      for (const itemId of solicitud.disciplinas) {
+        if (!disciplinasValidas.has(itemId)) {
+          throw new ErrorValidacion('Una disciplina no pertenece al catálogo vigente.');
+        }
+      }
+      const referencia = await repositorio.BuscarReferencia(solicitud.referenciaId, ambito);
+      if (!referencia || referencia.estado !== 'PENDIENTE_REVISION') {
+        throw new ErrorNoEncontrado(NO_ENCONTRADO);
+      }
+      const resolucion = await repositorio.ObtenerResolucion(solicitud.referenciaId);
+      if (!resolucion || resolucion.decision !== 'REQUIERE_AI') {
+        throw new ErrorConflicto(
+          'La apertura exige una decisión profesional de que sí requiere Atención Interdisciplinaria.'
+        );
+      }
+      const abierto = await Reintentar(() => repositorio.AbrirCaso({
+        referenciaId: solicitud.referenciaId,
+        valoracionId: Number(resolucion.valoracion_id),
+        personaId: referencia.per_id_persona,
+        oficinaLocalId: ambito.localOfficeId,
+        regionId: ambito.regionId,
+        frecuenciaItemId: frecuencia.itemId,
+        propositos: solicitud.propositos,
+        estrategias: solicitud.estrategias,
+        disciplinas: solicitud.disciplinas,
+        fecha: FechaHoy(),
+        responsable: ExigirResponsable(acceso),
+        rol: acceso.accessLevel,
+        ambitoTexto: `OL-${ambito.localOfficeId}`
+      }), { duplicado: CASO_ACTIVO });
+      return {
+        casoId: abierto.casoId,
+        identificacion: abierto.personaId,
+        consecutivo: abierto.consecutivo,
+        estado: 'ACTIVO'
+      };
+    },
+
+    async ListarCasos(acceso, consulta) {
+      const contexto = this.ObtenerContexto(acceso);
+      if (!contexto.puedeVerListaSimplificada && !contexto.puedeVerCasosOficina) {
+        throw new ErrorProhibido('La operación no está permitida.');
+      }
+      if (consulta.identificacion && consulta.nombre) {
+        throw new ErrorValidacion('Use identificación o nombre, no ambos a la vez.');
+      }
+      const ambito = await Ambito(acceso, consulta.establecimientoId);
+      let personas;
+      if (consulta.identificacion) {
+        personas = [consulta.identificacion];
+      } else if (consulta.nombre) {
+        personas = await IdentificacionesPorNombre(ambito, consulta.nombre);
+      }
+      const pagina = await repositorio.ListarCasos({ ...consulta, ambito, personas });
+      const nombres = await Nombres(ambito, pagina.filas.map((fila) => fila.per_id_persona));
+      return {
+        consulta: {
+          pagina: consulta.pagina,
+          tamano: consulta.tamano,
+          estado: consulta.estado,
+          prioridad: consulta.prioridad,
+          identificacion: consulta.identificacion,
+          nombre: consulta.nombre,
+          establecimientoId: consulta.establecimientoId
+        },
+        total: pagina.total,
+        devueltos: pagina.filas.length,
+        detallePermitido: contexto.puedeVerDetalleCaso,
+        items: pagina.filas.map((fila) => PresentarCasoLista(fila, nombres.get(fila.per_id_persona)))
+      };
+    },
+
+    async ExportarCasos(acceso, consulta) {
+      ExigirOficina(acceso, CAPABILITY.CASE_READ);
+      const listado = await this.ListarCasos(acceso, { ...consulta, pagina: 1, tamano: 50, desplazamiento: 0 });
+      if (listado.total > 50) {
+        throw new ErrorValidacion('La exportación supera una página. Precise los filtros.');
+      }
+      const encabezado = [
+        'identificacion',
+        'nombre',
+        'establecimiento',
+        'estado',
+        'prioridad',
+        'fecha_apertura',
+        'fecha_cierre'
+      ];
+      const lineas = listado.items.map((item) => [
+        item.identificacion,
+        item.nombre || '',
+        String(item.establecimientoId),
+        item.estado,
+        item.prioridadEtiqueta,
+        item.fechaApertura || '',
+        item.fechaCierre || ''
+      ].map((valor) => `"${String(valor).replaceAll('"', '""')}"`).join(','));
+      return {
+        contenido: [encabezado.join(','), ...lineas].join('\n'),
+        total: listado.total
+      };
+    },
+
+    async ObtenerCaso(acceso, casoId) {
+      ExigirOficina(acceso, CAPABILITY.CASE_READ);
+      if (!TieneCapacidad(acceso, CAPABILITY.ASSESSMENT_READ)) {
+        throw new ErrorProhibido('La operación no está permitida.');
+      }
+      const ambito = await Ambito(acceso, null);
+      let detalle;
+      try {
+        detalle = await repositorio.ObtenerDetalleCaso(casoId, ambito);
+      } catch (error) {
+        TraducirPersistencia(error, {});
+      }
+      if (!detalle) {
+        throw new ErrorNoEncontrado(NO_ENCONTRADO);
+      }
+      const nombres = await Nombres(ambito, [detalle.caso.per_id_persona]);
+      const nombre = nombres.get(detalle.caso.per_id_persona);
+      let ultimaAtencion = { disponibilidad: 'DISPONIBLE', fecha: null, mensaje: 'Sin atención registrada.' };
+      try {
+        const fecha = await repositorio.ObtenerUltimaAtencion(casoId);
+        ultimaAtencion = fecha
+          ? { disponibilidad: 'DISPONIBLE', fecha, mensaje: null }
+          : ultimaAtencion;
+      } catch (error) {
+        if (error && error.code === 'PERMISO') {
+          ultimaAtencion = {
+            disponibilidad: 'BLOQUEADO',
+            fecha: null,
+            mensaje: 'La consulta de atenciones no está disponible para la cuenta técnica actual.'
+          };
+        } else {
+          TraducirPersistencia(error, {});
+        }
+      }
+      const vigente = detalle.valoraciones.find((fila) => fila.es_vigente === true || fila.es_vigente === 1);
+      return {
+        casoId: Number(detalle.caso.caso_id),
+        identificacion: detalle.caso.per_id_persona,
+        nombre: nombre ? nombre.fullName : null,
+        establecimientoId: Number(detalle.caso.establecimiento_id),
+        establecimientoNombre: detalle.caso.establecimiento_nombre,
+        consecutivo: detalle.caso.consecutivo_origen,
+        estado: detalle.caso.estado,
+        fechaApertura: detalle.caso.fecha_apertura,
+        prioridadCodigo: vigente ? vigente.prioridad_codigo : null,
+        prioridadEtiqueta: vigente ? ETIQUETA_PRIORIDAD[vigente.prioridad_codigo] : null,
+        riesgoCodigo: vigente ? vigente.riesgo_codigo : null,
+        proteccionCodigo: vigente ? vigente.proteccion_codigo : null,
+        contextoIngreso: {
+          encargado: detalle.caso.encargado_nombre,
+          relacion: detalle.caso.relacion_encargado,
+          contacto: detalle.caso.contacto,
+          direccion: detalle.caso.direccion
+        },
+        valoraciones: detalle.valoraciones.map((fila) => ({
+          valoracionId: Number(fila.valoracion_id),
+          numero: Number(fila.numero),
+          vigente: fila.es_vigente === true || fila.es_vigente === 1,
+          riesgoCodigo: fila.riesgo_codigo,
+          proteccionCodigo: fila.proteccion_codigo,
+          prioridadCodigo: fila.prioridad_codigo,
+          prioridadEtiqueta: ETIQUETA_PRIORIDAD[fila.prioridad_codigo],
+          responsable: fila.responsable_usuario,
+          fecha: fila.fecha_valoracion,
+          sesionId: Number(fila.sesion_id),
+          fechaSesion: fila.fecha_sesion
+        })),
+        factores: detalle.factores.map((fila) => ({
+          valoracionId: Number(fila.valoracion_id),
+          eje: fila.eje,
+          ambito: fila.ambito,
+          etiqueta: fila.etiqueta,
+          especificacion: fila.especificacion
+        })),
+        plan: detalle.plan ? {
+          frecuenciaCodigo: detalle.plan.frecuencia_codigo,
+          frecuenciaEtiqueta: detalle.plan.frecuencia_etiqueta,
+          propositos: detalle.plan.propositos.map((fila) => fila.texto),
+          estrategias: detalle.plan.estrategias.map((fila) => fila.etiqueta),
+          disciplinas: detalle.plan.disciplinas.map((fila) => fila.etiqueta)
+        } : null,
+        historial: detalle.historial.map((fila) => ({
+          estado: fila.estado,
+          ocurridoEn: fila.ocurrido_en
+        })),
+        ultimaAtencion,
+        coberturaHistorial: 'PARCIAL',
+        pendientes: [
+          'Atenciones, actividades grupales, coordinaciones, traslados y reportes no forman parte de este lote.'
+        ]
+      };
+    }
+  };
+}
+
+module.exports = { CrearServicioProceso, PresentarCasoLista };

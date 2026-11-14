@@ -22,7 +22,8 @@ const ETIQUETAS_AMBIENTE = {
 export default function BienvenidaTecnica({
   direccionApi,
   ambiente,
-  consultarEstado = ConsultarEstadoTecnico
+  consultarEstado = ConsultarEstadoTecnico,
+  embebida = false
 }) {
   const [fase, establecerFase] = useState('cargando');
   const [mensaje, establecerMensaje] = useState('');
@@ -66,8 +67,10 @@ export default function BienvenidaTecnica({
     ? ETIQUETAS_AMBIENTE[ambiente]
     : ETIQUETAS_AMBIENTE.development;
 
+  const Contenedor = embebida ? 'section' : 'main';
+
   return (
-    <main className="bienvenida">
+    <Contenedor className="bienvenida">
       <p className="encabezado">Infraestructura inicial</p>
       <h1>SIA-CENCINAI</h1>
       <p className="introduccion">
@@ -86,6 +89,6 @@ export default function BienvenidaTecnica({
         />
       </section>
       <button type="button" onClick={ComprobarEstado}>Volver a comprobar</button>
-    </main>
+    </Contenedor>
   );
 }

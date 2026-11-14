@@ -1,0 +1,63 @@
+---
+description: Instrucciones operativas para implementar código de SIA-CENCINAI con nomenclatura, arquitectura, seguridad y la política de pendientes institucionales.
+alwaysApply: true
+---
+
+# Implementación institucional — SIA-CENCINAI
+
+Aplicar al escribir o modificar código. Complementa `07` y `08`; no las reemplaza
+ni debilita seguridad, privacidad ni gobernanza. Fuentes: `AGENTS.md`,
+`docs/institutional/DEVELOPMENT_GUIDELINES_DNCC_DI_MET_02.md`,
+`docs/institutional/DNCC-DI-MET-02_Metodologia_Desarrollo_Software.md`,
+`docs/architecture/INSTITUTIONAL_COMPLIANCE_REVIEW.md` y la arquitectura vigente.
+No copiar esos documentos. Convertirlos en instrucciones.
+
+## Nomenclatura
+
+- Identificadores propios nuevos en español. Funciones en PascalCase, verbo y
+  sustantivo (`CrearReferencia`). Variables y parámetros en camelCase.
+- Constantes descriptivas en español, en mayúsculas y con guion bajo.
+- No usar Spanglish, abreviaturas ambiguas ni números mágicos.
+- No traducir palabras reservadas, APIs de frameworks ni contratos HTTP ya publicados.
+- No renombrar objetos SQL existentes para forzar una convención posterior.
+
+## Comentarios y formato
+
+- Comentarios en español, solo para propósito, entradas, salidas o decisiones no evidentes.
+- En archivos nuevos, encabezado breve con responsable Sarah Priscilla Quesada Chaves
+  y la fecha real de creación. Al modificar, conservar el historial válido y agregar
+  la fecha real. No inventar fechas ni autores.
+- Máximo 100 caracteres por línea, salvo que partirla rompa un contrato o una sintaxis.
+- Sangría de 2 espacios, llave de apertura en la misma línea y una instrucción por línea.
+- SQL con palabras clave en mayúsculas y parámetros. Funciones pequeñas.
+
+## Arquitectura y datos
+
+- Monolito modular: presentación, rutas, validación, servicios, reglas y persistencia.
+- React no accede a SQL Server. No duplicar reglas de negocio en el cliente.
+- No agregar dependencias ni abstracciones sin una necesidad concreta de este cambio.
+- Extender con catálogos, versiones y configuración. No inventar catálogos ni decisiones
+  profesionales. La prioridad A.I. solo sale de RN-009.
+- Identidad, capacidad y territorio se vuelven a comprobar en el servicio.
+- Separar permisos de `SIA_CENCINAI` y `SIDINACC_LOCAL`. Parametrizar SQL.
+- Usar transacciones cuando varias escrituras deban confirmarse juntas.
+- Conservar auditoría e historial. Distinguir NULL, pendiente, no aplica y desconocido.
+- No guardar credenciales ni datos sensibles reales en código, pruebas o registros.
+
+## Pendientes institucionales
+
+- CRÍTICO: detener solo la operación afectada si hay exposición de datos, acceso no
+  autorizado, corrupción o pérdida, decisión profesional automatizada, una restricción
+  institucional explícita de alto impacto, o una migración destructiva.
+- RESOLUBLE INTERNAMENTE: decidir de forma reversible, documentada y compatible con
+  la arquitectura acordada, sin pedir aprobación por cada detalle de implementación.
+- PENDIENTE INSTITUCIONAL NO BLOQUEANTE: registrar `NEEDS_VALIDATION` con el supuesto,
+  el impacto y cómo se corregirá. No frenar flujos independientes.
+- Si la regla funcional no está confirmada, implementar solo lo que las fuentes respaldan
+  y aislar el resto. No convertir una incertidumbre en una regla inventada.
+
+## Calidad mínima
+
+Cada funcionalidad nueva incluye trazabilidad HU/RF/CU, validación, errores, pruebas
+del comportamiento principal, permisos, integridad y la documentación proporcional.
+Ejecutar el lint, las pruebas y el build que correspondan al cambio.
