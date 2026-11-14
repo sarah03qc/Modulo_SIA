@@ -1,7 +1,8 @@
 'use strict';
 
-const { ForbiddenError } = require('../../common/errors');
-const { isKnownCapability } = require('./capabilities');
+const { DescartarCuerpoNoProcesado } = require('../../common/http-error-handler');
+const { ErrorProhibido } = require('../../common/errors');
+const { EsCapacidadConocida } = require('./capabilities');
 
 /*
   Políticas de autorización por capacidad.
@@ -11,7 +12,8 @@ const { isKnownCapability } = require('./capabilities');
 */
 
 const OPERACION_DENEGADA = 'La operación no está permitida.';
-const AMBITO_NO_CONFIRMADO = 'La combinación de concesiones no tiene una regla de consulta confirmada.';
+const AMBITO_NO_CONFIRMADO = 'La combinación de concesiones no tiene una regla '
+  + 'de consulta confirmada.';
 
 /*
   Propósito: impedir que una unión de concesiones sin ancla confirmada autorice operaciones
@@ -22,7 +24,7 @@ const AMBITO_NO_CONFIRMADO = 'La combinación de concesiones no tiene una regla 
 function ExigirAmbitoConfirmado(contexto) {
   const totalConcesiones = contexto && Array.isArray(contexto.grants) ? contexto.grants.length : 0;
   if (totalConcesiones > 1 && (contexto.scopeConfirmed === false || !contexto.accessLevel)) {
-    throw new ForbiddenError(AMBITO_NO_CONFIRMADO);
+    throw new ErrorProhibido(AMBITO_NO_CONFIRMADO);
   }
 }
 
@@ -36,7 +38,7 @@ function TieneCapacidad(contexto, capacidad) {
     return false;
   }
   return Boolean(
-    isKnownCapability(capacidad)
+    EsCapacidadConocida(capacidad)
     && contexto
     && Array.isArray(contexto.capabilities)
     && contexto.capabilities.includes(capacidad)
@@ -52,7 +54,7 @@ function TieneCapacidad(contexto, capacidad) {
 function ExigirCapacidad(contexto, capacidad) {
   ExigirAmbitoConfirmado(contexto);
   if (!TieneCapacidad(contexto, capacidad)) {
-    throw new ForbiddenError(OPERACION_DENEGADA);
+    throw new ErrorProhibido(OPERACION_DENEGADA);
   }
   return contexto;
 }
@@ -65,10 +67,10 @@ function ExigirCapacidad(contexto, capacidad) {
 function CrearControlCapacidad(capacidad) {
   return function ComprobarCapacidad(req, res, next) {
     try {
-      ExigirCapacidad(req.access, capacidad);
+      ExigirCapacidad(req.acceso, capacidad);
       next();
     } catch (error) {
-      next(error);
+      DescartarCuerpoNoProcesado(req, () => next(error));
     }
   };
 }

@@ -21,7 +21,7 @@ const SIDINACC_SESSION_CONTRACT = Object.freeze({
   Entrada: ninguna. Una credencial externa no es argumento de esta función
   Salida: estado no configurado y el contrato pendiente, sin datos de usuario
 */
-function resolveSidinaccSession() {
+function ResolverSesionSidinacc() {
   return Object.freeze({
     status: 'unconfigured',
     contract: SIDINACC_SESSION_CONTRACT
@@ -30,5 +30,5 @@ function resolveSidinaccSession() {
 
 module.exports = {
   SIDINACC_SESSION_CONTRACT,
-  resolveSidinaccSession
+  ResolverSesionSidinacc
 };

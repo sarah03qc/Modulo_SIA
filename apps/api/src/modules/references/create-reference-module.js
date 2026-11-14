@@ -1,7 +1,7 @@
 'use strict';
 
-const { createReferenceRepository } = require('./reference-repository');
-const { createReferenceService } = require('./reference-service');
+const { CrearRepositorioReferencias } = require('./reference-repository');
+const { CrearServicioReferencias } = require('./reference-service');
 
 /**
  * Arma el módulo de referencias con el adaptador institucional y la base propia.
@@ -10,13 +10,13 @@ const { createReferenceService } = require('./reference-service');
  * @param {object} dependencies Periodo, adaptador y cliente SQL.
  * @returns {object} Servicio de referencias.
  */
-function createReferenceModule(dependencies) {
-  const repository = dependencies.repository || createReferenceRepository(dependencies.sia);
-  return createReferenceService({
+function CrearModuloReferencias(dependencies) {
+  const repository = dependencies.repository || CrearRepositorioReferencias(dependencies.sia);
+  return CrearServicioReferencias({
     periodId: dependencies.periodId,
     adapter: dependencies.adapter,
     repository
   });
 }
 
-module.exports = { createReferenceModule };
+module.exports = { CrearModuloReferencias };

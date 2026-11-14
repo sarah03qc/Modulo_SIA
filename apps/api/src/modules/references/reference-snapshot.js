@@ -1,6 +1,6 @@
 'use strict';
 
-const { ageAtReference, blankToNull } = require('./reference-rules');
+const { EdadEnReferencia, BlancoANulo } = require('./reference-rules');
 
 /**
  * Arma el nombre visible con las partes institucionales disponibles.
@@ -8,7 +8,7 @@ const { ageAtReference, blankToNull } = require('./reference-rules');
  * @param {object} row Fila de persona de la réplica.
  * @returns {string} Nombre compuesto. Vacío si no hay partes.
  */
-function fullName(row) {
+function NombreCompleto(row) {
   return [row.given_name, row.first_surname, row.second_surname]
     .map((part) => (typeof part === 'string' ? part.trim() : ''))
     .filter((part) => part.length > 0)
@@ -22,7 +22,7 @@ function fullName(row) {
  * @param {object} row Fila del encargado.
  * @returns {string|null} MADRE, PADRE o null.
  */
-function guardianRelationship(row) {
+function RelacionEncargado(row) {
   if (row.guardian_id && row.mother_id && row.guardian_id === row.mother_id) {
     return 'MADRE';
   }
@@ -39,8 +39,8 @@ function guardianRelationship(row) {
  * @param {number} maxLength Ancho de la columna.
  * @returns {string|null} Texto utilizable.
  */
-function clip(value, maxLength) {
-  const text = blankToNull(value);
+function RecortarTexto(value, maxLength) {
+  const text = BlancoANulo(value);
   if (!text) {
     return null;
   }
@@ -56,17 +56,17 @@ function clip(value, maxLength) {
  * @param {object} input Fila de persona, servicios, encargado y fecha de referencia.
  * @returns {object} Contexto histórico listo para `ref_contexto` y para la revisión.
  */
-function buildHistoricalContext(input) {
+function ConstruirContextoHistorico(input) {
   const person = input.person;
   const birthDate = typeof person.birth_date === 'string' ? person.birth_date.slice(0, 10) : null;
   const services = (input.services || [])
-    .map((row) => blankToNull(row.service_name))
+    .map((row) => BlancoANulo(row.service_name))
     .filter(Boolean)
     .join('; ');
   const guardianRows = input.guardianRows || [];
   const guardian = guardianRows.length === 1 ? guardianRows[0] : null;
   const phones = [person.phone_one, person.phone_two]
-    .map((value) => blankToNull(value))
+    .map((value) => BlancoANulo(value))
     .filter(Boolean)
     .join(' / ');
   return {
@@ -74,23 +74,23 @@ function buildHistoricalContext(input) {
     establishmentId: Number(person.establishment_id),
     localOfficeId: Number(person.local_office_id),
     regionId: Number(person.region_id),
-    guardianName: guardian ? clip(fullName(guardian), 200) : null,
-    guardianRelationship: guardian ? guardianRelationship(guardian) : null,
+    guardianName: guardian ? RecortarTexto(NombreCompleto(guardian), 200) : null,
+    RelacionEncargado: guardian ? RelacionEncargado(guardian) : null,
     guardianRelationshipStatus: guardian ? 'CONFIRMADO' : (guardianRows.length > 1 ? 'NEEDS_VALIDATION' : 'ABSENT'),
-    contact: clip(phones, 80),
-    address: clip(person.address_line, 200),
-    servicesText: clip(services, 500),
-    regionName: clip(person.region_name, 200),
-    localOfficeName: clip(person.local_office_name, 200),
-    establishmentName: clip(person.establishment_name, 200),
-    ageYears: ageAtReference(birthDate, input.referenceDate),
+    contact: RecortarTexto(phones, 80),
+    address: RecortarTexto(person.address_line, 200),
+    servicesText: RecortarTexto(services, 500),
+    regionName: RecortarTexto(person.region_name, 200),
+    localOfficeName: RecortarTexto(person.local_office_name, 200),
+    establishmentName: RecortarTexto(person.establishment_name, 200),
+    ageYears: EdadEnReferencia(birthDate, input.referenceDate),
     birthDate: birthDate && /^\d{4}-\d{2}-\d{2}$/.test(birthDate) ? birthDate : null,
-    currentName: fullName(person),
-    currentSex: blankToNull(person.sex_name)
+    currentName: NombreCompleto(person),
+    currentSex: BlancoANulo(person.sex_name)
   };
 }
 
 module.exports = {
-  fullName,
-  buildHistoricalContext
+  NombreCompleto,
+  ConstruirContextoHistorico
 };

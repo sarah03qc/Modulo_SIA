@@ -1,9 +1,9 @@
 'use strict';
 
 const sql = require('mssql');
-const { loadConfig } = require('../src/config/load-config');
-const { toMssqlConfig, createDatabaseGateway } = require('../src/infrastructure/database/sql-client');
-const { createSidinaccAdapter } = require('../src/infrastructure/integrations/sidinacc-adapter');
+const { CargarConfiguracion } = require('../src/config/load-config');
+const { ConvertirConfiguracionMssql, CrearPasarelaBases } = require('../src/infrastructure/database/sql-client');
+const { CrearAdaptadorSidinacc } = require('../src/infrastructure/integrations/sidinacc-adapter');
 const { PermitirEscriturasSqlLocales } = require('./escrituras-sql-locales');
 
 const READER_LOGIN = 'sia_sidinacc_app';
@@ -51,7 +51,7 @@ const PUBLIC_DATABASE_EXTRAS = [
   'VIEW ANY COLUMN MASTER KEY DEFINITION'
 ];
 
-function errorNumber(error) {
+function NumeroDeErrorSql(error) {
   if (error && Number.isInteger(error.number)) {
     return error.number;
   }
@@ -59,21 +59,21 @@ function errorNumber(error) {
   return nested && Number.isInteger(nested.number) ? nested.number : null;
 }
 
-function sortedNames(rows) {
+function NombresOrdenados(rows) {
   return rows.map((row) => row.permission_name).sort();
 }
 
-async function runStatement(pool, statement) {
+async function EjecutarSentencia(pool, statement) {
   try {
     const result = await pool.request().query(statement);
-    return { denied: false, rows: result.recordset ? result.recordset.length : 0 };
+    return { EsValorDenegado: false, rows: result.recordset ? result.recordset.length : 0 };
   } catch (error) {
-    return { denied: true, number: errorNumber(error) };
+    return { EsValorDenegado: true, number: NumeroDeErrorSql(error) };
   }
 }
 
-async function connectPool(databaseConfig, timeouts, appName) {
-  const pool = new sql.ConnectionPool(toMssqlConfig(
+async function ConectarGrupo(databaseConfig, timeouts, appName) {
+  const pool = new sql.ConnectionPool(ConvertirConfiguracionMssql(
     { ...databaseConfig, appName },
     timeouts,
     1
@@ -87,8 +87,8 @@ async function connectPool(databaseConfig, timeouts, appName) {
   }
 }
 
-async function expectDatabaseRejected(databaseConfig, timeouts, appName) {
-  const pool = new sql.ConnectionPool(toMssqlConfig(
+async function EsperarBaseRechazada(databaseConfig, timeouts, appName) {
+  const pool = new sql.ConnectionPool(ConvertirConfiguracionMssql(
     { ...databaseConfig, appName },
     timeouts,
     1
@@ -129,15 +129,15 @@ describeLive('permisos SQL de las cuentas de aplicación', () => {
   }
 
   beforeAll(async () => {
-    config = loadConfig(process.env);
+    config = CargarConfiguracion(process.env);
     timeouts = {
       connectionTimeoutMs: config.connectionTimeoutMs,
       requestTimeoutMs: config.requestTimeoutMs
     };
     try {
-      reader = await connectPool(config.sidinacc, timeouts, 'sia-sidinacc-reader-check');
-      app = await connectPool(config.sia, timeouts, 'sia-cencinai-app-check');
-      gateway = createDatabaseGateway(config);
+      reader = await ConectarGrupo(config.sidinacc, timeouts, 'sia-sidinacc-reader-check');
+      app = await ConectarGrupo(config.sia, timeouts, 'sia-cencinai-app-check');
+      gateway = CrearPasarelaBases(config);
       readerBefore = (await reader.request().query(READER_COUNTS_SQL)).recordset[0];
       appBefore = (await app.request().query(APP_COUNTS_SQL)).recordset[0];
     } catch (error) {
@@ -240,13 +240,13 @@ describeLive('permisos SQL de las cuentas de aplicación', () => {
       SELECT permission_name
       FROM fn_my_permissions(NULL, 'SERVER')
     `);
-    expect(sortedNames(serverPermissions.recordset)).toEqual(PUBLIC_SERVER_PERMISSIONS);
+    expect(NombresOrdenados(serverPermissions.recordset)).toEqual(PUBLIC_SERVER_PERMISSIONS);
 
     const databasePermissions = await reader.request().query(`
       SELECT permission_name
       FROM fn_my_permissions(NULL, 'DATABASE')
     `);
-    expect(sortedNames(databasePermissions.recordset)).toEqual(
+    expect(NombresOrdenados(databasePermissions.recordset)).toEqual(
       ['CONNECT', 'SELECT', ...PUBLIC_DATABASE_EXTRAS].sort()
     );
 
@@ -264,7 +264,7 @@ describeLive('permisos SQL de las cuentas de aplicación', () => {
     const probes = await reader.request().query(`
       SELECT name
       FROM sys.tables
-      WHERE name LIKE N'%probe%' OR LEFT(name, 5) = N'__sia'
+      WHERE name LIKE N'%Sondear%' OR LEFT(name, 5) = N'__sia'
     `);
     expect(probes.recordset).toEqual([]);
     expect(readerBefore.sidinacc_tables).toBe(15);
@@ -273,10 +273,10 @@ describeLive('permisos SQL de las cuentas de aplicación', () => {
     expect(config.sidinacc.user).toBe(READER_LOGIN);
     expect(gateway.sidinacc.writeFilterEnabled).toBe(true);
 
-    const identity = await gateway.sidinacc.query(`
+    const identidad = await gateway.sidinacc.query(`
       SELECT ORIGINAL_LOGIN() AS original_login, DB_NAME() AS database_name
     `);
-    expect(identity).toEqual([{ original_login: READER_LOGIN, database_name: 'SIDINACC_LOCAL' }]);
+    expect(identidad).toEqual([{ original_login: READER_LOGIN, database_name: 'SIDINACC_LOCAL' }]);
 
     const selected = await gateway.sidinacc.query(
       'SELECT TOP (0) CAT_idSexo AS catalog_key FROM dbo.CAF_CAT_SEXO'
@@ -289,31 +289,31 @@ describeLive('permisos SQL de las cuentas de aplicación', () => {
       gateway.sidinacc.query('DELETE FROM dbo.CAF_CAT_SEXO WHERE 1 = 0')
     ).rejects.toMatchObject({ code: 'INFRASTRUCTURE_UNAVAILABLE' });
 
-    const availability = await createSidinaccAdapter(gateway.sidinacc).checkAvailability();
+    const availability = await CrearAdaptadorSidinacc(gateway.sidinacc).ComprobarDisponibilidad();
     expect(availability).toMatchObject({
       available: true,
       database: 'SIDINACC_LOCAL',
       readOnly: true
     });
 
-    expect(await runStatement(
+    expect(await EjecutarSentencia(
       reader,
       'INSERT INTO dbo.CAF_CAT_SEXO (SNB_codigo) SELECT CAST(1 AS tinyint) WHERE 1 = 0'
-    )).toEqual({ denied: true, number: 229 });
-    expect(await runStatement(
+    )).toEqual({ EsValorDenegado: true, number: 229 });
+    expect(await EjecutarSentencia(
       reader,
       'UPDATE dbo.CAF_CAT_SEXO SET BIT_eliminado = BIT_eliminado WHERE 1 = 0'
-    )).toEqual({ denied: true, number: 229 });
-    expect(await runStatement(
+    )).toEqual({ EsValorDenegado: true, number: 229 });
+    expect(await EjecutarSentencia(
       reader,
       'DELETE FROM dbo.CAF_CAT_SEXO WHERE 1 = 0'
-    )).toEqual({ denied: true, number: 229 });
-    expect(await runStatement(
+    )).toEqual({ EsValorDenegado: true, number: 229 });
+    expect(await EjecutarSentencia(
       reader,
       'SELECT TOP (0) schema_migracion_id AS migration_key FROM SIA_CENCINAI.dbo.schema_migracion'
-    )).toEqual({ denied: true, number: 916 });
+    )).toEqual({ EsValorDenegado: true, number: 916 });
 
-    await expectDatabaseRejected(
+    await EsperarBaseRechazada(
       { ...config.sidinacc, database: 'SIA_CENCINAI' },
       timeouts,
       'sia-sidinacc-boundary'
@@ -418,13 +418,13 @@ describeLive('permisos SQL de las cuentas de aplicación', () => {
       SELECT permission_name
       FROM fn_my_permissions(NULL, 'SERVER')
     `);
-    expect(sortedNames(serverPermissions.recordset)).toEqual(PUBLIC_SERVER_PERMISSIONS);
+    expect(NombresOrdenados(serverPermissions.recordset)).toEqual(PUBLIC_SERVER_PERMISSIONS);
 
     const databasePermissions = await app.request().query(`
       SELECT permission_name
       FROM fn_my_permissions(NULL, 'DATABASE')
     `);
-    expect(sortedNames(databasePermissions.recordset)).toEqual(
+    expect(NombresOrdenados(databasePermissions.recordset)).toEqual(
       ['CONNECT', ...PUBLIC_DATABASE_EXTRAS].sort()
     );
 
@@ -476,71 +476,71 @@ describeLive('permisos SQL de las cuentas de aplicación', () => {
     const probes = await app.request().query(`
       SELECT name
       FROM sys.tables
-      WHERE name LIKE N'%probe%' OR LEFT(name, 5) = N'__sia'
+      WHERE name LIKE N'%Sondear%' OR LEFT(name, 5) = N'__sia'
     `);
     expect(probes.recordset).toEqual([]);
 
     expect(config.sia.user).toBe(APP_LOGIN);
     expect(config.sameDatabaseUser).toBe(false);
 
-    const identity = await gateway.sia.query(`
+    const identidad = await gateway.sia.query(`
       SELECT ORIGINAL_LOGIN() AS original_login, DB_NAME() AS database_name
     `);
-    expect(identity).toEqual([{ original_login: APP_LOGIN, database_name: 'SIA_CENCINAI' }]);
+    expect(identidad).toEqual([{ original_login: APP_LOGIN, database_name: 'SIA_CENCINAI' }]);
 
-    const probe = await gateway.sia.probe();
-    expect(probe).toMatchObject({
+    const Sondear = await gateway.sia.Sondear();
+    expect(Sondear).toMatchObject({
       database: 'SIA_CENCINAI',
       readOnly: true
     });
 
-    expect(await runStatement(
+    expect(await EjecutarSentencia(
       app,
       `INSERT INTO dbo.schema_migracion (codigo, orden, estado, aplicada_en)
-       SELECT N'probe', 999, N'APLICADA', SYSUTCDATETIME() WHERE 1 = 0`
-    )).toEqual({ denied: true, number: 229 });
-    expect(await runStatement(
+       SELECT N'Sondear', 999, N'APLICADA', SYSUTCDATETIME() WHERE 1 = 0`
+    )).toEqual({ EsValorDenegado: true, number: 229 });
+    expect(await EjecutarSentencia(
       app,
       'UPDATE dbo.schema_migracion SET estado = estado WHERE 1 = 0'
-    )).toEqual({ denied: true, number: 229 });
-    expect(await runStatement(
+    )).toEqual({ EsValorDenegado: true, number: 229 });
+    expect(await EjecutarSentencia(
       app,
       'DELETE FROM dbo.schema_migracion WHERE 1 = 0'
-    )).toEqual({ denied: true, number: 229 });
-    expect(await runStatement(
+    )).toEqual({ EsValorDenegado: true, number: 229 });
+    expect(await EjecutarSentencia(
       app,
       'SELECT TOP (0) caso_id AS case_key FROM dbo.caso_lista_establecimiento'
-    )).toEqual({ denied: false, rows: 0 });
-    expect(await runStatement(
+    )).toEqual({ EsValorDenegado: false, rows: 0 });
+    expect(await EjecutarSentencia(
       app,
       'SELECT TOP (0) caso_id AS case_key FROM dbo.caso_ai'
-    )).toEqual({ denied: true, number: 229 });
-    expect(await runStatement(
+    )).toEqual({ EsValorDenegado: true, number: 229 });
+    expect(await EjecutarSentencia(
       app,
       'SELECT TOP (0) valoracion_id AS assessment_key FROM dbo.ses_valoracion'
-    )).toEqual({ denied: true, number: 229 });
-    expect(await runStatement(
+    )).toEqual({ EsValorDenegado: true, number: 229 });
+    expect(await EjecutarSentencia(
       app,
       `INSERT INTO dbo.aud_evento (
          ocurrido_en, usuario, rol, accion, entidad, entidad_id, ambito, codigo_cambio
        )
-       SELECT SYSUTCDATETIME(), N'probe', N'probe', N'probe', N'probe', N'probe', N'probe', N'probe'
+       SELECT SYSUTCDATETIME(), N'Sondear', N'Sondear', N'Sondear', N'Sondear', N'Sondear', N'Sondear', N'Sondear'
        WHERE 1 = 0`
-    )).toEqual({ denied: false, rows: 0 });
-    expect(await runStatement(
+    )).toEqual({ EsValorDenegado: false, rows: 0 });
+    expect(await EjecutarSentencia(
       app,
       'UPDATE dbo.ref_referencia SET estado = estado WHERE 1 = 0'
-    )).toEqual({ denied: true, number: 229 });
-    expect(await runStatement(
+    )).toEqual({ EsValorDenegado: true, number: 229 });
+    expect(await EjecutarSentencia(
       app,
       'DELETE FROM dbo.ref_referencia WHERE 1 = 0'
-    )).toEqual({ denied: true, number: 229 });
-    expect(await runStatement(
+    )).toEqual({ EsValorDenegado: true, number: 229 });
+    expect(await EjecutarSentencia(
       app,
       'SELECT TOP (0) CAT_idSexo AS catalog_key FROM SIDINACC_LOCAL.dbo.CAF_CAT_SEXO'
-    )).toEqual({ denied: true, number: 916 });
+    )).toEqual({ EsValorDenegado: true, number: 916 });
 
-    await expectDatabaseRejected(
+    await EsperarBaseRechazada(
       { ...config.sia, database: 'SIDINACC_LOCAL' },
       timeouts,
       'sia-cencinai-boundary'

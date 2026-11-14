@@ -1,19 +1,19 @@
 'use strict';
 
 const request = require('supertest');
-const { createApp } = require('../src/app');
-const { loadConfig } = require('../src/config/load-config');
-const { InfrastructureError } = require('../src/common/errors');
-const { validEnv } = require('./env-fixture');
+const { CrearAplicacion } = require('../src/app');
+const { CargarConfiguracion } = require('../src/config/load-config');
+const { ErrorInfraestructura } = require('../src/common/errors');
+const { EntornoValido } = require('./env-fixture');
 
-function createTestApp(service) {
-  const config = loadConfig(validEnv());
+function CrearAplicacionDePrueba(service) {
+  const config = CargarConfiguracion(EntornoValido());
   const logger = { error: jest.fn(), warn: jest.fn(), info: jest.fn() };
-  const app = createApp({
+  const app = CrearAplicacion({
     config,
-    databases: { sia: { probe: jest.fn() } },
+    databases: { sia: { Sondear: jest.fn() } },
     adapter: {
-      checkAvailability: jest.fn(async () => ({
+      ComprobarDisponibilidad: jest.fn(async () => ({
         available: true,
         database: 'SIDINACC_LOCAL',
         readOnly: true
@@ -31,8 +31,8 @@ function bearer(principalId) {
 
 describe('HTTP de consulta institucional', () => {
   test('sin credencial sigue en autenticación no configurada y un encabezado de rol no autentica', async () => {
-    const service = { searchPersons: jest.fn(), getPerson: jest.fn(), listTerritoryOptions: jest.fn() };
-    const { app } = createTestApp(service);
+    const service = { BuscarPersonas: jest.fn(), ObtenerPersona: jest.fn(), ListarOpcionesTerritorio: jest.fn() };
+    const { app } = CrearAplicacionDePrueba(service);
     const missing = await request(app).get('/api/institutional/persons/search');
     expect(missing.status).toBe(401);
     expect(missing.body.error.code).toBe('AUTHENTICATION_NOT_CONFIGURED');
@@ -42,36 +42,36 @@ describe('HTTP de consulta institucional', () => {
       .set('X-Access-Level', 'NACIONAL')
       .set('X-Establishment-Id', '1190108');
     expect(forged.status).toBe(401);
-    expect(service.searchPersons).not.toHaveBeenCalled();
+    expect(service.BuscarPersonas).not.toHaveBeenCalled();
   });
 
   test('una credencial desconocida no selecciona un ámbito', async () => {
-    const service = { searchPersons: jest.fn(), getPerson: jest.fn(), listTerritoryOptions: jest.fn() };
-    const { app } = createTestApp(service);
+    const service = { BuscarPersonas: jest.fn(), ObtenerPersona: jest.fn(), ListarOpcionesTerritorio: jest.fn() };
+    const { app } = CrearAplicacionDePrueba(service);
     const response = await request(app)
       .get('/api/institutional/persons/search?q=Ana')
       .set('Authorization', 'Bearer dev-nacional-falso');
     expect(response.status).toBe(401);
     expect(response.body.error.code).toBe('UNAUTHORIZED');
-    expect(service.searchPersons).not.toHaveBeenCalled();
+    expect(service.BuscarPersonas).not.toHaveBeenCalled();
   });
 
   test('el ámbito llega del registro del servidor aunque la solicitud declare otro', async () => {
     const service = {
-      searchPersons: jest.fn(async (access) => ({
-        scope: { accessLevel: access.accessLevel, principalId: access.principalId },
+      BuscarPersonas: jest.fn(async (acceso) => ({
+        scope: { accessLevel: acceso.accessLevel, principalId: acceso.principalId },
         result: { total: 0, returned: 0, items: [] }
       })),
-      getPerson: jest.fn(),
-      listTerritoryOptions: jest.fn()
+      ObtenerPersona: jest.fn(),
+      ListarOpcionesTerritorio: jest.fn()
     };
-    const { app } = createTestApp(service);
+    const { app } = CrearAplicacionDePrueba(service);
     const response = await request(app)
       .get('/api/institutional/persons/search?q=Ana&accessLevel=NACIONAL&establishmentId=1190108')
       .set(bearer('dev-establecimiento-unico'))
       .set('X-Access-Level', 'NACIONAL');
     expect(response.status).toBe(200);
-    expect(service.searchPersons).toHaveBeenCalledWith(
+    expect(service.BuscarPersonas).toHaveBeenCalledWith(
       expect.objectContaining({
         principalId: 'dev-establecimiento-unico',
         accessLevel: 'ESTABLECIMIENTO',
@@ -84,20 +84,20 @@ describe('HTTP de consulta institucional', () => {
 
   test('valida el criterio y traduce una caída de la réplica sin filtrar la causa', async () => {
     const service = {
-      searchPersons: jest.fn(async () => {
-        const error = new InfrastructureError('La dependencia de base de datos no está disponible.');
+      BuscarPersonas: jest.fn(async () => {
+        const error = new ErrorInfraestructura('La dependencia de base de datos no está disponible.');
         error.driverCode = 'ELOGIN';
         throw error;
       }),
-      getPerson: jest.fn(),
-      listTerritoryOptions: jest.fn()
+      ObtenerPersona: jest.fn(),
+      ListarOpcionesTerritorio: jest.fn()
     };
-    const { app, logger } = createTestApp(service);
-    const invalid = await request(app)
+    const { app, logger } = CrearAplicacionDePrueba(service);
+    const solicitudInvalida = await request(app)
       .get('/api/institutional/persons/search')
       .set(bearer('dev-nacional'));
-    expect(invalid.status).toBe(400);
-    expect(invalid.body.error.code).toBe('VALIDATION_ERROR');
+    expect(solicitudInvalida.status).toBe(400);
+    expect(solicitudInvalida.body.error.code).toBe('VALIDATION_ERROR');
 
     const down = await request(app)
       .get('/api/institutional/persons/search?q=Ana')
@@ -109,10 +109,10 @@ describe('HTTP de consulta institucional', () => {
   });
 
   test('la preflight local admite Authorization', async () => {
-    const { app } = createTestApp({
-      searchPersons: jest.fn(),
-      getPerson: jest.fn(),
-      listTerritoryOptions: jest.fn()
+    const { app } = CrearAplicacionDePrueba({
+      BuscarPersonas: jest.fn(),
+      ObtenerPersona: jest.fn(),
+      ListarOpcionesTerritorio: jest.fn()
     });
     const response = await request(app)
       .options('/api/institutional/persons/search')

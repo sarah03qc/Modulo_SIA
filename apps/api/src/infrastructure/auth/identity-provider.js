@@ -1,7 +1,7 @@
 'use strict';
 
-const { resolveDevelopmentIdentity } = require('./development-identity-provider');
-const { resolveSidinaccSession } = require('./sidinacc-session-contract');
+const { ResolverIdentidadDesarrollo } = require('./development-identity-provider');
+const { ResolverSesionSidinacc } = require('./sidinacc-session-contract');
 
 /*
   Proveedor de identidad.
@@ -15,14 +15,14 @@ const { resolveSidinaccSession } = require('./sidinacc-session-contract');
   Entrada: nodeEnv y el encabezado Authorization
   Salida: resultado del proveedor sintético o del contrato institucional
 */
-function resolvePresentedIdentity(input) {
+function ResolverIdentidadPresentada(input) {
   const nodeEnv = input && input.nodeEnv;
   if (nodeEnv !== 'development' && nodeEnv !== 'test') {
-    return resolveSidinaccSession();
+    return ResolverSesionSidinacc();
   }
-  return resolveDevelopmentIdentity(input && input.authorizationHeader);
+  return ResolverIdentidadDesarrollo(input && input.authorizationHeader);
 }
 
 module.exports = {
-  resolvePresentedIdentity
+  ResolverIdentidadPresentada
 };

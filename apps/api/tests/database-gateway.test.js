@@ -1,19 +1,19 @@
 'use strict';
 
-const { loadConfig } = require('../src/config/load-config');
-const { createDatabaseGateway, createSqlClient, toMssqlConfig } = require('../src/infrastructure/database/sql-client');
-const { assertInstitutionalRead } = require('../src/infrastructure/database/institutional-read');
-const { validEnv } = require('./env-fixture');
+const { CargarConfiguracion } = require('../src/config/load-config');
+const { CrearPasarelaBases, CrearClienteSql, ConvertirConfiguracionMssql } = require('../src/infrastructure/database/sql-client');
+const { AfirmarLecturaInstitucional } = require('../src/infrastructure/database/institutional-read');
+const { EntornoValido } = require('./env-fixture');
 
 describe('clientes SQL', () => {
   test('prepara dos configuraciones con base y aplicación distintas', () => {
-    const config = loadConfig(validEnv());
+    const config = CargarConfiguracion(EntornoValido());
     const timeouts = {
       connectionTimeoutMs: config.connectionTimeoutMs,
       requestTimeoutMs: config.requestTimeoutMs
     };
-    const sia = toMssqlConfig({ ...config.sia, appName: 'sia-cencinai-api' }, timeouts, config.poolMax);
-    const sidinacc = toMssqlConfig(
+    const sia = ConvertirConfiguracionMssql({ ...config.sia, appName: 'sia-cencinai-api' }, timeouts, config.poolMax);
+    const sidinacc = ConvertirConfiguracionMssql(
       { ...config.sidinacc, appName: 'sia-cencinai-sidinacc-adapter' },
       timeouts,
       config.poolMax
@@ -26,9 +26,9 @@ describe('clientes SQL', () => {
   });
 
   test('el cliente institucional rechaza escritura y SELECT * sin abrir conexión', async () => {
-    const config = loadConfig(validEnv());
-    const connectPool = jest.fn();
-    const gateway = createDatabaseGateway(config, { connectPool });
+    const config = CargarConfiguracion(EntornoValido());
+    const ConectarGrupo = jest.fn();
+    const gateway = CrearPasarelaBases(config, { ConectarGrupo });
 
     await expect(gateway.sidinacc.query('UPDATE dbo.ejemplo SET valor = 1')).rejects.toMatchObject({
       code: 'INFRASTRUCTURE_UNAVAILABLE'
@@ -45,40 +45,40 @@ describe('clientes SQL', () => {
       'SELECT alias.* FROM dbo.ejemplo AS alias'
     ];
     for (const sqlText of blocked) {
-      expect(() => assertInstitutionalRead(sqlText)).toThrow();
+      expect(() => AfirmarLecturaInstitucional(sqlText)).toThrow();
     }
-    expect(() => assertInstitutionalRead('WITH cte AS (SELECT 1 AS n) SELECT n FROM cte')).not.toThrow();
-    expect(connectPool).not.toHaveBeenCalled();
+    expect(() => AfirmarLecturaInstitucional('WITH cte AS (SELECT 1 AS n) SELECT n FROM cte')).not.toThrow();
+    expect(ConectarGrupo).not.toHaveBeenCalled();
     expect(gateway.sia.writeFilterEnabled).toBe(false);
     expect(gateway.sidinacc.writeFilterEnabled).toBe(true);
-    expect(() => assertInstitutionalRead("SELECT COUNT(*) AS total FROM sys.tables WHERE name = 'ejemplo'")).not.toThrow();
+    expect(() => AfirmarLecturaInstitucional("SELECT COUNT(*) AS total FROM sys.tables WHERE name = 'ejemplo'")).not.toThrow();
   });
 
   test('la transacción institucional rechaza una escritura antes de enviarla al motor', async () => {
-    const config = loadConfig(validEnv());
+    const config = CargarConfiguracion(EntornoValido());
     const rollback = jest.fn(async () => {});
-    const client = createSqlClient({
+    const client = CrearClienteSql({
       role: 'sidinacc',
       databaseName: config.sidinacc.database,
       writeFilterEnabled: true,
       mssqlConfig: {},
-      connectPool: async () => ({ close: async () => {} }),
+      ConectarGrupo: async () => ({ close: async () => {} }),
       beginTransaction: () => ({
         begin: async () => {},
         commit: async () => {},
         rollback
       })
     });
-    await expect(client.withTransaction(async (transaction) => {
+    await expect(client.EnTransaccion(async (transaction) => {
       await transaction.query('INSERT INTO dbo.ejemplo (valor) VALUES (1)');
     })).rejects.toMatchObject({ code: 'INFRASTRUCTURE_UNAVAILABLE' });
     expect(rollback).toHaveBeenCalledTimes(1);
   });
 
   test('un fallo de conexión no copia el mensaje del controlador a la respuesta de dominio', async () => {
-    const config = loadConfig(validEnv());
-    const gateway = createDatabaseGateway(config, {
-      connectPool: async () => {
+    const config = CargarConfiguracion(EntornoValido());
+    const gateway = CrearPasarelaBases(config, {
+      ConectarGrupo: async () => {
         const error = new Error('Login failed for user sa password=sia-secret-value');
         error.code = 'ELOGIN';
         throw error;

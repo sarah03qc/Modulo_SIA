@@ -1,6 +1,6 @@
 'use strict';
 
-const { findDevelopmentPrincipal } = require('./development-access');
+const { BuscarPrincipalDesarrollo } = require('./development-access');
 
 const BEARER = /^Bearer ([A-Za-z0-9._-]+)$/;
 
@@ -16,7 +16,7 @@ const BEARER = /^Bearer ([A-Za-z0-9._-]+)$/;
   Entrada: valor del encabezado Authorization, o vacío si no vino
   Salida: anonymous, invalid o authenticated con la identidad del servidor
 */
-function resolveDevelopmentIdentity(authorizationHeader) {
+function ResolverIdentidadDesarrollo(authorizationHeader) {
   if (typeof authorizationHeader !== 'string' || authorizationHeader.trim() === '') {
     return Object.freeze({ status: 'anonymous' });
   }
@@ -27,8 +27,8 @@ function resolveDevelopmentIdentity(authorizationHeader) {
       message: 'La credencial de acceso no es válida.'
     });
   }
-  const identity = findDevelopmentPrincipal(match[1]);
-  if (!identity) {
+  const identidad = BuscarPrincipalDesarrollo(match[1]);
+  if (!identidad) {
     return Object.freeze({
       status: 'invalid',
       message: 'La identidad de desarrollo no está autorizada.'
@@ -36,10 +36,10 @@ function resolveDevelopmentIdentity(authorizationHeader) {
   }
   return Object.freeze({
     status: 'authenticated',
-    identity
+    identidad
   });
 }
 
 module.exports = {
-  resolveDevelopmentIdentity
+  ResolverIdentidadDesarrollo
 };

@@ -1,6 +1,6 @@
 'use strict';
 
-const { ValidationError } = require('../../common/errors');
+const { ErrorValidacion } = require('../../common/errors');
 const {
   REGION_CODES,
   MOTIVE_CATEGORY_BY_CODE,
@@ -17,7 +17,7 @@ const CONSECUTIVE_PATTERN = /^DNCC-DR[A-Z]{2}-OL[0-9]{3}-[0-9]+-REF-[0-9]{3}-20[
  * @param {unknown} value Texto de un campo narrativo.
  * @returns {string|null} Texto recortado o null.
  */
-function blankToNull(value) {
+function BlancoANulo(value) {
   if (value === null || value === undefined) {
     return null;
   }
@@ -31,11 +31,11 @@ function blankToNull(value) {
  *
  * @param {unknown} value Fecha digitada.
  * @returns {string} Fecha canónica.
- * @throws {ValidationError} Cuando el valor no es una fecha civil.
+ * @throws {ErrorValidacion} Cuando el valor no es una fecha civil.
  */
-function requireReferenceDate(value) {
+function ExigirFechaReferencia(value) {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    throw new ValidationError('La fecha de referencia debe indicarse como AAAA-MM-DD.');
+    throw new ErrorValidacion('La fecha de referencia debe indicarse como AAAA-MM-DD.');
   }
   const year = Number(value.slice(0, 4));
   const month = Number(value.slice(5, 7));
@@ -46,7 +46,7 @@ function requireReferenceDate(value) {
     || utc.getUTCMonth() !== month - 1
     || utc.getUTCDate() !== day
   ) {
-    throw new ValidationError('La fecha de referencia no es una fecha válida.');
+    throw new ErrorValidacion('La fecha de referencia no es una fecha válida.');
   }
   return value;
 }
@@ -58,7 +58,7 @@ function requireReferenceDate(value) {
  * @param {string} referenceDate Fecha de la referencia.
  * @returns {number|null} Edad entre 0 y 120, o null si no puede calcularse.
  */
-function ageAtReference(birthDate, referenceDate) {
+function EdadEnReferencia(birthDate, referenceDate) {
   if (typeof birthDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) {
     return null;
   }
@@ -87,31 +87,31 @@ function ageAtReference(birthDate, referenceDate) {
  *
  * @param {unknown} value Consecutivo digitado o precargado.
  * @returns {string} Consecutivo canónico.
- * @throws {ValidationError} Cuando el patrón, el código regional o los separadores no corresponden.
+ * @throws {ErrorValidacion} Cuando el patrón, el código regional o los separadores no corresponden.
  */
-function canonicalizeConsecutive(value) {
+function CanonizarConsecutivo(value) {
   if (typeof value !== 'string') {
-    throw new ValidationError('El consecutivo institucional es obligatorio y debe digitarse completo.');
+    throw new ErrorValidacion('El consecutivo institucional es obligatorio y debe digitarse completo.');
   }
   const consecutive = value.trim().toUpperCase();
   if (consecutive.length === 0) {
-    throw new ValidationError('El consecutivo institucional es obligatorio y debe digitarse completo.');
+    throw new ErrorValidacion('El consecutivo institucional es obligatorio y debe digitarse completo.');
   }
   if (/\s/.test(consecutive)) {
-    throw new ValidationError('El consecutivo institucional no admite espacios.');
+    throw new ErrorValidacion('El consecutivo institucional no admite espacios.');
   }
   if (!CONSECUTIVE_PATTERN.test(consecutive)) {
-    throw new ValidationError(
+    throw new ErrorValidacion(
       'El consecutivo no corresponde al patrón DNCC-DRXX-OLXXX-{código de establecimiento}-REF-XXX-20XX.'
     );
   }
   const regionCode = consecutive.slice(7, 9);
   if (!REGION_CODES.includes(regionCode)) {
-    throw new ValidationError('El segmento regional del consecutivo no corresponde a un código identificado.');
+    throw new ErrorValidacion('El segmento regional del consecutivo no corresponde a un código identificado.');
   }
   const hyphenCount = consecutive.length - consecutive.replace(/-/g, '').length;
   if (hyphenCount !== 6) {
-    throw new ValidationError('El consecutivo no tiene la cantidad de segmentos esperada.');
+    throw new ErrorValidacion('El consecutivo no tiene la cantidad de segmentos esperada.');
   }
   return consecutive;
 }
@@ -122,7 +122,7 @@ function canonicalizeConsecutive(value) {
  * @param {string} consecutive Consecutivo canónico.
  * @returns {string} Segmento numérico del establecimiento.
  */
-function establishmentCodeOf(consecutive) {
+function CodigoEstablecimientoDe(consecutive) {
   return consecutive.split('-')[3];
 }
 
@@ -135,12 +135,12 @@ function establishmentCodeOf(consecutive) {
  * @param {string} consecutive Consecutivo canónico.
  * @param {number} establishmentId Establecimiento asociado a la persona.
  * @returns {void}
- * @throws {ValidationError} Cuando el segmento no coincide.
+ * @throws {ErrorValidacion} Cuando el segmento no coincide.
  */
-function assertConsecutiveMatchesPerson(consecutive, establishmentId) {
-  const code = establishmentCodeOf(consecutive);
+function AfirmarConsecutivoDePersona(consecutive, establishmentId) {
+  const code = CodigoEstablecimientoDe(consecutive);
   if (code !== String(establishmentId)) {
-    throw new ValidationError(
+    throw new ErrorValidacion(
       'El código de establecimiento del consecutivo no corresponde al establecimiento de la persona referida.'
     );
   }
@@ -152,12 +152,12 @@ function assertConsecutiveMatchesPerson(consecutive, establishmentId) {
  * @param {unknown} value Texto recibido.
  * @param {string} label Nombre funcional del campo.
  * @returns {string|null} Texto o null.
- * @throws {ValidationError} Cuando supera la longitud permitida.
+ * @throws {ErrorValidacion} Cuando supera la longitud permitida.
  */
-function narrative(value, label) {
-  const text = blankToNull(value);
+function NarrarTexto(value, label) {
+  const text = BlancoANulo(value);
   if (text && text.length > MAX_NARRATIVE_LENGTH) {
-    throw new ValidationError(`El campo ${label} supera la longitud permitida.`);
+    throw new ErrorValidacion(`El campo ${label} supera la longitud permitida.`);
   }
   return text;
 }
@@ -169,7 +169,7 @@ function narrative(value, label) {
  * @param {string} code Código de catálogo.
  * @returns {string} Categoría de lectura.
  */
-function motiveCategory(code) {
+function CategoriaDeMotivo(code) {
   return MOTIVE_CATEGORY_BY_CODE[code] || 'SIN_CLASIFICAR';
 }
 
@@ -179,7 +179,7 @@ function motiveCategory(code) {
  * @param {string} category Categoría solicitada.
  * @returns {string[]} Códigos conocidos. Vacío cuando la categoría no tiene ítems confirmados.
  */
-function motiveCodesForCategory(category) {
+function CodigosMotivoDeCategoria(category) {
   return Object.entries(MOTIVE_CATEGORY_BY_CODE)
     .filter((entry) => entry[1] === category)
     .map((entry) => entry[0]);
@@ -194,38 +194,38 @@ function motiveCodesForCategory(category) {
  * @param {unknown} motives Lista recibida.
  * @param {Map<string, object>} catalogItems Motivos vigentes por código.
  * @returns {Array<object>} Motivos listos para persistir, con el ítem de catálogo.
- * @throws {ValidationError} Cuando falta el motivo, está repetido o la especificación no corresponde.
+ * @throws {ErrorValidacion} Cuando falta el motivo, está repetido o la especificación no corresponde.
  */
-function normalizeMotives(motives, catalogItems) {
+function NormalizarMotivos(motives, catalogItems) {
   if (!Array.isArray(motives) || motives.length === 0) {
-    throw new ValidationError('La referencia requiere al menos un motivo del catálogo vigente.');
+    throw new ErrorValidacion('La referencia requiere al menos un motivo del catálogo vigente.');
   }
   if (motives.length > MAX_MOTIVES) {
-    throw new ValidationError('La cantidad de motivos supera el máximo admitido.');
+    throw new ErrorValidacion('La cantidad de motivos supera el máximo admitido.');
   }
   const selected = [];
   const seen = new Set();
   for (const motive of motives) {
     if (!motive || typeof motive !== 'object' || Array.isArray(motive)) {
-      throw new ValidationError('Cada motivo debe indicar su código de catálogo.');
+      throw new ErrorValidacion('Cada motivo debe indicar su código de catálogo.');
     }
     const code = typeof motive.code === 'string' ? motive.code.trim() : '';
     if (!code || seen.has(code)) {
-      throw new ValidationError('Los motivos deben existir en el catálogo y no pueden repetirse.');
+      throw new ErrorValidacion('Los motivos deben existir en el catálogo y no pueden repetirse.');
     }
     const item = catalogItems.get(code);
     if (!item) {
-      throw new ValidationError('Hay un motivo que no pertenece al catálogo vigente.');
+      throw new ErrorValidacion('Hay un motivo que no pertenece al catálogo vigente.');
     }
-    const specification = blankToNull(motive.specification);
+    const specification = BlancoANulo(motive.specification);
     if (specification && specification.length > MAX_SPECIFICATION_LENGTH) {
-      throw new ValidationError('La especificación de un motivo supera la longitud permitida.');
+      throw new ErrorValidacion('La especificación de un motivo supera la longitud permitida.');
     }
     seen.add(code);
     selected.push({
       code,
       label: item.label,
-      category: motiveCategory(code),
+      category: CategoriaDeMotivo(code),
       itemId: item.itemId,
       specification
     });
@@ -235,14 +235,14 @@ function normalizeMotives(motives, catalogItems) {
 
 module.exports = {
   CONSECUTIVE_PATTERN,
-  blankToNull,
-  requireReferenceDate,
-  ageAtReference,
-  canonicalizeConsecutive,
-  establishmentCodeOf,
-  assertConsecutiveMatchesPerson,
-  narrative,
-  motiveCategory,
-  motiveCodesForCategory,
-  normalizeMotives
+  BlancoANulo,
+  ExigirFechaReferencia,
+  EdadEnReferencia,
+  CanonizarConsecutivo,
+  CodigoEstablecimientoDe,
+  AfirmarConsecutivoDePersona,
+  NarrarTexto,
+  CategoriaDeMotivo,
+  CodigosMotivoDeCategoria,
+  NormalizarMotivos
 };

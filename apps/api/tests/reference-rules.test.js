@@ -1,14 +1,14 @@
 'use strict';
 
-const { ValidationError } = require('../src/common/errors');
-const { buildReferenceListQuery } = require('../src/modules/references/reference-repository');
+const { ErrorValidacion } = require('../src/common/errors');
+const { ConstruirConsultaReferencias } = require('../src/modules/references/reference-repository');
 const {
-  canonicalizeConsecutive,
-  assertConsecutiveMatchesPerson,
-  normalizeMotives,
-  motiveCodesForCategory
+  CanonizarConsecutivo,
+  AfirmarConsecutivoDePersona,
+  NormalizarMotivos,
+  CodigosMotivoDeCategoria
 } = require('../src/modules/references/reference-rules');
-const { renderReferenceDocument } = require('../src/modules/references/reference-document');
+const { GenerarDocumentoReferencia } = require('../src/modules/references/reference-document');
 
 const motives = new Map([
   ['CONDICION_MALNUTRICION', { itemId: 7, code: 'CONDICION_MALNUTRICION', label: 'Condición de malnutrición' }],
@@ -17,48 +17,48 @@ const motives = new Map([
 
 describe('reglas del consecutivo y de la consulta', () => {
   test('acepta el patrón vigente y conserva la forma canónica', () => {
-    const value = canonicalizeConsecutive(' dncc-drcs-ol101-1100102-ref-015-2026 ');
+    const value = CanonizarConsecutivo(' dncc-drcs-ol101-1100102-ref-015-2026 ');
     expect(value).toBe('DNCC-DRCS-OL101-1100102-REF-015-2026');
   });
 
   test('no exige que la oficina ni la región del patrón coincidan con la persona', () => {
-    const value = canonicalizeConsecutive('DNCC-DRBR-OL999-1100102-REF-015-2026');
-    expect(() => assertConsecutiveMatchesPerson(value, 1100102)).not.toThrow();
+    const value = CanonizarConsecutivo('DNCC-DRBR-OL999-1100102-REF-015-2026');
+    expect(() => AfirmarConsecutivoDePersona(value, 1100102)).not.toThrow();
   });
 
   test('rechaza formato, región desconocida y establecimiento distinto', () => {
-    expect(() => canonicalizeConsecutive('REF-001')).toThrow(ValidationError);
-    expect(() => canonicalizeConsecutive('DNCC-DRZZ-OL101-1100102-REF-015-2026')).toThrow(/regional/);
-    const valid = canonicalizeConsecutive('DNCC-DRCS-OL101-999-REF-015-2026');
-    expect(() => assertConsecutiveMatchesPerson(valid, 1100102)).toThrow(/persona referida/);
+    expect(() => CanonizarConsecutivo('REF-001')).toThrow(ErrorValidacion);
+    expect(() => CanonizarConsecutivo('DNCC-DRZZ-OL101-1100102-REF-015-2026')).toThrow(/regional/);
+    const valid = CanonizarConsecutivo('DNCC-DRCS-OL101-999-REF-015-2026');
+    expect(() => AfirmarConsecutivoDePersona(valid, 1100102)).toThrow(/persona referida/);
   });
 
   test('admite varios motivos y no conserva una especificación de uno no seleccionado', () => {
-    const selected = normalizeMotives([
+    const selected = NormalizarMotivos([
       { code: 'CONDICION_MALNUTRICION', specification: 'detalle' },
       { code: 'EDIN_II_RIESGO_RETRASO_ROJO', specification: null }
     ], motives);
     expect(selected).toHaveLength(2);
     expect(selected.map((item) => item.specification)).toEqual(['detalle', null]);
-    expect(() => normalizeMotives([{ code: 'OTRO_FACTOR' }], motives)).toThrow(/catálogo vigente/);
+    expect(() => NormalizarMotivos([{ code: 'OTRO_FACTOR' }], motives)).toThrow(/catálogo vigente/);
   });
 
   test('la categoría de factores de riesgo no tiene códigos confirmados', () => {
-    expect(motiveCodesForCategory('FACTORES_RIESGO')).toEqual([]);
-    expect(motiveCodesForCategory('CRECIMIENTO')).toEqual([
+    expect(CodigosMotivoDeCategoria('FACTORES_RIESGO')).toEqual([]);
+    expect(CodigosMotivoDeCategoria('CRECIMIENTO')).toEqual([
       'CONDICION_MALNUTRICION',
       'MALNUTRICION_NECESIDADES_ESPECIALES'
     ]);
-    expect(motiveCodesForCategory('DESARROLLO')).toEqual([
+    expect(CodigosMotivoDeCategoria('DESARROLLO')).toEqual([
       'EDIN_II_RIESGO_RETRASO_ROJO',
       'EVADE_RIESGO_REZAGO_0_1'
     ]);
-    expect(motiveCodesForCategory('SALUD')).toEqual(['OTRA_CONDICION_SALUD']);
+    expect(CodigosMotivoDeCategoria('SALUD')).toEqual(['OTRA_CONDICION_SALUD']);
   });
 
   test('el filtro SQL no interpola el texto buscado', () => {
     const attack = "'; DROP TABLE dbo.ref_referencia; --";
-    const query = buildReferenceListQuery({
+    const query = ConstruirConsultaReferencias({
       scope: { accessLevel: 'ESTABLECIMIENTO', establishmentIds: [1100102] },
       consecutive: attack,
       identification: 'SYN-1100102-01',
@@ -76,7 +76,7 @@ describe('reglas del consecutivo y de la consulta', () => {
   });
 
   test('la oficina local filtra por oficina y región dentro de SQL', () => {
-    const query = buildReferenceListQuery({
+    const query = ConstruirConsultaReferencias({
       scope: { accessLevel: 'OFICINA_LOCAL', localOfficeId: 101, regionId: 1, establishmentIds: null },
       offset: 20,
       pageSize: 20
@@ -90,7 +90,7 @@ describe('reglas del consecutivo y de la consulta', () => {
   });
 
   test('estado, vía, origen y página viajan como parámetros', () => {
-    const query = buildReferenceListQuery({
+    const query = ConstruirConsultaReferencias({
       scope: { accessLevel: 'ESTABLECIMIENTO', establishmentIds: [1100102] },
       status: 'PENDIENTE_REVISION',
       attentionRoute: 'URGENCIA',
@@ -110,7 +110,7 @@ describe('reglas del consecutivo y de la consulta', () => {
   });
 
   test('el documento escapa contenido y separa la generación del envío', () => {
-    const html = renderReferenceDocument({
+    const html = GenerarDocumentoReferencia({
       consecutive: 'DNCC-DRCS-OL101-1100102-REF-015-2026',
       referenceDate: '2026-11-06',
       sentAt: '2026-11-06T18:00:00Z',
@@ -125,7 +125,7 @@ describe('reglas del consecutivo y de la consulta', () => {
         localOfficeName: 'Hatillo',
         establishmentName: 'Establecimiento',
         guardianName: null,
-        guardianRelationship: null,
+        RelacionEncargado: null,
         contact: null,
         address: null
       },

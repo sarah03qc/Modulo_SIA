@@ -5,10 +5,10 @@
   Un fallo deja un código de salida distinto de cero.
 */
 
-const { loadConfig, publicConfigSummary } = require('./config/load-config');
+const { CargarConfiguracion, ResumenPublicoConfiguracion } = require('./config/load-config');
 
 try {
-  const summary = publicConfigSummary(loadConfig(process.env));
+  const summary = ResumenPublicoConfiguracion(CargarConfiguracion(process.env));
   console.log(JSON.stringify({ status: 'ok', summary }));
 } catch (error) {
   const message = error instanceof Error ? error.message : 'Configuración inválida.';

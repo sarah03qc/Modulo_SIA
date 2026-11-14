@@ -1,6 +1,6 @@
 'use strict';
 
-function validEnv(overrides = {}) {
+function EntornoValido(overrides = {}) {
   return {
     NODE_ENV: 'test',
     API_HOST: '127.0.0.1',
@@ -29,4 +29,4 @@ function validEnv(overrides = {}) {
   };
 }
 
-module.exports = { validEnv };
+module.exports = { EntornoValido };

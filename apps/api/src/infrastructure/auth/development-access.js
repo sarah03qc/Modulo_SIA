@@ -1,6 +1,6 @@
 'use strict';
 
-const { ACCESS_LEVEL, isInstitutionalRole } = require('./institutional-roles');
+const { ACCESS_LEVEL, EsRolInstitucional } = require('./institutional-roles');
 
 /*
   Identidades sintéticas solo para development y test.
@@ -17,7 +17,7 @@ const { ACCESS_LEVEL, isInstitutionalRole } = require('./institutional-roles');
   Entrada: valor candidato
   Salida: true cuando es un entero mayor que cero
 */
-function positiveInt(value) {
+function EnteroPositivo(value) {
   return Number.isInteger(value) && value > 0;
 }
 
@@ -26,8 +26,8 @@ function positiveInt(value) {
   Entrada: rol interno y anclas territoriales del registro
   Salida: concesión congelada que el adaptador puede normalizar
 */
-function grant(definition) {
-  if (!isInstitutionalRole(definition.role)) {
+function CrearConcesion(definition) {
+  if (!EsRolInstitucional(definition.role)) {
     throw new Error('La identidad de desarrollo tiene un rol no reconocido.');
   }
   if (definition.role === ACCESS_LEVEL.ESTABLISHMENT) {
@@ -36,7 +36,7 @@ function grant(definition) {
       throw new Error('La identidad de desarrollo no tiene establecimientos.');
     }
     for (const establishmentId of establishmentIds) {
-      if (!positiveInt(establishmentId)) {
+      if (!EnteroPositivo(establishmentId)) {
         throw new Error('La identidad de desarrollo tiene un establecimiento invalido.');
       }
     }
@@ -48,7 +48,7 @@ function grant(definition) {
     });
   }
   if (definition.role === ACCESS_LEVEL.LOCAL_OFFICE) {
-    if (!positiveInt(definition.regionId) || !positiveInt(definition.localOfficeId)) {
+    if (!EnteroPositivo(definition.regionId) || !EnteroPositivo(definition.localOfficeId)) {
       throw new Error('La identidad de desarrollo no tiene oficina local.');
     }
     return Object.freeze({
@@ -59,7 +59,7 @@ function grant(definition) {
     });
   }
   if (definition.role === ACCESS_LEVEL.REGION) {
-    if (!positiveInt(definition.regionId)) {
+    if (!EnteroPositivo(definition.regionId)) {
       throw new Error('La identidad de desarrollo no tiene region.');
     }
     if (definition.localOfficeId !== undefined || definition.establishmentIds !== undefined) {
@@ -88,7 +88,7 @@ function grant(definition) {
   Entrada: identificador y concesiones ya validadas
   Salida: identidad congelada del proveedor de desarrollo
 */
-function identity(principalId, grants) {
+function CrearIdentidad(principalId, grants) {
   return Object.freeze({
     source: 'SYNTHETIC_DEVELOPMENT',
     principalId,
@@ -100,36 +100,36 @@ function identity(principalId, grants) {
 // Establecimiento 1100102 y 1010320 pertenecen a la Oficina Local 101, Región 1.
 // Oficina Local 501 y Región 5 sirven para comprobar exclusión de ámbito.
 const DEVELOPMENT_PRINCIPALS = Object.freeze([
-  identity('dev-establecimiento-unico', [
-    grant({ role: ACCESS_LEVEL.ESTABLISHMENT, establishmentIds: [1100102] })
+  CrearIdentidad('dev-establecimiento-unico', [
+    CrearConcesion({ role: ACCESS_LEVEL.ESTABLISHMENT, establishmentIds: [1100102] })
   ]),
-  identity('dev-establecimiento-multiple', [
-    grant({ role: ACCESS_LEVEL.ESTABLISHMENT, establishmentIds: [1100102, 1010320] })
+  CrearIdentidad('dev-establecimiento-multiple', [
+    CrearConcesion({ role: ACCESS_LEVEL.ESTABLISHMENT, establishmentIds: [1100102, 1010320] })
   ]),
-  identity('dev-establecimientos-por-rol', [
-    grant({ role: ACCESS_LEVEL.ESTABLISHMENT, establishmentIds: [1100102] }),
-    grant({ role: ACCESS_LEVEL.ESTABLISHMENT, establishmentIds: [1010320] })
+  CrearIdentidad('dev-establecimientos-por-rol', [
+    CrearConcesion({ role: ACCESS_LEVEL.ESTABLISHMENT, establishmentIds: [1100102] }),
+    CrearConcesion({ role: ACCESS_LEVEL.ESTABLISHMENT, establishmentIds: [1010320] })
   ]),
-  identity('dev-oficina-hatillo', [
-    grant({ role: ACCESS_LEVEL.LOCAL_OFFICE, regionId: 1, localOfficeId: 101 })
+  CrearIdentidad('dev-oficina-hatillo', [
+    CrearConcesion({ role: ACCESS_LEVEL.LOCAL_OFFICE, regionId: 1, localOfficeId: 101 })
   ]),
-  identity('dev-oficina-perez-zeledon', [
-    grant({ role: ACCESS_LEVEL.LOCAL_OFFICE, regionId: 5, localOfficeId: 501 })
+  CrearIdentidad('dev-oficina-perez-zeledon', [
+    CrearConcesion({ role: ACCESS_LEVEL.LOCAL_OFFICE, regionId: 5, localOfficeId: 501 })
   ]),
-  identity('dev-region-central-sur', [
-    grant({ role: ACCESS_LEVEL.REGION, regionId: 1 })
+  CrearIdentidad('dev-region-central-sur', [
+    CrearConcesion({ role: ACCESS_LEVEL.REGION, regionId: 1 })
   ]),
-  identity('dev-region-brunca', [
-    grant({ role: ACCESS_LEVEL.REGION, regionId: 5 })
+  CrearIdentidad('dev-region-brunca', [
+    CrearConcesion({ role: ACCESS_LEVEL.REGION, regionId: 5 })
   ]),
-  identity('dev-nacional', [
-    grant({ role: ACCESS_LEVEL.NATIONAL })
+  CrearIdentidad('dev-nacional', [
+    CrearConcesion({ role: ACCESS_LEVEL.NATIONAL })
   ]),
-  identity('dev-roles-heterogeneos', [
-    grant({ role: ACCESS_LEVEL.ESTABLISHMENT, establishmentIds: [1100102] }),
-    grant({ role: ACCESS_LEVEL.NATIONAL })
+  CrearIdentidad('dev-roles-heterogeneos', [
+    CrearConcesion({ role: ACCESS_LEVEL.ESTABLISHMENT, establishmentIds: [1100102] }),
+    CrearConcesion({ role: ACCESS_LEVEL.NATIONAL })
   ]),
-  identity('dev-sin-capacidades', [])
+  CrearIdentidad('dev-sin-capacidades', [])
 ]);
 
 const principalsById = new Map(
@@ -141,7 +141,7 @@ const principalsById = new Map(
   Entrada: texto del identificador
   Salida: identidad del servidor, o null si no está registrada
 */
-function findDevelopmentPrincipal(principalId) {
+function BuscarPrincipalDesarrollo(principalId) {
   if (typeof principalId !== 'string' || principalId.length === 0) {
     return null;
   }
@@ -151,5 +151,5 @@ function findDevelopmentPrincipal(principalId) {
 module.exports = {
   ACCESS_LEVEL,
   DEVELOPMENT_PRINCIPALS,
-  findDevelopmentPrincipal
+  BuscarPrincipalDesarrollo
 };

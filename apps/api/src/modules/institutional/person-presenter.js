@@ -1,6 +1,6 @@
 'use strict';
 
-const { applyFieldPolicy } = require('../../infrastructure/auth/field-policy');
+const { AplicarPoliticaCampos } = require('../../infrastructure/auth/field-policy');
 
 const CASE_FIELDS = Object.freeze([
   'caseId',
@@ -10,7 +10,7 @@ const CASE_FIELDS = Object.freeze([
   'closedOn'
 ]);
 
-function cleanPart(value) {
+function LimpiarParte(value) {
   if (typeof value !== 'string') {
     return '';
   }
@@ -20,14 +20,14 @@ function cleanPart(value) {
 /**
  * Une nombre y apellidos y deja fuera las partes vacías.
  */
-function fullName(row) {
+function NombreCompleto(row) {
   return [row.given_name, row.first_surname, row.second_surname]
-    .map(cleanPart)
+    .map(LimpiarParte)
     .filter((part) => part.length > 0)
     .join(' ');
 }
 
-function isoDate(value) {
+function FechaIso(value) {
   if (value === null || value === undefined) {
     return null;
   }
@@ -43,7 +43,7 @@ function isoDate(value) {
  * Si la fecha no es usable, o la edad queda fuera de un rango razonable, devuelve vacío.
  * La zona horaria institucional sigue pendiente de validación.
  */
-function completedYears(iso, today) {
+function AniosCumplidos(iso, today) {
   if (!iso) {
     return null;
   }
@@ -61,7 +61,7 @@ function completedYears(iso, today) {
   return age;
 }
 
-function textOrNull(value) {
+function TextoONulo(value) {
   if (value === null || value === undefined) {
     return null;
   }
@@ -69,13 +69,13 @@ function textOrNull(value) {
   return text.length === 0 ? null : text;
 }
 
-function territoryUnit(id, name) {
+function UnidadTerritorial(id, name) {
   if (id === null || id === undefined) {
     return null;
   }
   return {
     id: Number(id),
-    name: textOrNull(name)
+    name: TextoONulo(name)
   };
 }
 
@@ -83,17 +83,17 @@ function territoryUnit(id, name) {
  * Arma la identidad visible de una persona a partir de la fila institucional.
  * La edad usa la fecha del proceso. Si la fecha de nacimiento no sirve, la edad queda vacía.
  */
-function presentIdentity(row, today) {
-  const birthDate = isoDate(row.birth_date);
+function PresentarIdentidad(row, today) {
+  const birthDate = FechaIso(row.birth_date);
   return {
     personId: row.person_id,
-    fullName: fullName(row),
+    fullName: NombreCompleto(row),
     birthDate,
-    ageYears: completedYears(birthDate, today),
-    sex: textOrNull(row.sex_name),
-    establishment: territoryUnit(row.establishment_id, row.establishment_name),
-    localOffice: territoryUnit(row.local_office_id, row.local_office_name),
-    region: territoryUnit(row.region_id, row.region_name)
+    ageYears: AniosCumplidos(birthDate, today),
+    sex: TextoONulo(row.sex_name),
+    establishment: UnidadTerritorial(row.establishment_id, row.establishment_name),
+    localOffice: UnidadTerritorial(row.local_office_id, row.local_office_name),
+    region: UnidadTerritorial(row.region_id, row.region_name)
   };
 }
 
@@ -101,7 +101,7 @@ function presentIdentity(row, today) {
  * Marca de dónde salen los datos de persona: la réplica local y el periodo configurado.
  * El estado de la integración institucional sigue pendiente de validación.
  */
-function provenance(periodId) {
+function Procedencia(periodId) {
   return {
     source: 'SIDINACC_LOCAL',
     periodId: String(periodId),
@@ -114,10 +114,10 @@ function provenance(periodId) {
   Entrada: modo, página, filas, ámbito y contexto de acceso
   Salida: cuerpo HTTP de la búsqueda contextual
 */
-function presentSearch(input) {
+function PresentarBusqueda(input) {
   const items = input.rows
-    .map((row) => presentIdentity(row, input.today))
-    .map((item) => applyFieldPolicy(item, input.access));
+    .map((row) => PresentarIdentidad(row, input.today))
+    .map((item) => AplicarPoliticaCampos(item, input.acceso));
   return {
     query: {
       matchMode: input.matchMode,
@@ -125,7 +125,7 @@ function presentSearch(input) {
       pageSize: input.pageSize
     },
     scope: input.scope,
-    provenance: provenance(input.periodId),
+    provenance: Procedencia(input.periodId),
     result: {
       total: input.total,
       returned: items.length,
@@ -141,7 +141,7 @@ function presentSearch(input) {
  * Clasifica la relación cuando el encargado coincide con la madre o el padre.
  * Otra relación no se inventa: la réplica no trae un catálogo para esos casos.
  */
-function guardianRelationship(row) {
+function RelacionEncargado(row) {
   if (row.guardian_id && row.mother_id && row.guardian_id === row.mother_id) {
     return 'MADRE';
   }
@@ -157,7 +157,7 @@ function guardianRelationship(row) {
  * Sin filas queda ausente. Con más de una no elige una: informa que la relación
  * necesita validación. El contacto es el de la familia en el periodo.
  */
-function presentGuardian(rows, contact) {
+function PresentarEncargado(rows, contact) {
   if (!rows || rows.length === 0) {
     return {
       availability: 'ABSENT',
@@ -183,13 +183,13 @@ function presentGuardian(rows, contact) {
     contextOnly: true,
     person: {
       personId: row.person_id,
-      fullName: fullName(row),
-      relationship: guardianRelationship(row)
+      fullName: NombreCompleto(row),
+      relationship: RelacionEncargado(row)
     },
     contact: {
-      address: textOrNull(contact && contact.address_line),
-      phoneOne: textOrNull(contact && contact.phone_one),
-      phoneTwo: textOrNull(contact && contact.phone_two),
+      address: TextoONulo(contact && contact.address_line),
+      phoneOne: TextoONulo(contact && contact.phone_one),
+      phoneTwo: TextoONulo(contact && contact.phone_two),
       // Direccion y telefonos son del detalle familiar del periodo, no del encargado.
       scope: 'FAMILIA_PERIODO'
     }
@@ -200,13 +200,13 @@ function presentGuardian(rows, contact) {
  * Lista los servicios leídos de la réplica.
  * No los traduce a una regla de atención: su interpretación sigue pendiente de validación.
  */
-function presentServices(rows) {
+function PresentarServicios(rows) {
   return {
     availability: 'AVAILABLE',
     interpretationStatus: 'NEEDS_VALIDATION',
     items: (rows || []).map((row) => ({
       id: Number(row.service_id),
-      name: textOrNull(row.service_name)
+      name: TextoONulo(row.service_name)
     }))
   };
 }
@@ -215,7 +215,7 @@ function presentServices(rows) {
  * Presenta el resumen de casos de SIA_CENCINAI.
  * Si la lectura vino bloqueada por permiso, no inventa filas ni un conteo.
  */
-function presentCases(cases) {
+function PresentarCasos(cases) {
   if (!cases || cases.availability === 'BLOCKED') {
     return {
       availability: 'BLOCKED',
@@ -230,8 +230,8 @@ function presentCases(cases) {
     caseId: String(item.caseId),
     status: item.status,
     priority: item.priority,
-    openedOn: isoDate(item.openedOn),
-    closedOn: isoDate(item.closedOn)
+    openedOn: FechaIso(item.openedOn),
+    closedOn: FechaIso(item.closedOn)
   }));
   return {
     availability: 'AVAILABLE',
@@ -250,27 +250,27 @@ function presentCases(cases) {
   Entrada: fila institucional, servicios, encargado, resumen de casos y contexto
   Salida: ficha ya filtrada por la política de campos
 */
-function presentProfile(input) {
-  const identity = presentIdentity(input.person, input.today);
-  const cases = presentCases(input.cases);
-  return applyFieldPolicy({
-    ...identity,
-    provenance: provenance(input.periodId),
+function PresentarFicha(input) {
+  const identidad = PresentarIdentidad(input.person, input.today);
+  const cases = PresentarCasos(input.cases);
+  return AplicarPoliticaCampos({
+    ...identidad,
+    provenance: Procedencia(input.periodId),
     familyContext: {
-      address: textOrNull(input.person.address_line),
-      phoneOne: textOrNull(input.person.phone_one),
-      phoneTwo: textOrNull(input.person.phone_two)
+      address: TextoONulo(input.person.address_line),
+      phoneOne: TextoONulo(input.person.phone_one),
+      phoneTwo: TextoONulo(input.person.phone_two)
     },
-    services: presentServices(input.services),
-    guardian: presentGuardian(input.guardianRows, input.person),
+    services: PresentarServicios(input.services),
+    guardian: PresentarEncargado(input.guardianRows, input.person),
     interdisciplinaryAttention: cases
-  }, input.access);
+  }, input.acceso);
 }
 
 module.exports = {
   CASE_FIELDS,
-  completedYears,
-  presentSearch,
-  presentProfile,
-  presentCases
+  AniosCumplidos,
+  PresentarBusqueda,
+  PresentarFicha,
+  PresentarCasos
 };

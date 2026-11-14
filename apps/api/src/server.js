@@ -1,10 +1,10 @@
 'use strict';
 
-const { loadConfig } = require('./config/load-config');
-const { createLogger } = require('./common/logger');
-const { createApp } = require('./app');
-const { createDatabaseGateway } = require('./infrastructure/database/sql-client');
-const { createSidinaccAdapter } = require('./infrastructure/integrations/sidinacc-adapter');
+const { CargarConfiguracion } = require('./config/load-config');
+const { CrearRegistro } = require('./common/logger');
+const { CrearAplicacion } = require('./app');
+const { CrearPasarelaBases } = require('./infrastructure/database/sql-client');
+const { CrearAdaptadorSidinacc } = require('./infrastructure/integrations/sidinacc-adapter');
 
 /**
  * Arranca la API con la configuración del entorno.
@@ -13,12 +13,12 @@ const { createSidinaccAdapter } = require('./infrastructure/integrations/sidinac
  * Si SIA y SIDINACC usan el mismo usuario, deja una advertencia:
  * el aislamiento de permisos no queda demostrado.
  */
-function startServer(env = process.env) {
-  const config = loadConfig(env);
-  const logger = createLogger(config.logLevel);
-  const databases = createDatabaseGateway(config);
-  const adapter = createSidinaccAdapter(databases.sidinacc);
-  const app = createApp({ config, databases, adapter, logger });
+function IniciarServidor(env = process.env) {
+  const config = CargarConfiguracion(env);
+  const logger = CrearRegistro(config.logLevel);
+  const databases = CrearPasarelaBases(config);
+  const adapter = CrearAdaptadorSidinacc(databases.sidinacc);
+  const app = CrearAplicacion({ config, databases, adapter, logger });
 
   if (config.sameDatabaseUser) {
     logger.warn(
@@ -43,7 +43,7 @@ function startServer(env = process.env) {
   /**
    * Cierra el puerto y las dos bases. Una segunda señal no repite el cierre.
    */
-  async function shutdown() {
+  async function DetenerServidor() {
     if (closing) {
       return;
     }
@@ -56,14 +56,14 @@ function startServer(env = process.env) {
     logger.info('Cierre ordenado completado');
   }
 
-  return { server, shutdown };
+  return { server, DetenerServidor };
 }
 
 if (require.main === module) {
   try {
-    const running = startServer();
+    const running = IniciarServidor();
     const stop = () => {
-      running.shutdown().finally(() => process.exit(0));
+      running.DetenerServidor().finally(() => process.exit(0));
     };
     process.on('SIGINT', stop);
     process.on('SIGTERM', stop);
@@ -78,4 +78,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { startServer };
+module.exports = { IniciarServidor };

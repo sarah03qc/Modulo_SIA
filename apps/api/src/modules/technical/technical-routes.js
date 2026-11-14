@@ -1,7 +1,7 @@
 'use strict';
 
 const express = require('express');
-const { asyncHandler } = require('../../common/async-handler');
+const { EnvolverAsincrono } = require('../../common/async-handler');
 
 /**
  * Rutas de diagnóstico. No exigen sesión.
@@ -11,7 +11,7 @@ const { asyncHandler } = require('../../common/async-handler');
  * si la cuenta se ve como solo lectura. Si una dependencia falla,
  * responde no disponible y no incluye el detalle del error.
  */
-function createTechnicalRouter(dependencies) {
+function CrearEnrutadorTecnico(dependencies) {
   const router = express.Router();
   const logger = dependencies.logger;
 
@@ -23,7 +23,7 @@ function createTechnicalRouter(dependencies) {
     });
   });
 
-  router.get('/ready', asyncHandler(async (req, res) => {
+  router.get('/ready', EnvolverAsincrono(async (req, res) => {
     const checks = {
       sia: { status: 'down' },
       sidinacc: { status: 'down' }
@@ -31,7 +31,7 @@ function createTechnicalRouter(dependencies) {
     let ready = true;
 
     try {
-      const sia = await dependencies.databases.sia.probe();
+      const sia = await dependencies.databases.sia.Sondear();
       checks.sia = { status: 'up', database: sia.database };
     } catch (error) {
       ready = false;
@@ -39,7 +39,7 @@ function createTechnicalRouter(dependencies) {
     }
 
     try {
-      const sidinacc = await dependencies.adapter.checkAvailability();
+      const sidinacc = await dependencies.adapter.ComprobarDisponibilidad();
       checks.sidinacc = {
         status: sidinacc.available ? 'up' : 'down',
         database: sidinacc.database,
@@ -66,4 +66,4 @@ function createTechnicalRouter(dependencies) {
   return router;
 }
 
-module.exports = { createTechnicalRouter };
+module.exports = { CrearEnrutadorTecnico };

@@ -1,8 +1,8 @@
 'use strict';
 
 const sql = require('mssql');
-const { InfrastructureError } = require('../../common/errors');
-const { assertInstitutionalRead } = require('./institutional-read');
+const { ErrorInfraestructura } = require('../../common/errors');
+const { AfirmarLecturaInstitucional } = require('./institutional-read');
 
 /*
   Cliente compartido de SQL Server.
@@ -27,7 +27,7 @@ SELECT
  * Interpreta el resultado del permiso como denegado.
  * El motor puede devolver 0, el texto "0" o false.
  */
-function denied(value) {
+function EsValorDenegado(value) {
   return value === 0 || value === '0' || value === false;
 }
 
@@ -36,15 +36,15 @@ function denied(value) {
  * Conserva el número del motor para que el servicio distinga duplicado,
  * interbloqueo o permiso, sin exponer el texto del motor al cliente.
  */
-class SqlExecutionError extends Error {
+class ErrorEjecucionSql extends Error {
   /**
    * @param {Error} source Error original del controlador.
    */
   constructor(source) {
     super('La operación de base de datos no se completó.');
-    this.name = 'SqlExecutionError';
+    this.name = 'ErrorEjecucionSql';
     this.driverCode = source && source.code ? String(source.code) : 'DB_ERROR';
-    this.sqlNumber = readSqlNumber(source);
+    this.sqlNumber = LeerNumeroSql(source);
     this.permissionDenied = this.sqlNumber === 229 || this.sqlNumber === 230;
   }
 }
@@ -53,7 +53,7 @@ class SqlExecutionError extends Error {
  * Extrae el número de error de SQL Server, si el controlador lo trae.
  * Sirve para distinguir permiso, duplicado o interbloqueo sin mostrar el texto del motor.
  */
-function readSqlNumber(error) {
+function LeerNumeroSql(error) {
   if (!error || typeof error !== 'object') {
     return null;
   }
@@ -79,7 +79,7 @@ function readSqlNumber(error) {
  * @param {Error} error Error del controlador o de la red.
  * @returns {boolean} true cuando no se trata de un rechazo de sentencia.
  */
-function isConnectionFailure(error) {
+function EsFalloDeConexion(error) {
   const code = error && error.code;
   return code === 'ECONNRESET' || code === 'ESOCKET' || code === 'ETIMEOUT' || code === 'ELOGIN';
 }
@@ -92,7 +92,7 @@ function isConnectionFailure(error) {
  * @param {object} parameters Mapa de parámetros.
  * @returns {void}
  */
-function bindParameters(request, parameters) {
+function VincularParametros(request, parameters) {
   for (const [name, value] of Object.entries(parameters || {})) {
     if (
       value
@@ -111,7 +111,7 @@ function bindParameters(request, parameters) {
  * Arma la configuración del controlador a partir de la base ya validada.
  * No elige la base: usa el nombre, el usuario y los tiempos que entregó la configuración.
  */
-function toMssqlConfig(database, timeouts, poolMax) {
+function ConvertirConfiguracionMssql(database, timeouts, poolMax) {
   return {
     server: database.server,
     port: database.port,
@@ -142,18 +142,18 @@ function toMssqlConfig(database, timeouts, poolMax) {
  * El conjunto de conexiones se abre en la primera consulta y se cierra si la conexión
  * falla o cuando el proceso pide el cierre. Un permiso denegado no lo descarta.
  */
-function createSqlClient(options) {
+function CrearClienteSql(options) {
   const writeFilterEnabled = Boolean(options.writeFilterEnabled);
   let pool = null;
 
   /**
    * Devuelve el conjunto de conexiones abierto, o lo crea si todavía no existe.
    */
-  async function getPool() {
+  async function ObtenerGrupo() {
     if (pool) {
       return pool;
     }
-    const factory = options.connectPool || ((config) => new sql.ConnectionPool(config).connect());
+    const factory = options.ConectarGrupo || ((config) => new sql.ConnectionPool(config).connect());
     pool = await factory(options.mssqlConfig);
     return pool;
   }
@@ -167,21 +167,21 @@ function createSqlClient(options) {
    */
   async function query(sqlText, parameters = {}) {
     if (writeFilterEnabled) {
-      assertInstitutionalRead(sqlText);
+      AfirmarLecturaInstitucional(sqlText);
     }
     try {
-      const active = await getPool();
+      const active = await ObtenerGrupo();
       const request = active.request();
-      bindParameters(request, parameters);
+      VincularParametros(request, parameters);
       const result = await request.query(sqlText);
       return result.recordset;
     } catch (error) {
-      if (error instanceof InfrastructureError) {
+      if (error instanceof ErrorInfraestructura) {
         throw error;
       }
-      const failure = new InfrastructureError('La dependencia de base de datos no está disponible.');
+      const failure = new ErrorInfraestructura('La dependencia de base de datos no está disponible.');
       failure.driverCode = error && error.code ? String(error.code) : 'DB_ERROR';
-      const sqlNumber = readSqlNumber(error);
+      const sqlNumber = LeerNumeroSql(error);
       if (sqlNumber !== null) {
         failure.sqlNumber = sqlNumber;
       }
@@ -203,8 +203,8 @@ function createSqlClient(options) {
    * No cierra la conexión por un duplicado o un permiso denegado.
    * Un fallo de conexión sí la cierra. El texto del motor no se reenvía al cliente.
    */
-  async function withTransaction(work) {
-    const active = await getPool();
+  async function EnTransaccion(work) {
+    const active = await ObtenerGrupo();
     const beginTransaction = options.beginTransaction || ((pool) => new sql.Transaction(pool));
     const transaction = beginTransaction(active);
     await transaction.begin();
@@ -212,10 +212,10 @@ function createSqlClient(options) {
       const value = await work({
         async query(sqlText, parameters) {
           if (writeFilterEnabled) {
-            assertInstitutionalRead(sqlText);
+            AfirmarLecturaInstitucional(sqlText);
           }
           const request = new sql.Request(transaction);
-          bindParameters(request, parameters);
+          VincularParametros(request, parameters);
           const result = await request.query(sqlText);
           return result.recordset;
         }
@@ -233,14 +233,14 @@ function createSqlClient(options) {
         && (
           error.expose === true
           || error.domain === true
-          || error instanceof InfrastructureError
-          || error instanceof SqlExecutionError
+          || error instanceof ErrorInfraestructura
+          || error instanceof ErrorEjecucionSql
         )
       ) {
         throw error;
       }
-      const failure = new SqlExecutionError(error);
-      if (!failure.permissionDenied && isConnectionFailure(error)) {
+      const failure = new ErrorEjecucionSql(error);
+      if (!failure.permissionDenied && EsFalloDeConexion(error)) {
         await close();
       }
       throw failure;
@@ -254,16 +254,16 @@ function createSqlClient(options) {
    * no puede insertar, actualizar, borrar ni actuar como administradora.
    * Ese indicador describe el permiso visto en el momento; no cambia la cuenta.
    */
-  async function probe() {
+  async function Sondear() {
     const rows = await query(PROBE_SQL);
     const row = rows && rows[0];
     if (!row || row.database_name !== options.databaseName) {
-      throw new InfrastructureError('La conexión no corresponde a la base configurada.');
+      throw new ErrorInfraestructura('La conexión no corresponde a la base configurada.');
     }
-    const readOnlyLogin = denied(row.can_insert)
-      && denied(row.can_update)
-      && denied(row.can_delete)
-      && denied(row.is_sysadmin);
+    const readOnlyLogin = EsValorDenegado(row.can_insert)
+      && EsValorDenegado(row.can_update)
+      && EsValorDenegado(row.can_delete)
+      && EsValorDenegado(row.is_sysadmin);
     return {
       role: options.role,
       database: row.database_name,
@@ -288,8 +288,8 @@ function createSqlClient(options) {
     databaseName: options.databaseName,
     writeFilterEnabled,
     query,
-    withTransaction,
-    probe,
+    EnTransaccion,
+    Sondear,
     close
   };
 }
@@ -300,32 +300,32 @@ function createSqlClient(options) {
  * sia escribe en SIA_CENCINAI. sidinacc lee SIDINACC_LOCAL y activa el filtro
  * de solo lectura. No comparten conexiones. close cierra ambos.
  */
-function createDatabaseGateway(config, dependencies = {}) {
+function CrearPasarelaBases(config, dependencies = {}) {
   const timeouts = {
     connectionTimeoutMs: config.connectionTimeoutMs,
     requestTimeoutMs: config.requestTimeoutMs
   };
-  const sia = createSqlClient({
+  const sia = CrearClienteSql({
     role: 'sia',
     databaseName: config.sia.database,
     writeFilterEnabled: false,
-    mssqlConfig: toMssqlConfig(
+    mssqlConfig: ConvertirConfiguracionMssql(
       { ...config.sia, appName: 'sia-cencinai-api' },
       timeouts,
       config.poolMax
     ),
-    connectPool: dependencies.connectPool
+    ConectarGrupo: dependencies.ConectarGrupo
   });
-  const sidinacc = createSqlClient({
+  const sidinacc = CrearClienteSql({
     role: 'sidinacc',
     databaseName: config.sidinacc.database,
     writeFilterEnabled: true,
-    mssqlConfig: toMssqlConfig(
+    mssqlConfig: ConvertirConfiguracionMssql(
       { ...config.sidinacc, appName: 'sia-cencinai-sidinacc-adapter' },
       timeouts,
       config.poolMax
     ),
-    connectPool: dependencies.connectPool
+    ConectarGrupo: dependencies.ConectarGrupo
   });
 
   return {
@@ -339,8 +339,8 @@ function createDatabaseGateway(config, dependencies = {}) {
 
 module.exports = {
   PROBE_SQL,
-  SqlExecutionError,
-  toMssqlConfig,
-  createSqlClient,
-  createDatabaseGateway
+  ErrorEjecucionSql,
+  ConvertirConfiguracionMssql,
+  CrearClienteSql,
+  CrearPasarelaBases
 };

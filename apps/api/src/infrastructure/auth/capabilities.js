@@ -117,7 +117,7 @@ const ROLE_CAPABILITIES = Object.freeze({
   Entrada: texto de capacidad
   Salida: true solo si el código es interno y conocido
 */
-function isKnownCapability(capability) {
+function EsCapacidadConocida(capability) {
   return KNOWN_CAPABILITIES.has(capability);
 }
 
@@ -127,7 +127,7 @@ function isKnownCapability(capability) {
   Salida: capacidades conocidas, sin duplicados y en el orden del catálogo
   Un rol desconocido no aporta capacidades
 */
-function capabilitiesForRoles(roles) {
+function CapacidadesDeRoles(roles) {
   const granted = new Set();
   const source = Array.isArray(roles) ? roles : [];
   for (const role of source) {
@@ -142,6 +142,6 @@ function capabilitiesForRoles(roles) {
 module.exports = {
   CAPABILITY,
   ROLE_CAPABILITIES,
-  isKnownCapability,
-  capabilitiesForRoles
+  EsCapacidadConocida,
+  CapacidadesDeRoles
 };

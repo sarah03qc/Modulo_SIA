@@ -19,18 +19,18 @@ const EXAMPLE_SECRET = 'CHANGE_ME';
  * Error de arranque cuando una variable falta o no es utilizable.
  * El mensaje nombra la variable y no incluye el secreto.
  */
-class ConfigError extends Error {
+class ErrorConfiguracion extends Error {
   constructor(message) {
     super(message);
-    this.name = 'ConfigError';
+    this.name = 'ErrorConfiguracion';
     this.code = 'INVALID_CONFIGURATION';
   }
 }
 
-function requireText(env, key) {
+function ExigirTexto(env, key) {
   const value = env[key];
   if (typeof value !== 'string' || value.trim() === '') {
-    throw new ConfigError(`Falta la variable obligatoria ${key}.`);
+    throw new ErrorConfiguracion(`Falta la variable obligatoria ${key}.`);
   }
   return value.trim();
 }
@@ -38,69 +38,69 @@ function requireText(env, key) {
 /**
  * Lee un secreto obligatorio y rechaza el valor de ejemplo CHANGE_ME.
  */
-function requireSecret(env, key) {
+function ExigirSecreto(env, key) {
   const value = env[key];
   if (typeof value !== 'string' || value.length === 0) {
-    throw new ConfigError(`Falta la variable obligatoria ${key}.`);
+    throw new ErrorConfiguracion(`Falta la variable obligatoria ${key}.`);
   }
   if (value === EXAMPLE_SECRET) {
-    throw new ConfigError(`${key} sigue en el valor de ejemplo.`);
+    throw new ErrorConfiguracion(`${key} sigue en el valor de ejemplo.`);
   }
   return value;
 }
 
-function requirePort(env, key) {
-  const raw = requireText(env, key);
+function ExigirPuerto(env, key) {
+  const raw = ExigirTexto(env, key);
   if (!/^\d+$/.test(raw)) {
-    throw new ConfigError(`${key} debe ser un puerto numérico.`);
+    throw new ErrorConfiguracion(`${key} debe ser un puerto numérico.`);
   }
   const port = Number(raw);
   if (port < 1 || port > 65535) {
-    throw new ConfigError(`${key} debe estar entre 1 y 65535.`);
+    throw new ErrorConfiguracion(`${key} debe estar entre 1 y 65535.`);
   }
   return port;
 }
 
-function requireBoolean(env, key) {
-  const raw = requireText(env, key).toLowerCase();
+function ExigirBooleano(env, key) {
+  const raw = ExigirTexto(env, key).toLowerCase();
   if (raw !== 'true' && raw !== 'false') {
-    throw new ConfigError(`${key} debe ser true o false.`);
+    throw new ErrorConfiguracion(`${key} debe ser true o false.`);
   }
   return raw === 'true';
 }
 
-function requirePositiveInt(env, key) {
-  const raw = requireText(env, key);
+function ExigirEnteroPositivo(env, key) {
+  const raw = ExigirTexto(env, key);
   if (!/^\d+$/.test(raw) || Number(raw) < 1) {
-    throw new ConfigError(`${key} debe ser un entero positivo.`);
+    throw new ErrorConfiguracion(`${key} debe ser un entero positivo.`);
   }
   return Number(raw);
 }
 
-function requireOrigin(env, key) {
-  const raw = requireText(env, key);
+function ExigirOrigen(env, key) {
+  const raw = ExigirTexto(env, key);
   let url;
   try {
     url = new URL(raw);
   } catch {
-    throw new ConfigError(`${key} debe ser una URL absoluta de origen.`);
+    throw new ErrorConfiguracion(`${key} debe ser una URL absoluta de origen.`);
   }
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-    throw new ConfigError(`${key} debe usar http o https.`);
+    throw new ErrorConfiguracion(`${key} debe usar http o https.`);
   }
   if (url.username || url.password) {
-    throw new ConfigError(`${key} no debe incluir credenciales.`);
+    throw new ErrorConfiguracion(`${key} no debe incluir credenciales.`);
   }
   if (url.pathname !== '/' || url.search || url.hash) {
-    throw new ConfigError(`${key} debe ser solo el origen, sin ruta ni consulta.`);
+    throw new ErrorConfiguracion(`${key} debe ser solo el origen, sin ruta ni consulta.`);
   }
   return url.origin;
 }
 
-function requireDatabaseName(env, key, expected) {
-  const name = requireText(env, key);
+function ExigirNombreBase(env, key, expected) {
+  const name = ExigirTexto(env, key);
   if (name !== expected) {
-    throw new ConfigError(`${key} debe ser ${expected}.`);
+    throw new ErrorConfiguracion(`${key} debe ser ${expected}.`);
   }
   return name;
 }
@@ -109,15 +109,15 @@ function requireDatabaseName(env, key, expected) {
  * Lee la conexión de una base. El nombre tiene que coincidir con el esperado:
  * SIA_CENCINAI o SIDINACC_LOCAL, según el prefijo.
  */
-function loadDatabase(env, prefix, expectedName) {
+function CargarBaseDatos(env, prefix, expectedName) {
   return {
-    server: requireText(env, `${prefix}_DB_SERVER`),
-    port: requirePort(env, `${prefix}_DB_PORT`),
-    database: requireDatabaseName(env, `${prefix}_DB_NAME`, expectedName),
-    user: requireText(env, `${prefix}_DB_USER`),
-    password: requireSecret(env, `${prefix}_DB_PASSWORD`),
-    encrypt: requireBoolean(env, `${prefix}_DB_ENCRYPT`),
-    trustServerCertificate: requireBoolean(env, `${prefix}_DB_TRUST_SERVER_CERTIFICATE`)
+    server: ExigirTexto(env, `${prefix}_DB_SERVER`),
+    port: ExigirPuerto(env, `${prefix}_DB_PORT`),
+    database: ExigirNombreBase(env, `${prefix}_DB_NAME`, expectedName),
+    user: ExigirTexto(env, `${prefix}_DB_USER`),
+    password: ExigirSecreto(env, `${prefix}_DB_PASSWORD`),
+    encrypt: ExigirBooleano(env, `${prefix}_DB_ENCRYPT`),
+    trustServerCertificate: ExigirBooleano(env, `${prefix}_DB_TRUST_SERVER_CERTIFICATE`)
   };
 }
 
@@ -130,49 +130,49 @@ function loadDatabase(env, prefix, expectedName) {
  * consulta o credenciales. Si las dos bases usan el mismo usuario, lo marca
  * para que el arranque pueda advertirlo.
  */
-function loadConfig(env) {
+function CargarConfiguracion(env) {
   const source = env || {};
-  const nodeEnv = requireText(source, 'NODE_ENV');
+  const nodeEnv = ExigirTexto(source, 'NODE_ENV');
   if (!ALLOWED_ENVIRONMENTS.has(nodeEnv)) {
-    throw new ConfigError(
+    throw new ErrorConfiguracion(
       'NODE_ENV debe ser development o test. El arranque de producción no está habilitado.'
     );
   }
 
-  const logLevel = requireText(source, 'LOG_LEVEL');
+  const logLevel = ExigirTexto(source, 'LOG_LEVEL');
   if (!ALLOWED_LOG_LEVELS.has(logLevel)) {
-    throw new ConfigError('LOG_LEVEL debe ser error, warn o info.');
+    throw new ErrorConfiguracion('LOG_LEVEL debe ser error, warn o info.');
   }
 
-  const host = requireText(source, 'API_HOST');
+  const host = ExigirTexto(source, 'API_HOST');
   if (!ALLOWED_HOSTS.has(host)) {
-    throw new ConfigError('API_HOST debe ser 127.0.0.1 o localhost en este bootstrap.');
+    throw new ErrorConfiguracion('API_HOST debe ser 127.0.0.1 o localhost en este bootstrap.');
   }
 
-  const sia = loadDatabase(source, 'SIA', SIA_DATABASE);
-  const sidinacc = loadDatabase(source, 'SIDINACC', SIDINACC_DATABASE);
+  const sia = CargarBaseDatos(source, 'SIA', SIA_DATABASE);
+  const sidinacc = CargarBaseDatos(source, 'SIDINACC', SIDINACC_DATABASE);
 
   return {
     nodeEnv,
     host,
-    port: requirePort(source, 'API_PORT'),
+    port: ExigirPuerto(source, 'API_PORT'),
     logLevel,
-    corsOrigin: requireOrigin(source, 'CORS_ORIGIN'),
-    connectionTimeoutMs: requirePositiveInt(source, 'DB_CONNECTION_TIMEOUT_MS'),
-    requestTimeoutMs: requirePositiveInt(source, 'DB_REQUEST_TIMEOUT_MS'),
-    poolMax: requirePositiveInt(source, 'DB_POOL_MAX'),
+    corsOrigin: ExigirOrigen(source, 'CORS_ORIGIN'),
+    connectionTimeoutMs: ExigirEnteroPositivo(source, 'DB_CONNECTION_TIMEOUT_MS'),
+    requestTimeoutMs: ExigirEnteroPositivo(source, 'DB_REQUEST_TIMEOUT_MS'),
+    poolMax: ExigirEnteroPositivo(source, 'DB_POOL_MAX'),
     sia,
     sidinacc,
     sameDatabaseUser: sia.user.toLowerCase() === sidinacc.user.toLowerCase(),
     // Periodo de lectura de la replica. El cliente HTTP no puede cambiarlo.
-    sidinaccPeriodId: requirePositiveInt(source, 'SIDINACC_PERIOD_ID')
+    sidinaccPeriodId: ExigirEnteroPositivo(source, 'SIDINACC_PERIOD_ID')
   };
 }
 
 /**
  * Resume la configuración para diagnóstico, sin usuarios ni contraseñas.
  */
-function publicConfigSummary(config) {
+function ResumenPublicoConfiguracion(config) {
   return {
     nodeEnv: config.nodeEnv,
     host: config.host,
@@ -187,7 +187,7 @@ function publicConfigSummary(config) {
 }
 
 module.exports = {
-  ConfigError,
-  loadConfig,
-  publicConfigSummary
+  ErrorConfiguracion,
+  CargarConfiguracion,
+  ResumenPublicoConfiguracion
 };

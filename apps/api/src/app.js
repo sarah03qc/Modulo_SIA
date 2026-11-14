@@ -6,14 +6,14 @@
 'use strict';
 
 const express = require('express');
-const { createLogger } = require('./common/logger');
+const { CrearRegistro } = require('./common/logger');
 const { ResponderRutaNoEncontrada, CrearControlErrores } = require('./common/http-error-handler');
-const { createInstitutionalSession } = require('./infrastructure/auth/institutional-session');
-const { createTechnicalRouter } = require('./modules/technical/technical-routes');
-const { createInstitutionalModule } = require('./modules/institutional/create-institutional-module');
-const { createInstitutionalRouter } = require('./modules/institutional/institutional-routes');
-const { createReferenceModule } = require('./modules/references/create-reference-module');
-const { createReferenceRouter } = require('./modules/references/reference-routes');
+const { CrearSesionInstitucional } = require('./infrastructure/auth/institutional-session');
+const { CrearEnrutadorTecnico } = require('./modules/technical/technical-routes');
+const { CrearModuloInstitucional } = require('./modules/institutional/create-institutional-module');
+const { CrearEnrutadorInstitucional } = require('./modules/institutional/institutional-routes');
+const { CrearModuloReferencias } = require('./modules/references/create-reference-module');
+const { CrearEnrutadorReferencias } = require('./modules/references/reference-routes');
 
 /**
  * Aplica encabezados para que el navegador no interprete mal el contenido,
@@ -61,11 +61,11 @@ function ConfigurarCors(origenPermitido) {
  * @param {object} dependencies Configuración y dependencias de los módulos.
  * @returns {express.Express} Aplicación HTTP sin iniciar el servidor.
  */
-function createApp(dependencies) {
-  const logger = dependencies.logger || createLogger(dependencies.config.logLevel);
+function CrearAplicacion(dependencies) {
+  const logger = dependencies.logger || CrearRegistro(dependencies.config.logLevel);
   const app = express();
   app.disable('x-powered-by');
-  const institutional = dependencies.institutional || createInstitutionalModule({
+  const institutional = dependencies.institutional || CrearModuloInstitucional({
     periodId: dependencies.config.sidinaccPeriodId,
     adapter: dependencies.adapter,
     sia: dependencies.databases && dependencies.databases.sia,
@@ -73,19 +73,19 @@ function createApp(dependencies) {
   });
   app.use(AplicarEncabezadosSeguridad);
   app.use(ConfigurarCors(dependencies.config.corsOrigin));
-  app.use(createTechnicalRouter({ ...dependencies, logger }));
+  app.use(CrearEnrutadorTecnico({ ...dependencies, logger }));
   // Salud y disponibilidad no exigen sesión. El resto de /api sí.
-  app.use('/api', createInstitutionalSession(dependencies.config));
-  const references = dependencies.references || createReferenceModule({
+  app.use('/api', CrearSesionInstitucional(dependencies.config));
+  const references = dependencies.references || CrearModuloReferencias({
     periodId: dependencies.config.sidinaccPeriodId,
     adapter: dependencies.adapter,
     sia: dependencies.databases && dependencies.databases.sia
   });
-  app.use('/api/institutional', createInstitutionalRouter(institutional));
-  app.use('/api/references', createReferenceRouter(references));
+  app.use('/api/institutional', CrearEnrutadorInstitucional(institutional));
+  app.use('/api/references', CrearEnrutadorReferencias(references));
   app.use(ResponderRutaNoEncontrada);
   app.use(CrearControlErrores(logger));
   return app;
 }
 
-module.exports = { createApp };
+module.exports = { CrearAplicacion };

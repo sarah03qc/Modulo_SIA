@@ -3,11 +3,11 @@
 const { execFileSync } = require('child_process');
 const path = require('path');
 const request = require('supertest');
-const { createApp } = require('../src/app');
-const { loadConfig } = require('../src/config/load-config');
-const { createDatabaseGateway } = require('../src/infrastructure/database/sql-client');
-const { createSidinaccAdapter } = require('../src/infrastructure/integrations/sidinacc-adapter');
-const { createReferenceRepository } = require('../src/modules/references/reference-repository');
+const { CrearAplicacion } = require('../src/app');
+const { CargarConfiguracion } = require('../src/config/load-config');
+const { CrearPasarelaBases } = require('../src/infrastructure/database/sql-client');
+const { CrearAdaptadorSidinacc } = require('../src/infrastructure/integrations/sidinacc-adapter');
+const { CrearRepositorioReferencias } = require('../src/modules/references/reference-repository');
 const { PermitirEscriturasSqlLocales } = require('./escrituras-sql-locales');
 
 const placeholder = !process.env.SIA_DB_PASSWORD
@@ -32,14 +32,14 @@ describeLive('referencias contra SQL Server local', () => {
   const createdIds = [];
 
   beforeAll(async () => {
-    config = loadConfig(process.env);
-    gateway = createDatabaseGateway(config);
-    await gateway.sia.probe();
+    config = CargarConfiguracion(process.env);
+    gateway = CrearPasarelaBases(config);
+    await gateway.sia.Sondear();
     conexionVerificada = true;
-    app = createApp({
+    app = CrearAplicacion({
       config,
       databases: gateway,
-      adapter: createSidinaccAdapter(gateway.sidinacc),
+      adapter: CrearAdaptadorSidinacc(gateway.sidinacc),
       logger: { error: jest.fn(), warn: jest.fn(), info: jest.fn() }
     });
   });
@@ -269,14 +269,14 @@ describeLive('referencias contra SQL Server local', () => {
   });
 
   test('un motivo inválido revierte la referencia ya insertada en la misma transacción', async () => {
-    const repository = createReferenceRepository(gateway.sia);
-    const catalog = await repository.listCatalog();
+    const repository = CrearRepositorioReferencias(gateway.sia);
+    const catalog = await repository.ListarCatalogo();
     const route = catalog.find((row) => row.codigo_catalogo === 'VIA_ATENCION' && row.codigo === 'URGENCIA');
     const origin = catalog.find((row) => row.codigo_catalogo === 'ORIGEN_REFERENCIA' && row.codigo === 'OBSERVACION');
     const consecutive = 'DNCC-DRCS-OL101-1100102-REF-892-2026';
     let failure = null;
     try {
-      await repository.insertSubmitted({
+      await repository.InsertarEnviada({
         personId: PROBE_PERSON,
         referenceDate: '2026-11-06',
         attentionRoute: { itemId: Number(route.cat_item_id) },
@@ -290,13 +290,13 @@ describeLive('referencias contra SQL Server local', () => {
         consecutive,
         draftId: null,
         auditRole: 'ESTABLECIMIENTO',
-        scopeText: 'E:1100102|OL:101|R:1|ID:SINTETICA',
+        TextoDeAmbito: 'E:1100102|OL:101|R:1|ID:SINTETICA',
         context: {
           establishmentId: 1100102,
           localOfficeId: 101,
           regionId: 1,
           guardianName: null,
-          guardianRelationship: null,
+          RelacionEncargado: null,
           contact: null,
           address: null,
           servicesText: null,

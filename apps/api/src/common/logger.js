@@ -7,14 +7,14 @@ const SECRET_KEY = /password|secret|token|connectionstring|pwd/i;
  * Oculta valores cuyas claves parecen contraseñas, secretos o tokens.
  * El resto del detalle se conserva para el diagnóstico.
  */
-function redact(value) {
+function RedactarValor(value) {
   if (Array.isArray(value)) {
-    return value.map(redact);
+    return value.map(RedactarValor);
   }
   if (value && typeof value === 'object') {
     const output = {};
     for (const [key, item] of Object.entries(value)) {
-      output[key] = SECRET_KEY.test(key) ? '[redacted]' : redact(item);
+      output[key] = SECRET_KEY.test(key) ? '[redacted]' : RedactarValor(item);
     }
     return output;
   }
@@ -25,7 +25,7 @@ function redact(value) {
  * Crea un registrador en JSON. Solo escribe niveles iguales o más graves
  * que el configurado. Los errores van a la salida de error.
  */
-function createLogger(levelName) {
+function CrearRegistro(levelName) {
   const threshold = LEVELS[levelName] ?? LEVELS.info;
 
   function write(level, message, details) {
@@ -38,7 +38,7 @@ function createLogger(levelName) {
       message
     };
     if (details) {
-      entry.details = redact(details);
+      entry.details = RedactarValor(details);
     }
     const line = JSON.stringify(entry);
     if (level === 'error') {
@@ -61,4 +61,4 @@ function createLogger(levelName) {
   };
 }
 
-module.exports = { createLogger, redact };
+module.exports = { CrearRegistro, RedactarValor };

@@ -1,17 +1,17 @@
 'use strict';
 
 const {
-  AmbiguousInstitutionalLocationError,
-  ConflictError,
-  ForbiddenError,
-  InfrastructureError,
-  NotFoundError,
-  ValidationError
+  ErrorUbicacionInstitucionalAmbigua,
+  ErrorConflicto,
+  ErrorProhibido,
+  ErrorInfraestructura,
+  ErrorNoEncontrado,
+  ErrorValidacion
 } = require('../../common/errors');
 const { CAPABILITY } = require('../../infrastructure/auth/capabilities');
 const { ExigirCapacidad } = require('../../infrastructure/auth/authorization-policy');
 const { GenerarLibroPlantilla, LeerLibroPlantilla } = require('./reference-template');
-const { resolveTerritorialScope } = require('../institutional/territorial-scope');
+const { ResolverAmbitoTerritorial } = require('../institutional/territorial-scope');
 const {
   ACTIVE_CASE_MESSAGE,
   CAPTURE_ORIGIN,
@@ -27,15 +27,15 @@ const {
   TEMPLATE_VERSION
 } = require('./reference-constants');
 const {
-  assertConsecutiveMatchesPerson,
-  canonicalizeConsecutive,
-  motiveCategory,
-  narrative,
-  normalizeMotives,
-  requireReferenceDate
+  AfirmarConsecutivoDePersona,
+  CanonizarConsecutivo,
+  CategoriaDeMotivo,
+  NarrarTexto,
+  NormalizarMotivos,
+  ExigirFechaReferencia
 } = require('./reference-rules');
-const { buildHistoricalContext, fullName } = require('./reference-snapshot');
-const { renderReferenceDocument } = require('./reference-document');
+const { ConstruirContextoHistorico, NombreCompleto } = require('./reference-snapshot');
+const { GenerarDocumentoReferencia } = require('./reference-document');
 
 const PERMISSION_MESSAGE = 'La operación de referencias no está disponible para la cuenta técnica actual.';
 const MAX_ATTEMPTS = 3;
@@ -46,11 +46,11 @@ const MAX_ATTEMPTS = 3;
  * @param {object} adapter Adaptador institucional.
  * @returns {object} Búsquedas de establecimiento, oficina y región.
  */
-function territoryPort(adapter) {
+function PuertoTerritorial(adapter) {
   return {
-    findEstablishment: (establishmentId) => adapter.findEstablishment(establishmentId),
-    findLocalOffice: (localOfficeId) => adapter.findLocalOffice(localOfficeId),
-    findRegion: (regionId) => adapter.findRegion(regionId)
+    BuscarEstablecimiento: (establishmentId) => adapter.BuscarEstablecimiento(establishmentId),
+    BuscarOficinaLocal: (localOfficeId) => adapter.BuscarOficinaLocal(localOfficeId),
+    BuscarRegion: (regionId) => adapter.BuscarRegion(regionId)
   };
 }
 
@@ -60,7 +60,7 @@ function territoryPort(adapter) {
  * @param {string} value Texto `AAAA-MM-DD HH:MM:SS` del servidor.
  * @returns {string|null} Instantáneo con sufijo Z, o null.
  */
-function serverTimestamp(value) {
+function MarcaTiempoServidor(value) {
   if (typeof value !== 'string' || value.trim() === '') {
     return null;
   }
@@ -73,34 +73,34 @@ function serverTimestamp(value) {
  *
  * @param {Error} error Error de dominio o de infraestructura.
  * @returns {never}
- * @throws {ConflictError|ValidationError|InfrastructureError|NotFoundError} Error visible.
+ * @throws {ErrorConflicto|ErrorValidacion|ErrorInfraestructura|ErrorNoEncontrado} Error visible.
  */
-function rethrowPersistence(error) {
+function RelanzarErrorPersistencia(error) {
   if (error && error.code === 'ACTIVE_CASE') {
-    throw new ConflictError(ACTIVE_CASE_MESSAGE);
+    throw new ErrorConflicto(ACTIVE_CASE_MESSAGE);
   }
   if (error && error.code === 'DUPLICATE_CONSECUTIVE') {
-    throw new ConflictError(DUPLICATE_CONSECUTIVE_MESSAGE);
+    throw new ErrorConflicto(DUPLICATE_CONSECUTIVE_MESSAGE);
   }
   if (error && error.code === 'CONSTRAINT') {
-    throw new ValidationError('Los datos de catálogo o de la persona ya no permiten registrar la referencia.');
+    throw new ErrorValidacion('Los datos de catálogo o de la persona ya no permiten registrar la referencia.');
   }
   if (error && error.code === 'PERMISSION') {
-    throw new InfrastructureError(PERMISSION_MESSAGE);
+    throw new ErrorInfraestructura(PERMISSION_MESSAGE);
   }
   if (error && error.code === 'DRAFT_MISMATCH') {
-    throw new ValidationError('El borrador indicado no corresponde a la persona de esta referencia.');
+    throw new ErrorValidacion('El borrador indicado no corresponde a la persona de esta referencia.');
   }
   if (error && error.code === 'DRAFT_NOT_FOUND') {
-    throw new NotFoundError('El borrador solicitado no existe.');
+    throw new ErrorNoEncontrado('El borrador solicitado no existe.');
   }
-  if (error instanceof ValidationError || error instanceof ConflictError || error instanceof NotFoundError) {
+  if (error instanceof ErrorValidacion || error instanceof ErrorConflicto || error instanceof ErrorNoEncontrado) {
     throw error;
   }
-  if (error instanceof InfrastructureError) {
+  if (error instanceof ErrorInfraestructura) {
     throw error;
   }
-  throw new InfrastructureError('La dependencia de base de datos no está disponible.');
+  throw new ErrorInfraestructura('La dependencia de base de datos no está disponible.');
 }
 
 /**
@@ -110,7 +110,7 @@ function rethrowPersistence(error) {
  * @param {string} identitySource Origen de la identidad del servidor.
  * @returns {string} Ámbito y marca de identidad.
  */
-function scopeText(context, identitySource) {
+function TextoDeAmbito(context, identitySource) {
   const source = identitySource === 'SYNTHETIC_DEVELOPMENT' ? 'SINTETICA' : 'SESION';
   return `E:${context.establishmentId}|OL:${context.localOfficeId}|R:${context.regionId}|ID:${source}`.slice(0, 200);
 }
@@ -122,21 +122,21 @@ function scopeText(context, identitySource) {
  * @param {object} dependencies Periodo, adaptador y repositorio.
  * @returns {object} Operaciones de catálogo, envío, consulta, plantilla y documento.
  */
-function createReferenceService(dependencies) {
+function CrearServicioReferencias(dependencies) {
   const periodId = dependencies.periodId;
   const adapter = dependencies.adapter;
   const repository = dependencies.repository;
-  const territory = territoryPort(adapter);
+  const territory = PuertoTerritorial(adapter);
 
   /**
    * Resuelve el ámbito efectivo. Un filtro de establecimiento solo puede estrecharlo.
    *
-   * @param {object} access Contexto interno.
+   * @param {object} acceso Contexto interno.
    * @param {object} filters Filtros territoriales ya validados.
    * @returns {Promise<object>} Ámbito de la operación.
    */
-  async function resolveScope(access, filters) {
-    return resolveTerritorialScope(access, {
+  async function ResolverAmbito(acceso, filters) {
+    return ResolverAmbitoTerritorial(acceso, {
       regionId: filters.regionId ?? null,
       localOfficeId: filters.localOfficeId ?? null,
       establishmentId: filters.establishmentId ?? null
@@ -146,28 +146,28 @@ function createReferenceService(dependencies) {
   /**
    * Exige una identidad de servidor utilizable como responsable.
    *
-   * @param {object} access Contexto interno.
+   * @param {object} acceso Contexto interno.
    * @returns {string} Identificador del responsable.
-   * @throws {ForbiddenError} Cuando la sesión no trae identidad.
+   * @throws {ErrorProhibido} Cuando la sesión no trae identidad.
    */
-  function requireResponsible(access) {
-    if (!access || typeof access.principalId !== 'string' || access.principalId.length === 0 || access.principalId.length > 128) {
-      throw new ForbiddenError('La identidad de la sesión no puede usarse como responsable.');
+  function ExigirResponsable(acceso) {
+    if (!acceso || typeof acceso.principalId !== 'string' || acceso.principalId.length === 0 || acceso.principalId.length > 128) {
+      throw new ErrorProhibido('La identidad de la sesión no puede usarse como responsable.');
     }
-    return access.principalId;
+    return acceso.principalId;
   }
 
   /**
    * Impide sustituir al responsable por un valor del cliente o de la plantilla.
    *
-   * @param {object} command DTO de entrada.
+   * @param {object} solicitud DTO de entrada.
    * @param {string} responsible Identidad de la sesión.
    * @returns {void}
-   * @throws {ValidationError} Cuando el valor enviado no es el de la sesión.
+   * @throws {ErrorValidacion} Cuando el valor enviado no es el de la sesión.
    */
-  function assertResponsibleLocked(command, responsible) {
-    if (command.responsibleProvided && command.responsible !== responsible) {
-      throw new ValidationError(RESPONSIBLE_LOCKED_MESSAGE);
+  function AfirmarResponsableFijo(solicitud, responsible) {
+    if (solicitud.responsibleProvided && solicitud.responsible !== responsible) {
+      throw new ErrorValidacion(RESPONSIBLE_LOCKED_MESSAGE);
     }
   }
 
@@ -176,12 +176,12 @@ function createReferenceService(dependencies) {
    *
    * @returns {Promise<object>} Vías, orígenes y motivos indexados.
    */
-  async function loadCatalog() {
+  async function CargarCatalogo() {
     let rows;
     try {
-      rows = await repository.listCatalog();
+      rows = await repository.ListarCatalogo();
     } catch (error) {
-      rethrowPersistence(error);
+      RelanzarErrorPersistencia(error);
     }
     const routes = new Map();
     const origins = new Map();
@@ -212,26 +212,26 @@ function createReferenceService(dependencies) {
    * @param {string} personId Identificador.
    * @param {string} referenceDate Fecha de la referencia.
    * @returns {Promise<object>} Contexto histórico y fila de origen.
-   * @throws {NotFoundError|AmbiguousInstitutionalLocationError} Cuando no hay una ubicación utilizable.
+   * @throws {ErrorNoEncontrado|ErrorUbicacionInstitucionalAmbigua} Cuando no hay una ubicación utilizable.
    */
-  async function loadPersonContext(scope, personId, referenceDate) {
-    const rows = await adapter.findPersonInScope({
+  async function CargarContextoPersona(scope, personId, referenceDate) {
+    const rows = await adapter.BuscarPersonaEnAmbito({
       periodId,
       personId,
       scope
     });
     const locationCounts = rows.map((row) => Number(row.location_count));
     if (rows.length > 1 || locationCounts.some((count) => count > 1)) {
-      throw new AmbiguousInstitutionalLocationError();
+      throw new ErrorUbicacionInstitucionalAmbigua();
     }
     if (rows.length === 0) {
-      throw new NotFoundError(PERSON_NOT_IN_SCOPE_MESSAGE);
+      throw new ErrorNoEncontrado(PERSON_NOT_IN_SCOPE_MESSAGE);
     }
     const [services, guardianRows] = await Promise.all([
-      adapter.listServices({ periodId, personId }),
-      adapter.listGuardianRows({ periodId, personId })
+      adapter.ListarServicios({ periodId, personId }),
+      adapter.ListarFilasEncargado({ periodId, personId })
     ]);
-    return buildHistoricalContext({
+    return ConstruirContextoHistorico({
       person: rows[0],
       services,
       guardianRows,
@@ -242,53 +242,53 @@ function createReferenceService(dependencies) {
   /**
    * Prepara la referencia sin escribirla. La usa la validación y el envío.
    *
-   * @param {object} access Contexto interno.
-   * @param {object} command DTO validado.
+   * @param {object} acceso Contexto interno.
+   * @param {object} solicitud DTO validado.
    * @param {object} catalog Catálogo vigente.
    * @returns {Promise<object>} Referencia lista para revisar o confirmar.
    */
-  async function prepare(access, command, catalog) {
-    const responsible = requireResponsible(access);
-    assertResponsibleLocked(command, responsible);
-    const referenceDate = requireReferenceDate(command.referenceDate);
-    const consecutive = canonicalizeConsecutive(command.consecutive);
-    const scope = await resolveScope(access, {});
-    const context = await loadPersonContext(scope, command.personId, referenceDate);
-    assertConsecutiveMatchesPerson(consecutive, context.establishmentId);
-    const route = catalog.routes.get(command.attentionRouteCode);
-    const origin = catalog.origins.get(command.originCode);
+  async function PrepararReferencia(acceso, solicitud, catalog) {
+    const responsible = ExigirResponsable(acceso);
+    AfirmarResponsableFijo(solicitud, responsible);
+    const referenceDate = ExigirFechaReferencia(solicitud.referenceDate);
+    const consecutive = CanonizarConsecutivo(solicitud.consecutive);
+    const scope = await ResolverAmbito(acceso, {});
+    const context = await CargarContextoPersona(scope, solicitud.personId, referenceDate);
+    AfirmarConsecutivoDePersona(consecutive, context.establishmentId);
+    const route = catalog.routes.get(solicitud.attentionRouteCode);
+    const origin = catalog.origins.get(solicitud.originCode);
     if (!route) {
-      throw new ValidationError('La Vía de Atención no corresponde al catálogo vigente.');
+      throw new ErrorValidacion('La Vía de Atención no corresponde al catálogo vigente.');
     }
     if (!origin) {
-      throw new ValidationError('El origen no corresponde al catálogo vigente.');
+      throw new ErrorValidacion('El origen no corresponde al catálogo vigente.');
     }
-    if (command.captureOrigin === CAPTURE_ORIGIN.TEMPLATE && command.templateVersion !== TEMPLATE_VERSION) {
-      throw new ValidationError('La versión de la plantilla no es compatible.');
+    if (solicitud.captureOrigin === CAPTURE_ORIGIN.TEMPLATE && solicitud.templateVersion !== TEMPLATE_VERSION) {
+      throw new ErrorValidacion('La versión de la plantilla no es compatible.');
     }
-    const motives = normalizeMotives(command.motives, catalog.motives);
+    const motives = NormalizarMotivos(solicitud.motives, catalog.motives);
     let activeCase = false;
     try {
-      activeCase = await repository.personHasActiveCase(command.personId);
+      activeCase = await repository.PersonaTieneCasoActivo(solicitud.personId);
     } catch (error) {
-      rethrowPersistence(error);
+      RelanzarErrorPersistencia(error);
     }
     return {
-      personId: command.personId,
+      personId: solicitud.personId,
       referenceDate,
       consecutive,
       attentionRoute: route,
       origin,
       motives,
-      previousActions: narrative(command.previousActions, 'acciones previas'),
-      previousResults: narrative(command.previousResults, 'resultados previos'),
-      complementaryInformation: narrative(command.complementaryInformation, 'información complementaria'),
-      captureOrigin: command.captureOrigin,
-      templateVersion: command.captureOrigin === CAPTURE_ORIGIN.TEMPLATE ? command.templateVersion : null,
-      draftId: command.draftId || null,
+      previousActions: NarrarTexto(solicitud.previousActions, 'acciones previas'),
+      previousResults: NarrarTexto(solicitud.previousResults, 'resultados previos'),
+      complementaryInformation: NarrarTexto(solicitud.complementaryInformation, 'información complementaria'),
+      captureOrigin: solicitud.captureOrigin,
+      templateVersion: solicitud.captureOrigin === CAPTURE_ORIGIN.TEMPLATE ? solicitud.templateVersion : null,
+      draftId: solicitud.draftId || null,
       responsible,
-      auditRole: access.accessLevel,
-      identitySource: access.identitySource,
+      auditRole: acceso.accessLevel,
+      identitySource: acceso.identitySource,
       scope,
       context,
       activeCase
@@ -302,7 +302,7 @@ function createReferenceService(dependencies) {
    * @param {object} prepared Referencia preparada.
    * @returns {object} Revisión de solo lectura.
    */
-  function presentReview(prepared) {
+  function PresentarRevision(prepared) {
     return {
       person: {
         personId: prepared.personId,
@@ -321,7 +321,7 @@ function createReferenceService(dependencies) {
       services: prepared.context.servicesText,
       guardian: {
         name: prepared.context.guardianName,
-        relationship: prepared.context.guardianRelationship,
+        relationship: prepared.context.RelacionEncargado,
         relationshipStatus: prepared.context.guardianRelationshipStatus
       },
       contact: prepared.context.contact,
@@ -352,7 +352,7 @@ function createReferenceService(dependencies) {
    * @param {object|null} prepared Preparación, o null si todavía no cierra.
    * @returns {object[]} Etapas de datos.
    */
-  function stagesOf(prepared) {
+  function EtapasDePreparacion(prepared) {
     const ready = Boolean(prepared);
     return [
       { code: 'PERSON', complete: ready },
@@ -369,8 +369,8 @@ function createReferenceService(dependencies) {
    * No incluye datos de una persona ni reserva un consecutivo.
    * Requisito: HU-014.
    */
-  async function downloadTemplate(access) {
-    ExigirCapacidad(access, CAPABILITY.REFERRAL_IMPORT);
+  async function DescargarPlantilla(acceso) {
+    ExigirCapacidad(acceso, CAPABILITY.REFERRAL_IMPORT);
     return {
       contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       fileName: 'referencia-plantilla.xlsx',
@@ -384,10 +384,10 @@ function createReferenceService(dependencies) {
    * Si la validación de negocio falla, el archivo no queda registrado
    * y se devuelven los problemas encontrados.
    */
-  async function preloadTemplate(access, buffer) {
-    ExigirCapacidad(access, CAPABILITY.REFERRAL_IMPORT);
+  async function PrecargarPlantilla(acceso, buffer) {
+    ExigirCapacidad(acceso, CAPABILITY.REFERRAL_IMPORT);
     const parsed = await LeerLibroPlantilla(buffer);
-    const command = {
+    const solicitud = {
       ...parsed.referral,
       responsibleProvided: false,
       responsible: null,
@@ -395,7 +395,7 @@ function createReferenceService(dependencies) {
     };
     let validation = null;
     try {
-      validation = await validateReferral(access, command);
+      validation = await ValidarReferencia(acceso, solicitud);
     } catch (error) {
       if (error && error.expose === true) {
         return {
@@ -429,13 +429,13 @@ function createReferenceService(dependencies) {
    * Publica el catálogo vigente de vías, orígenes y motivos.
    * Los factores de riesgo no están confirmados: se informan vacíos, sin inventar códigos.
    */
-  async function listCatalogs(access) {
-    ExigirCapacidad(access, CAPABILITY.REFERRAL_CREATE);
-    const catalog = await loadCatalog();
+  async function ListarCatalogos(acceso) {
+    ExigirCapacidad(acceso, CAPABILITY.REFERRAL_CREATE);
+    const catalog = await CargarCatalogo();
     const motives = [...catalog.motives.values()].map((item) => ({
       ...item,
-      category: motiveCategory(item.code),
-      categoryLabel: CATEGORY_LABEL[motiveCategory(item.code)]
+      category: CategoriaDeMotivo(item.code),
+      categoryLabel: CATEGORY_LABEL[CategoriaDeMotivo(item.code)]
     }));
     return {
       attentionRoutes: [...catalog.routes.values()],
@@ -452,22 +452,22 @@ function createReferenceService(dependencies) {
   /**
    * Valida la referencia y devuelve la revisión. No reserva consecutivo ni envía.
    *
-   * @param {object} access Contexto interno.
-   * @param {object} command DTO.
+   * @param {object} acceso Contexto interno.
+   * @param {object} solicitud DTO.
    * @returns {Promise<object>} Resultado de validación.
    */
-  async function validateReferral(access, command) {
-    ExigirCapacidad(access, CAPABILITY.REFERRAL_CREATE);
-    const catalog = await loadCatalog();
-    const prepared = await prepare(access, command, catalog);
+  async function ValidarReferencia(acceso, solicitud) {
+    ExigirCapacidad(acceso, CAPABILITY.REFERRAL_CREATE);
+    const catalog = await CargarCatalogo();
+    const prepared = await PrepararReferencia(acceso, solicitud, catalog);
     return {
       valid: !prepared.activeCase,
       submitted: false,
       consecutiveReserved: false,
       activeCaseBlocked: prepared.activeCase,
       message: prepared.activeCase ? ACTIVE_CASE_MESSAGE : null,
-      stages: stagesOf(prepared),
-      review: presentReview(prepared)
+      stages: EtapasDePreparacion(prepared),
+      review: PresentarRevision(prepared)
     };
   }
 
@@ -476,34 +476,34 @@ function createReferenceService(dependencies) {
    *
    * Requisitos: HU-013 y HU-014 CA-07 y CA-08.
    *
-   * @param {object} access Contexto interno.
-   * @param {object} command DTO.
+   * @param {object} acceso Contexto interno.
+   * @param {object} solicitud DTO.
    * @returns {Promise<object>} Referencia enviada y comprobante.
-   * @throws {ConflictError} Cuando hay caso activo o consecutivo duplicado.
+   * @throws {ErrorConflicto} Cuando hay caso activo o consecutivo duplicado.
    */
-  async function submitReferral(access, command) {
-    ExigirCapacidad(access, CAPABILITY.REFERRAL_CREATE);
-    const catalog = await loadCatalog();
-    const prepared = await prepare(access, command, catalog);
+  async function EnviarReferencia(acceso, solicitud) {
+    ExigirCapacidad(acceso, CAPABILITY.REFERRAL_CREATE);
+    const catalog = await CargarCatalogo();
+    const prepared = await PrepararReferencia(acceso, solicitud, catalog);
     if (prepared.activeCase) {
-      throw new ConflictError(ACTIVE_CASE_MESSAGE);
+      throw new ErrorConflicto(ACTIVE_CASE_MESSAGE);
     }
     const record = {
       ...prepared,
-      scopeText: scopeText(prepared.context, prepared.identitySource)
+      TextoDeAmbito: TextoDeAmbito(prepared.context, prepared.identitySource)
     };
     let attempt = 0;
     let saved = null;
     while (attempt < MAX_ATTEMPTS) {
       try {
-        saved = await repository.insertSubmitted(record);
+        saved = await repository.InsertarEnviada(record);
         break;
       } catch (error) {
         attempt += 1;
         if (error && error.code === 'DEADLOCK' && attempt < MAX_ATTEMPTS) {
           continue;
         }
-        rethrowPersistence(error);
+        RelanzarErrorPersistencia(error);
       }
     }
     return {
@@ -511,10 +511,10 @@ function createReferenceService(dependencies) {
       status: REFERENCE_STATUS.PENDING_REVIEW,
       statusLabel: STATUS_LABEL.PENDIENTE_REVISION,
       consecutive: prepared.consecutive,
-      sentAt: serverTimestamp(saved.sentAt),
+      sentAt: MarcaTiempoServidor(saved.sentAt),
       responsible: prepared.responsible,
       submitted: true,
-      review: presentReview(prepared)
+      review: PresentarRevision(prepared)
     };
   }
 
@@ -526,8 +526,8 @@ function createReferenceService(dependencies) {
    * @param {string} name Texto de nombre.
    * @returns {Promise<string[]>} Identificadores coincidentes.
    */
-  async function personIdsByName(scope, name) {
-    const result = await adapter.searchPersons({
+  async function IdentificadoresPorNombre(scope, name) {
+    const result = await adapter.BuscarPersonas({
       mode: 'name',
       periodId,
       text: name,
@@ -536,7 +536,7 @@ function createReferenceService(dependencies) {
       pageSize: NAME_MATCH_LIMIT
     });
     if (result.total > NAME_MATCH_LIMIT) {
-      throw new ValidationError('La búsqueda por nombre es demasiado amplia. Precise el criterio.');
+      throw new ErrorValidacion('La búsqueda por nombre es demasiado amplia. Precise el criterio.');
     }
     return result.items.map((row) => row.person_id);
   }
@@ -549,14 +549,14 @@ function createReferenceService(dependencies) {
    * @param {object[]} items Filas del listado.
    * @returns {Promise<Map<string, object>>} Nombre y sexo actuales por identificador.
    */
-  async function currentIdentities(scope, items) {
+  async function IdentidadesVigentes(scope, items) {
     const identities = new Map();
     const personIds = [...new Set(items.map((item) => item.per_id_persona))];
     await Promise.all(personIds.map(async (personId) => {
-      const rows = await adapter.findPersonInScope({ periodId, personId, scope });
+      const rows = await adapter.BuscarPersonaEnAmbito({ periodId, personId, scope });
       if (rows.length === 1 && Number(rows[0].location_count) === 1) {
         identities.set(personId, {
-          fullName: fullName(rows[0]),
+          fullName: NombreCompleto(rows[0]),
           sex: rows[0].sex_name || null
         });
       }
@@ -569,15 +569,15 @@ function createReferenceService(dependencies) {
    *
    * Requisitos: HU-015 y la consulta de Oficina Local de CU-06.
    *
-   * @param {object} access Contexto interno.
+   * @param {object} acceso Contexto interno.
    * @param {object} criteria Filtros de consulta.
    * @returns {Promise<object>} Página y conteo.
    */
-  async function listReferences(access, criteria) {
-    ExigirCapacidad(access, CAPABILITY.REFERRAL_READ);
+  async function ListarReferencias(acceso, criteria) {
+    ExigirCapacidad(acceso, CAPABILITY.REFERRAL_READ);
     if (criteria.categoryHasNoConfirmedCodes) {
       return {
-        query: presentQuery(criteria),
+        query: PresentarConsulta(criteria),
         result: {
           total: 0,
           returned: 0,
@@ -585,46 +585,46 @@ function createReferenceService(dependencies) {
         }
       };
     }
-    const scope = await resolveScope(access, { establishmentId: criteria.establishmentId });
+    const scope = await ResolverAmbito(acceso, { establishmentId: criteria.establishmentId });
     let personIds;
     if (criteria.name) {
-      personIds = await personIdsByName(scope, criteria.name);
+      personIds = await IdentificadoresPorNombre(scope, criteria.name);
       if (personIds.length === 0) {
-        return emptyPage(criteria);
+        return PaginaVacia(criteria);
       }
     }
     let page;
     try {
-      page = await repository.listReferences({
+      page = await repository.ListarReferencias({
         ...criteria,
         scope,
         personIds
       });
     } catch (error) {
-      rethrowPersistence(error);
+      RelanzarErrorPersistencia(error);
     }
-    const identities = await currentIdentities(scope, page.items);
+    const identities = await IdentidadesVigentes(scope, page.items);
     return {
-      query: presentQuery(criteria),
+      query: PresentarConsulta(criteria),
       result: {
         total: page.total,
         returned: page.items.length,
         items: page.items.map((item) => {
-          const identity = identities.get(item.per_id_persona);
+          const identidad = identities.get(item.per_id_persona);
           return {
             referenceId: Number(item.referencia_id),
             consecutive: item.consecutivo,
             person: {
               personId: item.per_id_persona,
-              fullName: identity ? identity.fullName : null,
-              nameSource: identity ? 'CURRENT_INSTITUTIONAL' : 'UNAVAILABLE'
+              fullName: identidad ? identidad.fullName : null,
+              nameSource: identidad ? 'CURRENT_INSTITUTIONAL' : 'UNAVAILABLE'
             },
             establishment: {
               id: Number(item.establecimiento_id),
               name: item.establecimiento_nombre
             },
             responsible: item.responsable_usuario,
-            sentAt: serverTimestamp(item.enviada_en),
+            sentAt: MarcaTiempoServidor(item.enviada_en),
             status: item.estado,
             statusLabel: STATUS_LABEL[item.estado] || item.estado,
             attentionRoute: {
@@ -643,7 +643,7 @@ function createReferenceService(dependencies) {
    * @param {object} criteria Criterios de entrada.
    * @returns {object} Eco de la consulta.
    */
-  function presentQuery(criteria) {
+  function PresentarConsulta(criteria) {
     return {
       page: criteria.page,
       pageSize: criteria.pageSize,
@@ -664,9 +664,9 @@ function createReferenceService(dependencies) {
    * @param {object} criteria Criterios de entrada.
    * @returns {object} Página sin filas.
    */
-  function emptyPage(criteria) {
+  function PaginaVacia(criteria) {
     return {
-      query: presentQuery(criteria),
+      query: PresentarConsulta(criteria),
       result: { total: 0, returned: 0, items: [] }
     };
   }
@@ -676,25 +676,25 @@ function createReferenceService(dependencies) {
    *
    * @param {object} header Fila histórica.
    * @param {object[]} motives Motivos guardados.
-   * @param {object|null} identity Lectura institucional actual, si sigue en el ámbito.
+   * @param {object|null} identidad Lectura institucional actual, si sigue en el ámbito.
    * @returns {object} Detalle autorizado.
    */
-  function presentDetail(header, motives, identity) {
+  function PresentarDetalle(header, motives, identidad) {
     return {
       referenceId: Number(header.referencia_id),
       consecutive: header.consecutivo,
       referenceDate: String(header.fecha_referencia).slice(0, 10),
-      sentAt: serverTimestamp(header.enviada_en),
+      sentAt: MarcaTiempoServidor(header.enviada_en),
       status: header.estado,
       statusLabel: STATUS_LABEL[header.estado] || header.estado,
       attentionRoute: { code: header.via_codigo, label: header.via_etiqueta },
       origin: { code: header.origen_codigo, label: header.origen_etiqueta },
       person: {
         personId: header.per_id_persona,
-        fullName: identity ? identity.fullName : null,
-        sex: identity ? identity.sex : null,
-        nameSource: identity ? 'CURRENT_INSTITUTIONAL' : 'UNAVAILABLE',
-        sexSource: identity ? 'CURRENT_INSTITUTIONAL' : 'UNAVAILABLE'
+        fullName: identidad ? identidad.fullName : null,
+        sex: identidad ? identidad.sex : null,
+        nameSource: identidad ? 'CURRENT_INSTITUTIONAL' : 'UNAVAILABLE',
+        sexSource: identidad ? 'CURRENT_INSTITUTIONAL' : 'UNAVAILABLE'
       },
       historicalContext: {
         birthDate: header.fecha_nacimiento_informada,
@@ -707,14 +707,14 @@ function createReferenceService(dependencies) {
         localOfficeId: Number(header.oficina_local_id),
         regionId: Number(header.region_id),
         guardianName: header.encargado_nombre,
-        guardianRelationship: header.relacion_encargado,
+        RelacionEncargado: header.relacion_encargado,
         contact: header.contacto,
         address: header.direccion
       },
       motives: motives.map((motive) => ({
         code: motive.codigo,
         label: motive.etiqueta,
-        category: motiveCategory(motive.codigo),
+        category: CategoriaDeMotivo(motive.codigo),
         specification: motive.especificacion
       })),
       previousActions: header.acciones_previas,
@@ -732,27 +732,27 @@ function createReferenceService(dependencies) {
    *
    * Requisitos: HU-016 y RF-033.
    *
-   * @param {object} access Contexto interno.
+   * @param {object} acceso Contexto interno.
    * @param {number} referenceId Identificador técnico.
    * @returns {Promise<object>} Detalle.
-   * @throws {NotFoundError} Cuando no está en el ámbito o no existe.
+   * @throws {ErrorNoEncontrado} Cuando no está en el ámbito o no existe.
    */
-  async function getReference(access, referenceId) {
-    ExigirCapacidad(access, CAPABILITY.REFERRAL_READ_DETAIL);
-    const scope = await resolveScope(access, {});
+  async function ObtenerReferencia(acceso, referenceId) {
+    ExigirCapacidad(acceso, CAPABILITY.REFERRAL_READ_DETAIL);
+    const scope = await ResolverAmbito(acceso, {});
     let header;
     let motives;
     try {
-      header = await repository.findReference(referenceId, scope);
-      motives = header ? await repository.listMotives(referenceId, scope) : [];
+      header = await repository.BuscarReferencia(referenceId, scope);
+      motives = header ? await repository.ListarMotivos(referenceId, scope) : [];
     } catch (error) {
-      rethrowPersistence(error);
+      RelanzarErrorPersistencia(error);
     }
     if (!header) {
-      throw new NotFoundError(REFERENCE_NOT_FOUND_MESSAGE);
+      throw new ErrorNoEncontrado(REFERENCE_NOT_FOUND_MESSAGE);
     }
-    const identities = await currentIdentities(scope, [header]);
-    return presentDetail(header, motives, identities.get(header.per_id_persona) || null);
+    const identities = await IdentidadesVigentes(scope, [header]);
+    return PresentarDetalle(header, motives, identities.get(header.per_id_persona) || null);
   }
 
   /**
@@ -760,36 +760,36 @@ function createReferenceService(dependencies) {
    *
    * Requisitos: HU-017 CA-08 y CA-09; RF-035.
    *
-   * @param {object} access Contexto interno.
+   * @param {object} acceso Contexto interno.
    * @param {number} referenceId Identificador técnico.
    * @returns {Promise<{contentType: string, fileName: string, body: string, generatedAt: string}>} Documento.
    */
-  async function printReference(access, referenceId) {
-    ExigirCapacidad(access, CAPABILITY.REFERRAL_PRINT);
-    const detail = await getReference(access, referenceId);
-    const responsible = requireResponsible(access);
+  async function ImprimirReferencia(acceso, referenceId) {
+    ExigirCapacidad(acceso, CAPABILITY.REFERRAL_PRINT);
+    const detail = await ObtenerReferencia(acceso, referenceId);
+    const responsible = ExigirResponsable(acceso);
     let printed;
     try {
-      printed = await repository.recordPrint({
+      printed = await repository.RegistrarImpresion({
         referenceId,
         responsible,
-        auditRole: access.accessLevel,
-        scopeText: scopeText(detail.historicalContext, access.identitySource)
+        auditRole: acceso.accessLevel,
+        TextoDeAmbito: TextoDeAmbito(detail.historicalContext, acceso.identitySource)
       });
     } catch (error) {
-      rethrowPersistence(error);
+      RelanzarErrorPersistencia(error);
     }
-    const generatedAt = serverTimestamp(printed.generatedAt);
-    const after = await getReference(access, referenceId);
+    const generatedAt = MarcaTiempoServidor(printed.generatedAt);
+    const after = await ObtenerReferencia(acceso, referenceId);
     if (after.sentAt !== detail.sentAt || after.consecutive !== detail.consecutive) {
-      throw new InfrastructureError('La generación documental no pudo conservar el comprobante de envío.');
+      throw new ErrorInfraestructura('La generación documental no pudo conservar el comprobante de envío.');
     }
     return {
       contentType: 'text/html; charset=utf-8',
       fileName: `referencia-${detail.referenceId}.html`,
       generatedAt,
       sentAt: detail.sentAt,
-      body: renderReferenceDocument(detail, generatedAt)
+      body: GenerarDocumentoReferencia(detail, generatedAt)
     };
   }
 
@@ -799,7 +799,7 @@ function createReferenceService(dependencies) {
    * @param {object} content Contenido recibido.
    * @returns {object} Contenido de captura, sin datos de envío.
    */
-  function draftContent(content) {
+  function ContenidoBorrador(content) {
     const copy = { ...content };
     for (const field of [
       'responsible',
@@ -821,63 +821,63 @@ function createReferenceService(dependencies) {
    *
    * Requisito: RF-098, limitado al autor. La visibilidad para otra persona de la misma oficina sigue NEEDS_VALIDATION.
    *
-   * @param {object} access Contexto interno.
-   * @param {object} command Borrador.
+   * @param {object} acceso Contexto interno.
+   * @param {object} solicitud Borrador.
    * @returns {Promise<object>} Borrador guardado.
    */
-  async function saveDraft(access, command) {
-    ExigirCapacidad(access, CAPABILITY.REFERRAL_CREATE);
-    const responsible = requireResponsible(access);
-    const content = draftContent(command.content);
+  async function GuardarBorrador(acceso, solicitud) {
+    ExigirCapacidad(acceso, CAPABILITY.REFERRAL_CREATE);
+    const responsible = ExigirResponsable(acceso);
+    const content = ContenidoBorrador(solicitud.content);
     const serialized = JSON.stringify({
       kind: 'REFERENCE_DRAFT',
       submitted: false,
       content
     });
     if (serialized.length > MAX_DRAFT_JSON_LENGTH) {
-      throw new ValidationError('El borrador supera el tamaño permitido.');
+      throw new ErrorValidacion('El borrador supera el tamaño permitido.');
     }
-    const scope = await resolveScope(access, {});
+    const scope = await ResolverAmbito(acceso, {});
     const establishmentId = Array.isArray(scope.establishmentIds) && scope.establishmentIds.length === 1
       ? scope.establishmentIds[0]
       : null;
     try {
-      const saved = await repository.saveDraft({
-        draftId: command.draftId,
-        personId: command.personId,
+      const saved = await repository.GuardarBorrador({
+        draftId: solicitud.draftId,
+        personId: solicitud.personId,
         responsible,
-        accessLevel: access.accessLevel,
+        accessLevel: acceso.accessLevel,
         localOfficeId: scope.localOfficeId,
         establishmentId,
         content: serialized
       });
       return {
         draftId: saved.draftId,
-        updatedAt: serverTimestamp(saved.updatedAt),
+        updatedAt: MarcaTiempoServidor(saved.updatedAt),
         submitted: false,
         status: null,
         sentAt: null,
         content
       };
     } catch (error) {
-      rethrowPersistence(error);
+      RelanzarErrorPersistencia(error);
     }
   }
 
   /**
    * Recupera los borradores del autor.
    *
-   * @param {object} access Contexto interno.
+   * @param {object} acceso Contexto interno.
    * @returns {Promise<object>} Lista de borradores no enviados.
    */
-  async function listDrafts(access) {
-    ExigirCapacidad(access, CAPABILITY.REFERRAL_CREATE);
-    const responsible = requireResponsible(access);
+  async function ListarBorradores(acceso) {
+    ExigirCapacidad(acceso, CAPABILITY.REFERRAL_CREATE);
+    const responsible = ExigirResponsable(acceso);
     let rows;
     try {
-      rows = await repository.listDrafts(responsible);
+      rows = await repository.ListarBorradores(responsible);
     } catch (error) {
-      rethrowPersistence(error);
+      RelanzarErrorPersistencia(error);
     }
     return {
       items: rows.map((row) => {
@@ -891,7 +891,7 @@ function createReferenceService(dependencies) {
         return {
           draftId: Number(row.borrador_id),
           personId: row.clave_negocio,
-          updatedAt: serverTimestamp(row.actualizado_en),
+          updatedAt: MarcaTiempoServidor(row.actualizado_en),
           submitted: false,
           status: null,
           sentAt: null,
@@ -904,40 +904,40 @@ function createReferenceService(dependencies) {
   /**
    * Elimina un borrador del autor.
    *
-   * @param {object} access Contexto interno.
+   * @param {object} acceso Contexto interno.
    * @param {number} draftId Identificador.
    * @returns {Promise<void>} Nada cuando la eliminación ocurrió.
-   * @throws {NotFoundError} Cuando el borrador no es del autor.
+   * @throws {ErrorNoEncontrado} Cuando el borrador no es del autor.
    */
-  async function deleteDraft(access, draftId) {
-    ExigirCapacidad(access, CAPABILITY.REFERRAL_CREATE);
-    const responsible = requireResponsible(access);
+  async function EliminarBorrador(acceso, draftId) {
+    ExigirCapacidad(acceso, CAPABILITY.REFERRAL_CREATE);
+    const responsible = ExigirResponsable(acceso);
     let removed = false;
     try {
-      removed = await repository.deleteDraft(draftId, responsible);
+      removed = await repository.EliminarBorrador(draftId, responsible);
     } catch (error) {
-      rethrowPersistence(error);
+      RelanzarErrorPersistencia(error);
     }
     if (!removed) {
-      throw new NotFoundError('El borrador solicitado no existe.');
+      throw new ErrorNoEncontrado('El borrador solicitado no existe.');
     }
   }
 
   return {
-    listCatalogs,
-    downloadTemplate,
-    preloadTemplate,
-    validateReferral,
-    submitReferral,
-    listReferences,
-    getReference,
-    printReference,
-    saveDraft,
-    listDrafts,
-    deleteDraft
+    ListarCatalogos,
+    DescargarPlantilla,
+    PrecargarPlantilla,
+    ValidarReferencia,
+    EnviarReferencia,
+    ListarReferencias,
+    ObtenerReferencia,
+    ImprimirReferencia,
+    GuardarBorrador,
+    ListarBorradores,
+    EliminarBorrador
   };
 }
 
 module.exports = {
-  createReferenceService
+  CrearServicioReferencias
 };

@@ -1,18 +1,18 @@
 'use strict';
 
-const { createUserContext } = require('../src/infrastructure/auth/user-context');
-const { findDevelopmentPrincipal } = require('../src/infrastructure/auth/development-access');
-const { ConflictError, NotFoundError, ValidationError } = require('../src/common/errors');
-const { createReferenceService } = require('../src/modules/references/reference-service');
-const { createReferenceRepository } = require('../src/modules/references/reference-repository');
+const { CrearContextoUsuario } = require('../src/infrastructure/auth/user-context');
+const { BuscarPrincipalDesarrollo } = require('../src/infrastructure/auth/development-access');
+const { ErrorConflicto, ErrorNoEncontrado, ErrorValidacion } = require('../src/common/errors');
+const { CrearServicioReferencias } = require('../src/modules/references/reference-service');
+const { CrearRepositorioReferencias } = require('../src/modules/references/reference-repository');
 const { GenerarLibroPlantilla, LeerLibroPlantilla } = require('../src/modules/references/reference-template');
 const { ACTIVE_CASE_MESSAGE } = require('../src/modules/references/reference-constants');
 
-function access(principalId) {
-  return createUserContext(findDevelopmentPrincipal(principalId));
+function AccesoDePrueba(principalId) {
+  return CrearContextoUsuario(BuscarPrincipalDesarrollo(principalId));
 }
 
-function catalogRows() {
+function FilasDeCatalogo() {
   return [
     ['VIA_ATENCION', 1, 'URGENCIA', 'Urgencia'],
     ['VIA_ATENCION', 2, 'NO_INMEDIATA', 'No inmediata'],
@@ -34,7 +34,7 @@ function catalogRows() {
   }));
 }
 
-function personRow(overrides = {}) {
+function FilaDePersona(overrides = {}) {
   return {
     person_id: 'SYN-1100102-09',
     given_name: 'Ana',
@@ -56,7 +56,7 @@ function personRow(overrides = {}) {
   };
 }
 
-function command(overrides = {}) {
+function SolicitudDePrueba(overrides = {}) {
   return {
     personId: 'SYN-1100102-09',
     referenceDate: '2026-11-06',
@@ -79,16 +79,16 @@ function command(overrides = {}) {
   };
 }
 
-function createHarness(options = {}) {
+function CrearMontaje(options = {}) {
   const state = {
     activeCase: options.activeCase || false,
     inserts: [],
     drafts: []
   };
   const repository = {
-    listCatalog: jest.fn(async () => catalogRows()),
-    personHasActiveCase: jest.fn(async () => state.activeCase),
-    insertSubmitted: jest.fn(async (record) => {
+    ListarCatalogo: jest.fn(async () => FilasDeCatalogo()),
+    PersonaTieneCasoActivo: jest.fn(async () => state.activeCase),
+    InsertarEnviada: jest.fn(async (record) => {
       if (options.failTimes && state.inserts.length < options.failTimes) {
         state.inserts.push(record);
         const error = new Error('interbloqueo');
@@ -103,32 +103,32 @@ function createHarness(options = {}) {
       state.inserts.push(record);
       return { referenceId: 77, sentAt: '2026-11-06 18:04:00' };
     }),
-    listReferences: jest.fn(async () => options.page || { total: 0, items: [] }),
-    findReference: jest.fn(async () => options.header || null),
-    listMotives: jest.fn(async () => options.motives || []),
-    recordPrint: jest.fn(async () => ({ generatedAt: '2026-11-06 19:10:00' })),
-    saveDraft: jest.fn(async (draft) => {
+    ListarReferencias: jest.fn(async () => options.page || { total: 0, items: [] }),
+    BuscarReferencia: jest.fn(async () => options.header || null),
+    ListarMotivos: jest.fn(async () => options.motives || []),
+    RegistrarImpresion: jest.fn(async () => ({ generatedAt: '2026-11-06 19:10:00' })),
+    GuardarBorrador: jest.fn(async (draft) => {
       state.drafts.push(draft);
       return { draftId: draft.draftId || 4, updatedAt: '2026-11-06 18:00:00' };
     }),
-    listDrafts: jest.fn(async () => []),
-    deleteDraft: jest.fn(async () => true)
+    ListarBorradores: jest.fn(async () => []),
+    EliminarBorrador: jest.fn(async () => true)
   };
-  const people = new Map([[personRow().person_id, personRow()]]);
+  const people = new Map([[FilaDePersona().person_id, FilaDePersona()]]);
   const adapter = {
-    findEstablishment: jest.fn(async (id) => (
+    BuscarEstablecimiento: jest.fn(async (id) => (
       id === 1100102 ? { establishmentId: 1100102, localOfficeId: 101, regionId: 1 } : null
     )),
-    findLocalOffice: jest.fn(async (id) => (
+    BuscarOficinaLocal: jest.fn(async (id) => (
       id === 101 ? { localOfficeId: 101, regionId: 1, name: 'Hatillo' } : null
     )),
-    findRegion: jest.fn(async () => ({ regionId: 1, name: 'Central Sur' })),
-    findPersonInScope: jest.fn(async ({ personId }) => {
+    BuscarRegion: jest.fn(async () => ({ regionId: 1, name: 'Central Sur' })),
+    BuscarPersonaEnAmbito: jest.fn(async ({ personId }) => {
       const row = people.get(personId);
       return row ? [row] : [];
     }),
-    listServices: jest.fn(async () => [{ service_name: 'Cuido diario' }]),
-    listGuardianRows: jest.fn(async () => [{
+    ListarServicios: jest.fn(async () => [{ service_name: 'Cuido diario' }]),
+    ListarFilasEncargado: jest.fn(async () => [{
       person_id: 'SYN-ENC-01',
       given_name: 'Luis',
       first_surname: 'Solis',
@@ -137,9 +137,9 @@ function createHarness(options = {}) {
       father_id: null,
       guardian_id: 'SYN-ENC-01'
     }]),
-    searchPersons: jest.fn(async () => ({ total: 1, items: [personRow()] }))
+    BuscarPersonas: jest.fn(async () => ({ total: 1, items: [FilaDePersona()] }))
   };
-  const service = createReferenceService({
+  const service = CrearServicioReferencias({
     periodId: 2026,
     adapter,
     repository,
@@ -148,10 +148,38 @@ function createHarness(options = {}) {
   return { service, repository, adapter, state, people };
 }
 
+function CrearZipConTamanoDeclarado(tamanoDescomprimido) {
+  const nombre = Buffer.from('xl/workbook.xml');
+  const datos = Buffer.from('<x/>');
+  const local = Buffer.alloc(30);
+  local.writeUInt32LE(0x04034b50, 0);
+  local.writeUInt16LE(20, 4);
+  local.writeUInt16LE(0, 8);
+  local.writeUInt32LE(datos.length, 18);
+  local.writeUInt32LE(tamanoDescomprimido, 22);
+  local.writeUInt16LE(nombre.length, 26);
+  const central = Buffer.alloc(46);
+  central.writeUInt32LE(0x02014b50, 0);
+  central.writeUInt16LE(20, 4);
+  central.writeUInt16LE(20, 6);
+  central.writeUInt32LE(datos.length, 20);
+  central.writeUInt32LE(tamanoDescomprimido, 24);
+  central.writeUInt16LE(nombre.length, 28);
+  central.writeUInt32LE(0, 42);
+  const inicioDirectorio = 30 + nombre.length + datos.length;
+  const cierre = Buffer.alloc(22);
+  cierre.writeUInt32LE(0x06054b50, 0);
+  cierre.writeUInt16LE(1, 8);
+  cierre.writeUInt16LE(1, 10);
+  cierre.writeUInt32LE(46 + nombre.length, 12);
+  cierre.writeUInt32LE(inicioDirectorio, 16);
+  return Buffer.concat([local, nombre, datos, central, nombre, cierre]);
+}
+
 describe('servicio de referencias', () => {
   test('envía una referencia manual con contexto histórico y responsable de la sesión', async () => {
-    const { service, repository, state } = createHarness();
-    const result = await service.submitReferral(access('dev-establecimiento-unico'), command());
+    const { service, repository, state } = CrearMontaje();
+    const result = await service.EnviarReferencia(AccesoDePrueba('dev-establecimiento-unico'), SolicitudDePrueba());
     expect(result.status).toBe('PENDIENTE_REVISION');
     expect(result.sentAt).toBe('2026-11-06T18:04:00Z');
     expect(result.responsible).toBe('dev-establecimiento-unico');
@@ -160,7 +188,7 @@ describe('servicio de referencias', () => {
     expect(saved.responsible).toBe('dev-establecimiento-unico');
     expect(saved.context.establishmentId).toBe(1100102);
     expect(saved.context.ageYears).toBe(6);
-    expect(saved.context.guardianRelationship).toBe('MADRE');
+    expect(saved.context.RelacionEncargado).toBe('MADRE');
     expect(saved.context.servicesText).toBe('Cuido diario');
     expect(saved.referenceDate).toBe('2026-11-06');
     expect(saved.previousActions).toBe('acciones previas');
@@ -176,75 +204,75 @@ describe('servicio de referencias', () => {
       'detalle de salud'
     ]);
     expect(saved.captureOrigin).toBe('MANUAL');
-    expect(repository.insertSubmitted).toHaveBeenCalledTimes(1);
+    expect(repository.InsertarEnviada).toHaveBeenCalledTimes(1);
   });
 
   test('rechaza un responsable distinto y no inserta', async () => {
-    const { service, repository } = createHarness();
-    await expect(service.submitReferral(access('dev-establecimiento-unico'), command({
+    const { service, repository } = CrearMontaje();
+    await expect(service.EnviarReferencia(AccesoDePrueba('dev-establecimiento-unico'), SolicitudDePrueba({
       responsibleProvided: true,
       responsible: 'otra-persona'
     }))).rejects.toThrow(/no puede sustituirse/);
-    expect(repository.insertSubmitted).not.toHaveBeenCalled();
+    expect(repository.InsertarEnviada).not.toHaveBeenCalled();
   });
 
   test('bloquea un caso activo sin revelar el expediente y permite casos no activos', async () => {
-    const blocked = createHarness({ activeCase: true });
-    await expect(blocked.service.submitReferral(access('dev-establecimiento-unico'), command()))
-      .rejects.toThrow(new ConflictError(ACTIVE_CASE_MESSAGE));
-    expect(blocked.repository.insertSubmitted).not.toHaveBeenCalled();
+    const blocked = CrearMontaje({ activeCase: true });
+    await expect(blocked.service.EnviarReferencia(AccesoDePrueba('dev-establecimiento-unico'), SolicitudDePrueba()))
+      .rejects.toThrow(new ErrorConflicto(ACTIVE_CASE_MESSAGE));
+    expect(blocked.repository.InsertarEnviada).not.toHaveBeenCalled();
     expect(ACTIVE_CASE_MESSAGE).not.toMatch(/caso_id|prioridad|establecimiento/i);
 
-    const closed = createHarness({ activeCase: false });
-    await expect(closed.service.submitReferral(access('dev-establecimiento-unico'), command())).resolves.toMatchObject({
+    const closed = CrearMontaje({ activeCase: false });
+    await expect(closed.service.EnviarReferencia(AccesoDePrueba('dev-establecimiento-unico'), SolicitudDePrueba())).resolves.toMatchObject({
       submitted: true
     });
   });
 
   test('acepta los orígenes de familia y de referencia externa', async () => {
     for (const originCode of ['INFORMACION_FAMILIA_U_OTROS', 'REFERENCIA_EXTERNA']) {
-      const harness = createHarness();
-      await harness.service.submitReferral(access('dev-establecimiento-unico'), command({ originCode }));
+      const harness = CrearMontaje();
+      await harness.service.EnviarReferencia(AccesoDePrueba('dev-establecimiento-unico'), SolicitudDePrueba({ originCode }));
       expect(harness.state.inserts[0].origin.code).toBe(originCode);
     }
   });
 
   test('una persona fuera del ámbito no se referencia', async () => {
-    const { service, repository } = createHarness();
-    await expect(service.submitReferral(access('dev-establecimiento-unico'), command({
+    const { service, repository } = CrearMontaje();
+    await expect(service.EnviarReferencia(AccesoDePrueba('dev-establecimiento-unico'), SolicitudDePrueba({
       personId: 'SYN-1190108-01'
-    }))).rejects.toBeInstanceOf(NotFoundError);
-    expect(repository.insertSubmitted).not.toHaveBeenCalled();
+    }))).rejects.toBeInstanceOf(ErrorNoEncontrado);
+    expect(repository.InsertarEnviada).not.toHaveBeenCalled();
   });
 
   test('reintenta un interbloqueo y no reintenta un consecutivo duplicado', async () => {
-    const deadlock = createHarness({ failTimes: 1 });
-    await expect(deadlock.service.submitReferral(access('dev-establecimiento-unico'), command())).resolves.toMatchObject({
+    const deadlock = CrearMontaje({ failTimes: 1 });
+    await expect(deadlock.service.EnviarReferencia(AccesoDePrueba('dev-establecimiento-unico'), SolicitudDePrueba())).resolves.toMatchObject({
       referenceId: 77
     });
-    expect(deadlock.repository.insertSubmitted).toHaveBeenCalledTimes(2);
+    expect(deadlock.repository.InsertarEnviada).toHaveBeenCalledTimes(2);
 
-    const duplicate = createHarness({ duplicateOnInsert: true });
-    await expect(duplicate.service.submitReferral(access('dev-establecimiento-unico'), command()))
+    const duplicate = CrearMontaje({ duplicateOnInsert: true });
+    await expect(duplicate.service.EnviarReferencia(AccesoDePrueba('dev-establecimiento-unico'), SolicitudDePrueba()))
       .rejects.toThrow(/ya está registrado/);
-    expect(duplicate.repository.insertSubmitted).toHaveBeenCalledTimes(1);
+    expect(duplicate.repository.InsertarEnviada).toHaveBeenCalledTimes(1);
   });
 
   test('un borrador de otra persona no se envía ni se reintenta', async () => {
-    const harness = createHarness();
+    const harness = CrearMontaje();
     const mismatch = new Error('borrador');
     mismatch.code = 'DRAFT_MISMATCH';
-    harness.repository.insertSubmitted.mockRejectedValue(mismatch);
-    await expect(harness.service.submitReferral(access('dev-establecimiento-unico'), command()))
+    harness.repository.InsertarEnviada.mockRejectedValue(mismatch);
+    await expect(harness.service.EnviarReferencia(AccesoDePrueba('dev-establecimiento-unico'), SolicitudDePrueba()))
       .rejects.toThrow(/no corresponde a la persona/);
-    expect(harness.repository.insertSubmitted).toHaveBeenCalledTimes(1);
+    expect(harness.repository.InsertarEnviada).toHaveBeenCalledTimes(1);
   });
 
   test('el envío solo elimina el borrador de la persona referida', async () => {
     let draftSql = '';
     const client = {
       query: async () => [],
-      withTransaction: async (work) => work({
+      EnTransaccion: async (work) => work({
         query: async (sqlText) => {
           if (sqlText.includes('THROW 52112')) {
             draftSql = sqlText;
@@ -256,8 +284,8 @@ describe('servicio de referencias', () => {
         }
       })
     };
-    const repository = createReferenceRepository(client);
-    await repository.insertSubmitted({
+    const repository = CrearRepositorioReferencias(client);
+    await repository.InsertarEnviada({
       personId: 'SYN-1100102-09',
       referenceDate: '2026-11-06',
       attentionRoute: { itemId: 1 },
@@ -271,13 +299,13 @@ describe('servicio de referencias', () => {
       consecutive: 'DNCC-DRCS-OL101-1100102-REF-015-2026',
       draftId: 8,
       auditRole: 'ESTABLECIMIENTO',
-      scopeText: 'E:1100102|OL:101|R:1|ID:SINTETICA',
+      TextoDeAmbito: 'E:1100102|OL:101|R:1|ID:SINTETICA',
       context: {
         establishmentId: 1100102,
         localOfficeId: 101,
         regionId: 1,
         guardianName: null,
-        guardianRelationship: null,
+        RelacionEncargado: null,
         contact: null,
         address: null,
         servicesText: null,
@@ -295,8 +323,8 @@ describe('servicio de referencias', () => {
   });
 
   test('la validación no envía y un borrador no recibe estado ni comprobante', async () => {
-    const { service, repository } = createHarness();
-    const preview = await service.validateReferral(access('dev-establecimiento-unico'), command());
+    const { service, repository } = CrearMontaje();
+    const preview = await service.ValidarReferencia(AccesoDePrueba('dev-establecimiento-unico'), SolicitudDePrueba());
     expect(preview.submitted).toBe(false);
     expect(preview.consecutiveReserved).toBe(false);
     expect(preview.review.responsible.editable).toBe(false);
@@ -326,9 +354,9 @@ describe('servicio de referencias', () => {
       'REVIEW'
     ]);
     expect(preview.stages.every((stage) => stage.complete)).toBe(true);
-    expect(repository.insertSubmitted).not.toHaveBeenCalled();
+    expect(repository.InsertarEnviada).not.toHaveBeenCalled();
 
-    const draft = await service.saveDraft(access('dev-establecimiento-unico'), {
+    const draft = await service.GuardarBorrador(AccesoDePrueba('dev-establecimiento-unico'), {
       draftId: null,
       personId: 'SYN-1100102-09',
       content: { consecutive: 'DNCC-DRCS-OL101-1100102-REF-015-2026', responsible: 'intruso', estado: 'PENDIENTE_REVISION' }
@@ -358,13 +386,13 @@ describe('servicio de referencias', () => {
     row.getCell(10).value = 'resultados';
     row.getCell(11).value = 'complemento';
     const filled = Buffer.from(await book.xlsx.writeBuffer());
-    const { service, repository } = createHarness();
-    const preload = await service.preloadTemplate(access('dev-establecimiento-unico'), filled);
+    const { service, repository } = CrearMontaje();
+    const preload = await service.PrecargarPlantilla(AccesoDePrueba('dev-establecimiento-unico'), filled);
     expect(preload.submitted).toBe(false);
     expect(preload.consecutiveReserved).toBe(false);
     expect(preload.referral.captureOrigin).toBe('PLANTILLA');
     expect(preload.referral.responsible).toBeUndefined();
-    expect(repository.insertSubmitted).not.toHaveBeenCalled();
+    expect(repository.InsertarEnviada).not.toHaveBeenCalled();
 
     const corrected = {
       ...preload.referral,
@@ -374,30 +402,30 @@ describe('servicio de referencias', () => {
       responsible: null,
       draftId: null
     };
-    const submitted = await service.submitReferral(access('dev-establecimiento-unico'), corrected);
+    const submitted = await service.EnviarReferencia(AccesoDePrueba('dev-establecimiento-unico'), corrected);
     expect(submitted.status).toBe('PENDIENTE_REVISION');
-    expect(repository.insertSubmitted).toHaveBeenCalledTimes(1);
-    expect(repository.insertSubmitted.mock.calls[0][0].captureOrigin).toBe('PLANTILLA');
-    expect(repository.insertSubmitted.mock.calls[0][0].previousActions).toBe('acciones corregidas');
-    expect(repository.insertSubmitted.mock.calls[0][0].origin.code).toBe('REFERENCIA_EXTERNA');
+    expect(repository.InsertarEnviada).toHaveBeenCalledTimes(1);
+    expect(repository.InsertarEnviada.mock.calls[0][0].captureOrigin).toBe('PLANTILLA');
+    expect(repository.InsertarEnviada.mock.calls[0][0].previousActions).toBe('acciones corregidas');
+    expect(repository.InsertarEnviada.mock.calls[0][0].origin.code).toBe('REFERENCIA_EXTERNA');
 
-    const file = await service.downloadTemplate(access('dev-establecimiento-unico'));
+    const file = await service.DescargarPlantilla(AccesoDePrueba('dev-establecimiento-unico'));
     expect(file.contentType).toContain('spreadsheetml.sheet');
     expect(file.fileName).toBe('referencia-plantilla.xlsx');
     const downloaded = await LeerLibroPlantilla(file.body);
     expect(downloaded.templateVersion).toBe('SIA-REF-PLANTILLA-1');
     expect(downloaded.referral.personId).toBe('');
 
-    const blocked = createHarness({ activeCase: true });
-    const rejected = await blocked.service.preloadTemplate(access('dev-establecimiento-unico'), filled);
+    const blocked = CrearMontaje({ activeCase: true });
+    const rejected = await blocked.service.PrecargarPlantilla(AccesoDePrueba('dev-establecimiento-unico'), filled);
     expect(rejected.submitted).toBe(false);
     expect(rejected.consecutiveReserved).toBe(false);
     expect(rejected.issues[0].message).toBe(ACTIVE_CASE_MESSAGE);
-    expect(blocked.repository.insertSubmitted).not.toHaveBeenCalled();
+    expect(blocked.repository.InsertarEnviada).not.toHaveBeenCalled();
   });
 
   test('rechaza plantilla dañada, versión ajena, fórmula y tamaño', async () => {
-    await expect(LeerLibroPlantilla(Buffer.from('no-es-xlsx'))).rejects.toThrow(ValidationError);
+    await expect(LeerLibroPlantilla(Buffer.from('no-es-xlsx'))).rejects.toThrow(ErrorValidacion);
     await expect(LeerLibroPlantilla(Buffer.concat([
       Buffer.from('PK'),
       Buffer.from('esto-no-es-un-libro-de-excel')
@@ -442,6 +470,33 @@ describe('servicio de referencias', () => {
     orphanRow.getCell(8).value = 'EDIN_II_RIESGO_RETRASO_ROJO=no seleccionada';
     const orphanFile = Buffer.from(await orphan.xlsx.writeBuffer());
     await expect(LeerLibroPlantilla(orphanFile)).rejects.toThrow(/no está seleccionado/);
+  });
+
+  test('rechaza hojas ajenas, fórmulas fuera de la fila y un ZIP inflado', async () => {
+    const ExcelJS = require('exceljs');
+    const libro = new ExcelJS.Workbook();
+    await libro.xlsx.load(await GenerarLibroPlantilla());
+    libro.addWorksheet('Oculta').getCell('A1').value = 'dato ajeno';
+    const conHoja = Buffer.from(await libro.xlsx.writeBuffer());
+    await expect(LeerLibroPlantilla(conHoja)).rejects.toThrow(/hojas que no pertenecen/);
+
+    const instrucciones = new ExcelJS.Workbook();
+    await instrucciones.xlsx.load(await GenerarLibroPlantilla());
+    instrucciones.getWorksheet('Instrucciones').getCell('A1').value = { formula: '1+1', result: 2 };
+    const conFormula = Buffer.from(await instrucciones.xlsx.writeBuffer());
+    await expect(LeerLibroPlantilla(conFormula)).rejects.toThrow(/fórmulas/);
+
+    const enlace = new ExcelJS.Workbook();
+    await enlace.xlsx.load(await GenerarLibroPlantilla());
+    enlace.getWorksheet('Instrucciones').getCell('B1').value = {
+      text: 'ayuda',
+      hyperlink: 'https://example.invalid/ayuda'
+    };
+    const conEnlace = Buffer.from(await enlace.xlsx.writeBuffer());
+    await expect(LeerLibroPlantilla(conEnlace)).rejects.toThrow(/enlaces/);
+
+    const inflado = CrearZipConTamanoDeclarado(8 * 1024 * 1024);
+    await expect(LeerLibroPlantilla(inflado)).rejects.toThrow(/descomprimirse/);
   });
 
   test.each([
@@ -490,7 +545,7 @@ describe('servicio de referencias', () => {
       edad_anios: 6,
       fecha_nacimiento_informada: '2020-01-15'
     };
-    const { service, repository, adapter } = createHarness({
+    const { service, repository, adapter } = CrearMontaje({
       header,
       motives: [{ codigo: 'CONDICION_MALNUTRICION', etiqueta: 'Condición de malnutrición', especificacion: 'detalle' }],
       page: {
@@ -509,7 +564,7 @@ describe('servicio de referencias', () => {
         }]
       }
     });
-    const page = await service.listReferences(access('dev-establecimiento-unico'), {
+    const page = await service.ListarReferencias(AccesoDePrueba('dev-establecimiento-unico'), {
       page: 1,
       pageSize: 20,
       name: null,
@@ -525,9 +580,9 @@ describe('servicio de referencias', () => {
     });
     expect(page.result.total).toBe(1);
     expect(page.result.items[0].establishment.name).toBe('Establecimiento histórico');
-    expect(repository.listReferences.mock.calls[0][0].scope.establishmentIds).toEqual([1100102]);
+    expect(repository.ListarReferencias.mock.calls[0][0].scope.establishmentIds).toEqual([1100102]);
 
-    await service.listReferences(access('dev-establecimiento-unico'), {
+    await service.ListarReferencias(AccesoDePrueba('dev-establecimiento-unico'), {
       page: 3,
       pageSize: 20,
       offset: 40,
@@ -542,8 +597,8 @@ describe('servicio de referencias', () => {
       categoryHasNoConfirmedCodes: false,
       establishmentId: null
     });
-    expect(adapter.searchPersons).toHaveBeenCalledWith(expect.objectContaining({ mode: 'name', text: 'Ana' }));
-    expect(repository.listReferences.mock.calls[1][0]).toMatchObject({
+    expect(adapter.BuscarPersonas).toHaveBeenCalledWith(expect.objectContaining({ mode: 'name', text: 'Ana' }));
+    expect(repository.ListarReferencias.mock.calls[1][0]).toMatchObject({
       offset: 40,
       pageSize: 20,
       identification: 'SYN-1100102-09',
@@ -555,7 +610,7 @@ describe('servicio de referencias', () => {
       personIds: ['SYN-1100102-09']
     });
 
-    const detail = await service.getReference(access('dev-establecimiento-unico'), 15);
+    const detail = await service.ObtenerReferencia(AccesoDePrueba('dev-establecimiento-unico'), 15);
     expect(detail.historicalContext.regionName).toBe('Región histórica');
     expect(detail.historicalContext.ageYears).toBe(6);
     expect(detail.referenceDate).toBe('2026-02-01');
@@ -568,14 +623,14 @@ describe('servicio de referencias', () => {
     expect(detail.responsible).toBe('dev-establecimiento-unico');
     expect(detail.sentBy).toBe('dev-establecimiento-unico');
 
-    repository.findReference.mockResolvedValueOnce(null);
-    await expect(service.getReference(access('dev-oficina-perez-zeledon'), 15)).rejects.toThrow('El recurso solicitado no existe.');
-    expect(repository.findReference.mock.calls.at(-1)[1]).toMatchObject({
+    repository.BuscarReferencia.mockResolvedValueOnce(null);
+    await expect(service.ObtenerReferencia(AccesoDePrueba('dev-oficina-perez-zeledon'), 15)).rejects.toThrow('El recurso solicitado no existe.');
+    expect(repository.BuscarReferencia.mock.calls.at(-1)[1]).toMatchObject({
       accessLevel: 'OFICINA_LOCAL',
       localOfficeId: 501,
       regionId: 5
     });
-    expect(adapter.findPersonInScope).toHaveBeenCalled();
+    expect(adapter.BuscarPersonaEnAmbito).toHaveBeenCalled();
   });
 
   test('imprime sin cambiar el comprobante de envío', async () => {
@@ -611,11 +666,11 @@ describe('servicio de referencias', () => {
       edad_anios: 6,
       fecha_nacimiento_informada: '2020-01-15'
     };
-    const { service, repository } = createHarness({
+    const { service, repository } = CrearMontaje({
       header,
       motives: [{ codigo: 'OTRA_CONDICION_SALUD', etiqueta: 'Otra condición de salud', especificacion: 'detalle de salud' }]
     });
-    const document = await service.printReference(access('dev-establecimiento-unico'), 15);
+    const document = await service.ImprimirReferencia(AccesoDePrueba('dev-establecimiento-unico'), 15);
     expect(document.generatedAt).toBe('2026-11-06T19:10:00Z');
     expect(document.sentAt).toBe('2026-02-01T08:00:00Z');
     expect(document.body).toContain('Región histórica');
@@ -634,25 +689,25 @@ describe('servicio de referencias', () => {
     expect(document.body).toContain('nota guardada');
     expect(document.body).toContain('2026-02-01T08:00:00Z');
     expect(document.body).toContain('2026-11-06T19:10:00Z');
-    expect(repository.recordPrint).toHaveBeenCalledTimes(1);
-    expect(repository.insertSubmitted).not.toHaveBeenCalled();
+    expect(repository.RegistrarImpresion).toHaveBeenCalledTimes(1);
+    expect(repository.InsertarEnviada).not.toHaveBeenCalled();
   });
 
   test('un rol sin capacidad no consulta ni crea', async () => {
-    const { service, repository } = createHarness();
-    await expect(service.listReferences(access('dev-region-central-sur'), {
+    const { service, repository } = CrearMontaje();
+    await expect(service.ListarReferencias(AccesoDePrueba('dev-region-central-sur'), {
       page: 1,
       pageSize: 20,
       categoryHasNoConfirmedCodes: false
     })).rejects.toThrow(/no está permitida/);
-    await expect(service.submitReferral(access('dev-sin-capacidades'), command())).rejects.toThrow(/no está permitida/);
-    expect(repository.listReferences).not.toHaveBeenCalled();
-    expect(repository.insertSubmitted).not.toHaveBeenCalled();
+    await expect(service.EnviarReferencia(AccesoDePrueba('dev-sin-capacidades'), SolicitudDePrueba())).rejects.toThrow(/no está permitida/);
+    expect(repository.ListarReferencias).not.toHaveBeenCalled();
+    expect(repository.InsertarEnviada).not.toHaveBeenCalled();
   });
 
   test('la categoría sin ítems confirmados no abre el ámbito', async () => {
-    const { service, repository } = createHarness();
-    const page = await service.listReferences(access('dev-oficina-hatillo'), {
+    const { service, repository } = CrearMontaje();
+    const page = await service.ListarReferencias(AccesoDePrueba('dev-oficina-hatillo'), {
       page: 1,
       pageSize: 20,
       name: null,
@@ -667,12 +722,12 @@ describe('servicio de referencias', () => {
       establishmentId: null
     });
     expect(page.result.total).toBe(0);
-    expect(repository.listReferences).not.toHaveBeenCalled();
+    expect(repository.ListarReferencias).not.toHaveBeenCalled();
   });
 
   test('publica crecimiento, desarrollo y salud, y deja factores de riesgo sin ítems', async () => {
-    const { service } = createHarness();
-    const catalogs = await service.listCatalogs(access('dev-establecimiento-unico'));
+    const { service } = CrearMontaje();
+    const catalogs = await service.ListarCatalogos(AccesoDePrueba('dev-establecimiento-unico'));
     expect(catalogs.motives.filter((item) => item.category === 'DESARROLLO').map((item) => item.code)).toEqual([
       'EDIN_II_RIESGO_RETRASO_ROJO',
       'EVADE_RIESGO_REZAGO_0_1'

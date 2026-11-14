@@ -1,8 +1,8 @@
 'use strict';
 
 const sql = require('mssql');
-const { InfrastructureError } = require('../../common/errors');
-const { SqlExecutionError } = require('../../infrastructure/database/sql-client');
+const { ErrorInfraestructura } = require('../../common/errors');
+const { ErrorEjecucionSql } = require('../../infrastructure/database/sql-client');
 const { ACCESS_LEVEL } = require('../../infrastructure/auth/institutional-roles');
 
 const ACTIVE_CASE_SQL_NUMBER = 52110;
@@ -14,7 +14,7 @@ const ACTIVE_CASE_SQL_NUMBER = 52110;
  * @param {unknown} value Valor ya validado.
  * @returns {{type: object, value: unknown}} Parámetro tipado.
  */
-function typed(type, value) {
+function TiparParametro(type, value) {
   return { type, value: value === undefined ? null : value };
 }
 
@@ -25,8 +25,8 @@ function typed(type, value) {
  * @param {Error} error Error de la transacción.
  * @returns {Error} Error con `code` de dominio o el error original si no es reconocible.
  */
-function toDomainError(error) {
-  const sqlNumber = error && (error.sqlNumber || (error instanceof SqlExecutionError ? error.sqlNumber : null));
+function ConvertirErrorDominio(error) {
+  const sqlNumber = error && (error.sqlNumber || (error instanceof ErrorEjecucionSql ? error.sqlNumber : null));
   const failure = new Error('La persistencia de la referencia no se completó.');
   failure.sqlNumber = sqlNumber;
   if (sqlNumber === ACTIVE_CASE_SQL_NUMBER) {
@@ -65,38 +65,38 @@ function toDomainError(error) {
  * @param {object} parameters Parámetros de la sentencia.
  * @param {string[]} clauses Cláusulas WHERE en construcción.
  * @returns {void}
- * @throws {InfrastructureError} Cuando el nivel no tiene una regla de referencias.
+ * @throws {ErrorInfraestructura} Cuando el nivel no tiene una regla de referencias.
  */
-function appendScope(scope, parameters, clauses) {
+function AgregarAmbito(scope, parameters, clauses) {
   if (!scope || scope.accessLevel === ACCESS_LEVEL.ESTABLISHMENT) {
     const ids = scope && scope.establishmentIds;
     if (!Array.isArray(ids) || ids.length === 0) {
-      throw new InfrastructureError('El ámbito de establecimientos no es utilizable.');
+      throw new ErrorInfraestructura('El ámbito de establecimientos no es utilizable.');
     }
     const names = ids.map((id, index) => {
       const name = `scopeEstablishment${index}`;
-      parameters[name] = typed(sql.Int, id);
+      parameters[name] = TiparParametro(sql.Int, id);
       return `@${name}`;
     });
     clauses.push(`ref.establecimiento_id IN (${names.join(', ')})`);
     return;
   }
   if (scope.accessLevel === ACCESS_LEVEL.LOCAL_OFFICE) {
-    parameters.scopeOffice = typed(sql.Int, scope.localOfficeId);
-    parameters.scopeRegion = typed(sql.Int, scope.regionId);
+    parameters.scopeOffice = TiparParametro(sql.Int, scope.localOfficeId);
+    parameters.scopeRegion = TiparParametro(sql.Int, scope.regionId);
     clauses.push('ref.oficina_local_id = @scopeOffice');
     clauses.push('ref.region_id = @scopeRegion');
     if (Array.isArray(scope.establishmentIds) && scope.establishmentIds.length > 0) {
       const names = scope.establishmentIds.map((id, index) => {
         const name = `scopeEstablishment${index}`;
-        parameters[name] = typed(sql.Int, id);
+        parameters[name] = TiparParametro(sql.Int, id);
         return `@${name}`;
       });
       clauses.push(`ref.establecimiento_id IN (${names.join(', ')})`);
     }
     return;
   }
-  throw new InfrastructureError('El nivel de acceso no tiene una consulta de referencias confirmada.');
+  throw new ErrorInfraestructura('El nivel de acceso no tiene una consulta de referencias confirmada.');
 }
 
 /**
@@ -105,7 +105,7 @@ function appendScope(scope, parameters, clauses) {
  * @param {string} value Texto de búsqueda.
  * @returns {string} Patrón contiene, con escape.
  */
-function containsLike(value) {
+function PatronContiene(value) {
   const escaped = value.toUpperCase().replace(/[\\%_[\]]/g, (character) => `\\${character}`);
   return `%${escaped}%`;
 }
@@ -119,46 +119,46 @@ function containsLike(value) {
  * @param {object} criteria Filtros, ámbito y página.
  * @returns {{listSql: string, countSql: string, parameters: object}} Sentencias parametrizadas.
  */
-function buildReferenceListQuery(criteria) {
+function ConstruirConsultaReferencias(criteria) {
   const parameters = {};
   const clauses = ['1 = 1'];
-  appendScope(criteria.scope, parameters, clauses);
+  AgregarAmbito(criteria.scope, parameters, clauses);
   if (Array.isArray(criteria.personIds)) {
     if (criteria.personIds.length === 0) {
       clauses.push('1 = 0');
     } else {
       const names = criteria.personIds.map((personId, index) => {
         const name = `personMatch${index}`;
-        parameters[name] = typed(sql.NVarChar(20), personId);
+        parameters[name] = TiparParametro(sql.NVarChar(20), personId);
         return `@${name}`;
       });
       clauses.push(`ref.per_id_persona IN (${names.join(', ')})`);
     }
   }
   if (criteria.identification) {
-    parameters.identification = typed(sql.NVarChar(20), criteria.identification);
+    parameters.identification = TiparParametro(sql.NVarChar(20), criteria.identification);
     clauses.push('ref.per_id_persona = @identification');
   }
   if (criteria.consecutive) {
-    parameters.consecutivePattern = typed(sql.NVarChar(80), containsLike(criteria.consecutive));
+    parameters.consecutivePattern = TiparParametro(sql.NVarChar(80), PatronContiene(criteria.consecutive));
     clauses.push("UPPER(ref.consecutivo) LIKE @consecutivePattern ESCAPE '\\'");
   }
   if (criteria.status) {
-    parameters.status = typed(sql.NVarChar(30), criteria.status);
+    parameters.status = TiparParametro(sql.NVarChar(30), criteria.status);
     clauses.push('ref.estado = @status');
   }
   if (criteria.attentionRoute) {
-    parameters.attentionRoute = typed(sql.NVarChar(80), criteria.attentionRoute);
+    parameters.attentionRoute = TiparParametro(sql.NVarChar(80), criteria.attentionRoute);
     clauses.push('via.codigo = @attentionRoute');
   }
   if (criteria.origin) {
-    parameters.origin = typed(sql.NVarChar(80), criteria.origin);
+    parameters.origin = TiparParametro(sql.NVarChar(80), criteria.origin);
     clauses.push('origin.codigo = @origin');
   }
   if (Array.isArray(criteria.motiveCodes) && criteria.motiveCodes.length > 0) {
     const names = criteria.motiveCodes.map((code, index) => {
       const name = `motiveCode${index}`;
-      parameters[name] = typed(sql.NVarChar(80), code);
+      parameters[name] = TiparParametro(sql.NVarChar(80), code);
       return `@${name}`;
     });
     clauses.push(`EXISTS (
@@ -171,8 +171,8 @@ function buildReferenceListQuery(criteria) {
         AND motive_item.codigo IN (${names.join(', ')})
     )`);
   }
-  parameters.rowOffset = typed(sql.Int, criteria.offset);
-  parameters.pageSize = typed(sql.Int, criteria.pageSize);
+  parameters.rowOffset = TiparParametro(sql.Int, criteria.offset);
+  parameters.pageSize = TiparParametro(sql.Int, criteria.pageSize);
   const whereSql = clauses.join('\n  AND ');
   const fromSql = `
 FROM dbo.ref_referencia AS ref
@@ -318,7 +318,7 @@ INSERT INTO dbo.ref_contexto (
 VALUES (
   @referenceId,
   @guardianName,
-  @guardianRelationship,
+  @RelacionEncargado,
   @contact,
   @address,
   @servicesText,
@@ -386,7 +386,7 @@ VALUES (
   @action,
   N'ref_referencia',
   @entityId,
-  @scopeText,
+  @TextoDeAmbito,
   @changeCode
 );
 `;
@@ -398,16 +398,16 @@ VALUES (
  * @param {object} client Cliente SQL de SIA_CENCINAI.
  * @returns {object} Operaciones de persistencia.
  */
-function createReferenceRepository(client) {
+function CrearRepositorioReferencias(client) {
   /**
    * Exige el cliente antes de abrir una sentencia.
    *
    * @returns {void}
-   * @throws {InfrastructureError} Cuando la base del módulo no está inyectada.
+   * @throws {ErrorInfraestructura} Cuando la base del módulo no está inyectada.
    */
-  function requireClient() {
+  function ExigirCliente() {
     if (!client || typeof client.query !== 'function') {
-      throw new InfrastructureError('La base del módulo no está disponible.');
+      throw new ErrorInfraestructura('La base del módulo no está disponible.');
     }
   }
 
@@ -418,8 +418,8 @@ function createReferenceRepository(client) {
    * @param {object} parameters Parámetros.
    * @returns {Promise<object[]>} Filas.
    */
-  async function read(sqlText, parameters) {
-    requireClient();
+  async function LeerFilas(sqlText, parameters) {
+    ExigirCliente();
     try {
       return await client.query(sqlText, parameters);
     } catch (error) {
@@ -433,15 +433,15 @@ function createReferenceRepository(client) {
   }
 
   return {
-    buildReferenceListQuery,
+    ConstruirConsultaReferencias,
 
     /**
      * Lee vías, orígenes y motivos de la versión vigente y activa.
      *
      * @returns {Promise<object[]>} Ítems de catálogo.
      */
-    async listCatalog() {
-      return read(`
+    async ListarCatalogo() {
+      return LeerFilas(`
 SELECT
   item.cat_item_id,
   item.codigo_catalogo,
@@ -466,15 +466,15 @@ ORDER BY item.codigo_catalogo, item.orden, item.codigo
      * @param {string} personId Identificador institucional.
      * @returns {Promise<boolean>} true cuando existe un caso ACTIVO.
      */
-    async personHasActiveCase(personId) {
-      const rows = await read(`
+    async PersonaTieneCasoActivo(personId) {
+      const rows = await LeerFilas(`
 SELECT CASE WHEN EXISTS (
   SELECT 1
   FROM dbo.caso_lista_establecimiento
   WHERE per_id_persona = @personId
     AND estado = N'ACTIVO'
 ) THEN 1 ELSE 0 END AS active_case
-`, { personId: typed(sql.NVarChar(20), personId) });
+`, { personId: TiparParametro(sql.NVarChar(20), personId) });
       return Boolean(rows[0] && Number(rows[0].active_case) === 1);
     },
 
@@ -484,14 +484,14 @@ SELECT CASE WHEN EXISTS (
      * @param {object} criteria Filtros ya cerrados por el servicio.
      * @returns {Promise<{total: number, items: object[]}>} Conteo y página.
      */
-    async listReferences(criteria) {
-      const statement = buildReferenceListQuery(criteria);
-      const counts = await read(statement.countSql, statement.parameters);
+    async ListarReferencias(criteria) {
+      const statement = ConstruirConsultaReferencias(criteria);
+      const counts = await LeerFilas(statement.countSql, statement.parameters);
       const total = counts[0] ? Number(counts[0].total_matches) : 0;
       if (total === 0 || criteria.offset >= total) {
         return { total, items: [] };
       }
-      const items = await read(statement.listSql, statement.parameters);
+      const items = await LeerFilas(statement.listSql, statement.parameters);
       return { total, items };
     },
 
@@ -503,11 +503,11 @@ SELECT CASE WHEN EXISTS (
      * @param {object} scope Ámbito autorizado.
      * @returns {Promise<object|null>} Fila o null.
      */
-    async findReference(referenceId, scope) {
-      const parameters = { referenceId: typed(sql.BigInt, referenceId) };
+    async BuscarReferencia(referenceId, scope) {
+      const parameters = { referenceId: TiparParametro(sql.BigInt, referenceId) };
       const clauses = ['ref.referencia_id = @referenceId'];
-      appendScope(scope, parameters, clauses);
-      const rows = await read(`
+      AgregarAmbito(scope, parameters, clauses);
+      const rows = await LeerFilas(`
 SELECT
   ref.referencia_id,
   ref.consecutivo,
@@ -560,11 +560,11 @@ WHERE ${clauses.join('\n  AND ')}
      * @param {object} scope Ámbito autorizado. Se repite para no leer motivos ajenos.
      * @returns {Promise<object[]>} Motivos y especificaciones.
      */
-    async listMotives(referenceId, scope) {
-      const parameters = { referenceId: typed(sql.BigInt, referenceId) };
+    async ListarMotivos(referenceId, scope) {
+      const parameters = { referenceId: TiparParametro(sql.BigInt, referenceId) };
       const clauses = ['ref.referencia_id = @referenceId'];
-      appendScope(scope, parameters, clauses);
-      return read(`
+      AgregarAmbito(scope, parameters, clauses);
+      return LeerFilas(`
 SELECT
   item.codigo,
   item.etiqueta,
@@ -589,63 +589,63 @@ ORDER BY item.orden, motive.motivo_id
      * @returns {Promise<{referenceId: number, sentAt: string}>} Comprobante del envío.
      * @throws {Error} Con código ACTIVE_CASE, DUPLICATE_CONSECUTIVE, DEADLOCK, PERMISSION o CONSTRAINT.
      */
-    async insertSubmitted(record) {
-      requireClient();
-      if (typeof client.withTransaction !== 'function') {
-        throw new InfrastructureError('La base del módulo no admite transacciones.');
+    async InsertarEnviada(record) {
+      ExigirCliente();
+      if (typeof client.EnTransaccion !== 'function') {
+        throw new ErrorInfraestructura('La base del módulo no admite transacciones.');
       }
       try {
-        return await client.withTransaction(async (transaction) => {
+        return await client.EnTransaccion(async (transaction) => {
           const header = await transaction.query(INSERT_REFERENCE_SQL, {
-            personId: typed(sql.NVarChar(20), record.personId),
-            referenceDate: typed(sql.Date, record.referenceDate),
-            routeItemId: typed(sql.BigInt, record.attentionRoute.itemId),
-            originItemId: typed(sql.BigInt, record.origin.itemId),
-            responsible: typed(sql.NVarChar(128), record.responsible),
-            previousActions: typed(sql.NVarChar(2000), record.previousActions),
-            previousResults: typed(sql.NVarChar(2000), record.previousResults),
-            complementaryInformation: typed(sql.NVarChar(2000), record.complementaryInformation),
-            captureOrigin: typed(sql.NVarChar(20), record.captureOrigin),
-            templateVersion: typed(sql.NVarChar(40), record.templateVersion),
-            consecutive: typed(sql.NVarChar(80), record.consecutive),
-            establishmentId: typed(sql.Int, record.context.establishmentId),
-            localOfficeId: typed(sql.Int, record.context.localOfficeId),
-            regionId: typed(sql.Int, record.context.regionId)
+            personId: TiparParametro(sql.NVarChar(20), record.personId),
+            referenceDate: TiparParametro(sql.Date, record.referenceDate),
+            routeItemId: TiparParametro(sql.BigInt, record.attentionRoute.itemId),
+            originItemId: TiparParametro(sql.BigInt, record.origin.itemId),
+            responsible: TiparParametro(sql.NVarChar(128), record.responsible),
+            previousActions: TiparParametro(sql.NVarChar(2000), record.previousActions),
+            previousResults: TiparParametro(sql.NVarChar(2000), record.previousResults),
+            complementaryInformation: TiparParametro(sql.NVarChar(2000), record.complementaryInformation),
+            captureOrigin: TiparParametro(sql.NVarChar(20), record.captureOrigin),
+            templateVersion: TiparParametro(sql.NVarChar(40), record.templateVersion),
+            consecutive: TiparParametro(sql.NVarChar(80), record.consecutive),
+            establishmentId: TiparParametro(sql.Int, record.context.establishmentId),
+            localOfficeId: TiparParametro(sql.Int, record.context.localOfficeId),
+            regionId: TiparParametro(sql.Int, record.context.regionId)
           });
           const inserted = header[0];
           const referenceId = Number(inserted.referencia_id);
           await transaction.query(INSERT_CONTEXT_SQL, {
-            referenceId: typed(sql.BigInt, referenceId),
-            guardianName: typed(sql.NVarChar(200), record.context.guardianName),
-            guardianRelationship: typed(sql.NVarChar(80), record.context.guardianRelationship),
-            contact: typed(sql.NVarChar(80), record.context.contact),
-            address: typed(sql.NVarChar(200), record.context.address),
-            servicesText: typed(sql.NVarChar(500), record.context.servicesText),
-            regionName: typed(sql.NVarChar(200), record.context.regionName),
-            localOfficeName: typed(sql.NVarChar(200), record.context.localOfficeName),
-            establishmentName: typed(sql.NVarChar(200), record.context.establishmentName),
-            ageYears: typed(sql.SmallInt, record.context.ageYears),
-            birthDate: typed(sql.Date, record.context.birthDate)
+            referenceId: TiparParametro(sql.BigInt, referenceId),
+            guardianName: TiparParametro(sql.NVarChar(200), record.context.guardianName),
+            RelacionEncargado: TiparParametro(sql.NVarChar(80), record.context.RelacionEncargado),
+            contact: TiparParametro(sql.NVarChar(80), record.context.contact),
+            address: TiparParametro(sql.NVarChar(200), record.context.address),
+            servicesText: TiparParametro(sql.NVarChar(500), record.context.servicesText),
+            regionName: TiparParametro(sql.NVarChar(200), record.context.regionName),
+            localOfficeName: TiparParametro(sql.NVarChar(200), record.context.localOfficeName),
+            establishmentName: TiparParametro(sql.NVarChar(200), record.context.establishmentName),
+            ageYears: TiparParametro(sql.SmallInt, record.context.ageYears),
+            birthDate: TiparParametro(sql.Date, record.context.birthDate)
           });
           for (const motive of record.motives) {
             await transaction.query(INSERT_MOTIVE_SQL, {
-              referenceId: typed(sql.BigInt, referenceId),
-              itemId: typed(sql.BigInt, motive.itemId),
-              specification: typed(sql.NVarChar(1000), motive.specification)
+              referenceId: TiparParametro(sql.BigInt, referenceId),
+              itemId: TiparParametro(sql.BigInt, motive.itemId),
+              specification: TiparParametro(sql.NVarChar(1000), motive.specification)
             });
           }
           await transaction.query(DELETE_DRAFT_SQL, {
-            responsible: typed(sql.NVarChar(128), record.responsible),
-            draftId: typed(sql.BigInt, record.draftId),
-            personId: typed(sql.NVarChar(80), record.personId)
+            responsible: TiparParametro(sql.NVarChar(128), record.responsible),
+            draftId: TiparParametro(sql.BigInt, record.draftId),
+            personId: TiparParametro(sql.NVarChar(80), record.personId)
           });
           await transaction.query(INSERT_AUDIT_SQL, {
-            responsible: typed(sql.NVarChar(128), record.responsible),
-            role: typed(sql.NVarChar(40), record.auditRole),
-            action: typed(sql.NVarChar(40), 'ENVIO'),
-            entityId: typed(sql.NVarChar(40), String(referenceId)),
-            scopeText: typed(sql.NVarChar(200), record.scopeText),
-            changeCode: typed(sql.NVarChar(80), 'REFERENCIA_ENVIADA')
+            responsible: TiparParametro(sql.NVarChar(128), record.responsible),
+            role: TiparParametro(sql.NVarChar(40), record.auditRole),
+            action: TiparParametro(sql.NVarChar(40), 'ENVIO'),
+            entityId: TiparParametro(sql.NVarChar(40), String(referenceId)),
+            TextoDeAmbito: TiparParametro(sql.NVarChar(200), record.TextoDeAmbito),
+            changeCode: TiparParametro(sql.NVarChar(80), 'REFERENCIA_ENVIADA')
           });
           return {
             referenceId,
@@ -653,7 +653,7 @@ ORDER BY item.orden, motive.motivo_id
           };
         });
       } catch (error) {
-        throw toDomainError(error);
+        throw ConvertirErrorDominio(error);
       }
     },
 
@@ -663,13 +663,13 @@ ORDER BY item.orden, motive.motivo_id
      * @param {object} record Identificador, usuario y ámbito.
      * @returns {Promise<{generatedAt: string}>} Fecha y hora del servidor.
      */
-    async recordPrint(record) {
-      requireClient();
-      if (typeof client.withTransaction !== 'function') {
-        throw new InfrastructureError('La base del módulo no admite transacciones.');
+    async RegistrarImpresion(record) {
+      ExigirCliente();
+      if (typeof client.EnTransaccion !== 'function') {
+        throw new ErrorInfraestructura('La base del módulo no admite transacciones.');
       }
       try {
-        return await client.withTransaction(async (transaction) => {
+        return await client.EnTransaccion(async (transaction) => {
           const rows = await transaction.query(`
 INSERT INTO dbo.ref_impresion (referencia_id, usuario, impresa_en)
 OUTPUT CONVERT(char(19), inserted.impresa_en, 120) AS impresa_en
@@ -679,21 +679,21 @@ VALUES (
   CAST(SYSUTCDATETIME() AS datetime2(0))
 );
 `, {
-            referenceId: typed(sql.BigInt, record.referenceId),
-            responsible: typed(sql.NVarChar(128), record.responsible)
+            referenceId: TiparParametro(sql.BigInt, record.referenceId),
+            responsible: TiparParametro(sql.NVarChar(128), record.responsible)
           });
           await transaction.query(INSERT_AUDIT_SQL, {
-            responsible: typed(sql.NVarChar(128), record.responsible),
-            role: typed(sql.NVarChar(40), record.auditRole),
-            action: typed(sql.NVarChar(40), 'IMPRESION'),
-            entityId: typed(sql.NVarChar(40), String(record.referenceId)),
-            scopeText: typed(sql.NVarChar(200), record.scopeText),
-            changeCode: typed(sql.NVarChar(80), 'REFERENCIA_IMPRESA')
+            responsible: TiparParametro(sql.NVarChar(128), record.responsible),
+            role: TiparParametro(sql.NVarChar(40), record.auditRole),
+            action: TiparParametro(sql.NVarChar(40), 'IMPRESION'),
+            entityId: TiparParametro(sql.NVarChar(40), String(record.referenceId)),
+            TextoDeAmbito: TiparParametro(sql.NVarChar(200), record.TextoDeAmbito),
+            changeCode: TiparParametro(sql.NVarChar(80), 'REFERENCIA_IMPRESA')
           });
           return { generatedAt: rows[0].impresa_en };
         });
       } catch (error) {
-        throw toDomainError(error);
+        throw ConvertirErrorDominio(error);
       }
     },
 
@@ -703,13 +703,13 @@ VALUES (
      * @param {object} draft Borrador del usuario autenticado.
      * @returns {Promise<{draftId: number, updatedAt: string}>} Identificador y marca de tiempo.
      */
-    async saveDraft(draft) {
-      requireClient();
-      if (typeof client.withTransaction !== 'function') {
-        throw new InfrastructureError('La base del módulo no admite transacciones.');
+    async GuardarBorrador(draft) {
+      ExigirCliente();
+      if (typeof client.EnTransaccion !== 'function') {
+        throw new ErrorInfraestructura('La base del módulo no admite transacciones.');
       }
       try {
-        return await client.withTransaction(async (transaction) => {
+        return await client.EnTransaccion(async (transaction) => {
           if (draft.draftId) {
             const updated = await transaction.query(`
 UPDATE dbo.bor_captura
@@ -725,13 +725,13 @@ WHERE borrador_id = @draftId
   AND usuario = @responsible
   AND flujo = N'REFERENCIA';
 `, {
-              content: typed(sql.NVarChar(sql.MAX), draft.content),
-              personKey: typed(sql.NVarChar(80), draft.personId),
-              accessLevel: typed(sql.NVarChar(20), draft.accessLevel),
-              localOfficeId: typed(sql.Int, draft.localOfficeId),
-              establishmentId: typed(sql.Int, draft.establishmentId),
-              draftId: typed(sql.BigInt, draft.draftId),
-              responsible: typed(sql.NVarChar(128), draft.responsible)
+              content: TiparParametro(sql.NVarChar(sql.MAX), draft.content),
+              personKey: TiparParametro(sql.NVarChar(80), draft.personId),
+              accessLevel: TiparParametro(sql.NVarChar(20), draft.accessLevel),
+              localOfficeId: TiparParametro(sql.Int, draft.localOfficeId),
+              establishmentId: TiparParametro(sql.Int, draft.establishmentId),
+              draftId: TiparParametro(sql.BigInt, draft.draftId),
+              responsible: TiparParametro(sql.NVarChar(128), draft.responsible)
             });
             if (!updated[0]) {
               const missing = new Error('El borrador no está disponible.');
@@ -767,12 +767,12 @@ VALUES (
   CAST(SYSUTCDATETIME() AS datetime2(0))
 );
 `, {
-            responsible: typed(sql.NVarChar(128), draft.responsible),
-            accessLevel: typed(sql.NVarChar(20), draft.accessLevel),
-            localOfficeId: typed(sql.Int, draft.localOfficeId),
-            establishmentId: typed(sql.Int, draft.establishmentId),
-            personKey: typed(sql.NVarChar(80), draft.personId),
-            content: typed(sql.NVarChar(sql.MAX), draft.content)
+            responsible: TiparParametro(sql.NVarChar(128), draft.responsible),
+            accessLevel: TiparParametro(sql.NVarChar(20), draft.accessLevel),
+            localOfficeId: TiparParametro(sql.Int, draft.localOfficeId),
+            establishmentId: TiparParametro(sql.Int, draft.establishmentId),
+            personKey: TiparParametro(sql.NVarChar(80), draft.personId),
+            content: TiparParametro(sql.NVarChar(sql.MAX), draft.content)
           });
           return {
             draftId: Number(inserted[0].borrador_id),
@@ -783,7 +783,7 @@ VALUES (
         if (error && error.code === 'DRAFT_NOT_FOUND') {
           throw error;
         }
-        throw toDomainError(error);
+        throw ConvertirErrorDominio(error);
       }
     },
 
@@ -793,8 +793,8 @@ VALUES (
      * @param {string} responsible Identidad de la sesión.
      * @returns {Promise<object[]>} Borradores recientes del autor.
      */
-    async listDrafts(responsible) {
-      return read(`
+    async ListarBorradores(responsible) {
+      return LeerFilas(`
 SELECT TOP (20)
   borrador_id,
   clave_negocio,
@@ -804,7 +804,7 @@ FROM dbo.bor_captura
 WHERE usuario = @responsible
   AND flujo = N'REFERENCIA'
 ORDER BY actualizado_en DESC, borrador_id DESC
-`, { responsible: typed(sql.NVarChar(128), responsible) });
+`, { responsible: TiparParametro(sql.NVarChar(128), responsible) });
     },
 
     /**
@@ -814,8 +814,8 @@ ORDER BY actualizado_en DESC, borrador_id DESC
      * @param {string} responsible Identidad de la sesión.
      * @returns {Promise<boolean>} true cuando eliminó una fila.
      */
-    async deleteDraft(draftId, responsible) {
-      requireClient();
+    async EliminarBorrador(draftId, responsible) {
+      ExigirCliente();
       const rows = await client.query(`
 DELETE FROM dbo.bor_captura
 OUTPUT deleted.borrador_id
@@ -823,8 +823,8 @@ WHERE borrador_id = @draftId
   AND usuario = @responsible
   AND flujo = N'REFERENCIA';
 `, {
-        draftId: typed(sql.BigInt, draftId),
-        responsible: typed(sql.NVarChar(128), responsible)
+        draftId: TiparParametro(sql.BigInt, draftId),
+        responsible: TiparParametro(sql.NVarChar(128), responsible)
       });
       return rows.length > 0;
     }
@@ -832,7 +832,7 @@ WHERE borrador_id = @draftId
 }
 
 module.exports = {
-  createReferenceRepository,
-  buildReferenceListQuery,
-  toDomainError
+  CrearRepositorioReferencias,
+  ConstruirConsultaReferencias,
+  ConvertirErrorDominio
 };

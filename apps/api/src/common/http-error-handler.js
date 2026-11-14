@@ -5,7 +5,7 @@
  */
 'use strict';
 
-const { NotFoundError } = require('./errors');
+const { ErrorNoEncontrado } = require('./errors');
 
 /**
  * Obtiene el patrón registrado en Express para el diagnóstico.
@@ -14,6 +14,33 @@ const { NotFoundError } = require('./errors');
  * @param {object} req Solicitud de Express.
  * @returns {string} Patrón declarado por el servidor, sin valores de la solicitud.
  */
+/**
+ * Descarta los bytes crudos y luego continúa.
+ * No interpreta JSON ni el libro. Esperar el fin evita cortar la respuesta.
+ *
+ * @param {object} req Solicitud de Express.
+ * @param {Function} alTerminar Continuación, normalmente next con el error.
+ * @returns {void}
+ */
+function DescartarCuerpoNoProcesado(req, alTerminar) {
+  const continuar = typeof alTerminar === 'function' ? alTerminar : () => {};
+  if (!req || req.readableEnded || typeof req.resume !== 'function') {
+    continuar();
+    return;
+  }
+  let cerrado = false;
+  const finalizar = () => {
+    if (cerrado) {
+      return;
+    }
+    cerrado = true;
+    continuar();
+  };
+  req.on('end', finalizar);
+  req.on('error', finalizar);
+  req.resume();
+}
+
 function ObtenerPatronRuta(req) {
   const patron = req.route?.path;
   return typeof patron === 'string' ? patron : 'SIN_RUTA';
@@ -23,7 +50,7 @@ function ObtenerPatronRuta(req) {
  * Convierte una ruta desconocida en el error de recurso no encontrado.
  */
 function ResponderRutaNoEncontrada(req, res, next) {
-  next(new NotFoundError());
+  next(new ErrorNoEncontrado());
 }
 
 /**
@@ -83,4 +110,8 @@ function CrearControlErrores(registro) {
   };
 }
 
-module.exports = { ResponderRutaNoEncontrada, CrearControlErrores };
+module.exports = {
+  DescartarCuerpoNoProcesado,
+  ResponderRutaNoEncontrada,
+  CrearControlErrores
+};

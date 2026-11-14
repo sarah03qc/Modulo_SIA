@@ -1,6 +1,6 @@
 'use strict';
 
-const { InfrastructureError } = require('../../common/errors');
+const { ErrorInfraestructura } = require('../../common/errors');
 
 /*
   HU-009 CA-06 y RF-017.
@@ -15,7 +15,7 @@ const { InfrastructureError } = require('../../common/errors');
  * Convierte una lista de establecimientos en parámetros nombrados.
  * El ámbito entra a SQL sin pegar los identificadores en el texto.
  */
-function bindIdList(columnSql, ids, parameters) {
+function VincularListaIdentificadores(columnSql, ids, parameters) {
   const names = ids.map((id, index) => {
     const name = `establishment${index}`;
     parameters[name] = id;
@@ -30,7 +30,7 @@ function bindIdList(columnSql, ids, parameters) {
  * Recibe el ámbito ya resuelto. Filtra por persona y, según el nivel,
  * por región, oficina o establecimientos. No trae valoración, riesgo ni plan.
  */
-function buildCaseSummarySql(scope) {
+function ConstruirSqlResumenCasos(scope) {
   const parameters = {};
   const clauses = ['case_list.per_id_persona = @personId'];
   if (scope.regionId !== null && scope.regionId !== undefined) {
@@ -42,7 +42,7 @@ function buildCaseSummarySql(scope) {
     clauses.push('case_list.oficina_local_id = @localOfficeId');
   }
   if (Array.isArray(scope.establishmentIds)) {
-    clauses.push(bindIdList('case_list.establecimiento_id', scope.establishmentIds, parameters));
+    clauses.push(VincularListaIdentificadores('case_list.establecimiento_id', scope.establishmentIds, parameters));
   }
   return {
     parameters,
@@ -64,7 +64,7 @@ ORDER BY case_list.fecha_apertura, case_list.caso_id
  * Pasa una fila de la vista al resumen que usa el servicio.
  * Las fechas ya vienen como texto de año, mes y día.
  */
-function mapCase(row) {
+function MapearCaso(row) {
   return {
     caseId: row.caso_id,
     status: row.estado,
@@ -78,7 +78,7 @@ function mapCase(row) {
  * Lee resúmenes de caso en SIA_CENCINAI.
  * El ámbito lo aplica esta consulta. El permiso SQL es el de la cuenta técnica.
  */
-function createCaseSummaryReader(client) {
+function CrearLectorResumenCasos(client) {
   return {
     /**
      * Lista los casos visibles de la persona dentro del ámbito.
@@ -86,11 +86,11 @@ function createCaseSummaryReader(client) {
      * Si la cuenta no tiene permiso de lectura, no inventa casos:
      * informa la consulta como bloqueada. Otro error de base se propaga.
      */
-    async listAuthorizedSummaries(personId, scope) {
+    async ListarResumenesAutorizados(personId, scope) {
       if (!client || typeof client.query !== 'function') {
-        throw new InfrastructureError('La base del módulo no está disponible.');
+        throw new ErrorInfraestructura('La base del módulo no está disponible.');
       }
-      const statement = buildCaseSummarySql(scope);
+      const statement = ConstruirSqlResumenCasos(scope);
       try {
         const rows = await client.query(statement.sql, {
           ...statement.parameters,
@@ -98,7 +98,7 @@ function createCaseSummaryReader(client) {
         });
         return {
           availability: 'AVAILABLE',
-          items: rows.map(mapCase)
+          items: rows.map(MapearCaso)
         };
       } catch (error) {
         if (error && error.permissionDenied) {
@@ -114,6 +114,6 @@ function createCaseSummaryReader(client) {
 }
 
 module.exports = {
-  buildCaseSummarySql,
-  createCaseSummaryReader
+  ConstruirSqlResumenCasos,
+  CrearLectorResumenCasos
 };

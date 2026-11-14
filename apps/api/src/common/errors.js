@@ -7,7 +7,7 @@
   para no revelar el texto del motor.
 */
 
-class HttpError extends Error {
+class ErrorHttp extends Error {
   constructor(status, code, message) {
     super(message);
     this.name = new.target.name;
@@ -17,13 +17,13 @@ class HttpError extends Error {
   }
 }
 
-class ValidationError extends HttpError {
+class ErrorValidacion extends ErrorHttp {
   constructor(message = 'La solicitud no es válida.') {
     super(400, 'VALIDATION_ERROR', message);
   }
 }
 
-class UnauthorizedError extends HttpError {
+class ErrorNoAutorizado extends ErrorHttp {
   constructor(message = 'Se requiere una sesión institucional.') {
     super(401, 'UNAUTHORIZED', message);
   }
@@ -33,7 +33,7 @@ class UnauthorizedError extends HttpError {
  * La sesión institucional todavía no está integrada.
  * No describe un token ni un perfil de SIDINACC.
  */
-class AuthenticationNotConfiguredError extends HttpError {
+class ErrorAutenticacionNoConfigurada extends ErrorHttp {
   constructor() {
     super(
       401,
@@ -43,19 +43,19 @@ class AuthenticationNotConfiguredError extends HttpError {
   }
 }
 
-class ForbiddenError extends HttpError {
+class ErrorProhibido extends ErrorHttp {
   constructor(message = 'La operación no está permitida.') {
     super(403, 'FORBIDDEN', message);
   }
 }
 
-class NotFoundError extends HttpError {
+class ErrorNoEncontrado extends ErrorHttp {
   constructor(message = 'El recurso solicitado no existe.') {
     super(404, 'NOT_FOUND', message);
   }
 }
 
-class ConflictError extends HttpError {
+class ErrorConflicto extends ErrorHttp {
   constructor(message = 'La operación entra en conflicto con el estado actual.') {
     super(409, 'CONFLICT', message);
   }
@@ -65,7 +65,7 @@ class ConflictError extends HttpError {
  * Hay más de una ubicación en el periodo y el ámbito.
  * No se elige una de forma automática.
  */
-class AmbiguousInstitutionalLocationError extends HttpError {
+class ErrorUbicacionInstitucionalAmbigua extends ErrorHttp {
   constructor() {
     super(
       409,
@@ -75,20 +75,20 @@ class AmbiguousInstitutionalLocationError extends HttpError {
   }
 }
 
-class InfrastructureError extends HttpError {
+class ErrorInfraestructura extends ErrorHttp {
   constructor(message = 'Una dependencia necesaria no está disponible.') {
     super(503, 'INFRASTRUCTURE_UNAVAILABLE', message);
   }
 }
 
 module.exports = {
-  HttpError,
-  ValidationError,
-  UnauthorizedError,
-  AuthenticationNotConfiguredError,
-  ForbiddenError,
-  NotFoundError,
-  ConflictError,
-  AmbiguousInstitutionalLocationError,
-  InfrastructureError
+  ErrorHttp,
+  ErrorValidacion,
+  ErrorNoAutorizado,
+  ErrorAutenticacionNoConfigurada,
+  ErrorProhibido,
+  ErrorNoEncontrado,
+  ErrorConflicto,
+  ErrorUbicacionInstitucionalAmbigua,
+  ErrorInfraestructura
 };

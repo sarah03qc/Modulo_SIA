@@ -1,8 +1,8 @@
 'use strict';
 
-const { loadConfig } = require('../src/config/load-config');
-const { createDatabaseGateway } = require('../src/infrastructure/database/sql-client');
-const { createSidinaccAdapter } = require('../src/infrastructure/integrations/sidinacc-adapter');
+const { CargarConfiguracion } = require('../src/config/load-config');
+const { CrearPasarelaBases } = require('../src/infrastructure/database/sql-client');
+const { CrearAdaptadorSidinacc } = require('../src/infrastructure/integrations/sidinacc-adapter');
 
 const placeholder = !process.env.SIA_DB_PASSWORD
   || !process.env.SIDINACC_DB_PASSWORD
@@ -19,9 +19,9 @@ describeLive('conexión local a SQL Server', () => {
   let adapter;
 
   beforeAll(() => {
-    config = loadConfig(process.env);
-    gateway = createDatabaseGateway(config);
-    adapter = createSidinaccAdapter(gateway.sidinacc);
+    config = CargarConfiguracion(process.env);
+    gateway = CrearPasarelaBases(config);
+    adapter = CrearAdaptadorSidinacc(gateway.sidinacc);
   });
 
   afterAll(async () => {
@@ -38,8 +38,8 @@ describeLive('conexión local a SQL Server', () => {
       'SELECT COUNT(*) AS table_count FROM sys.tables'
     );
 
-    const sia = await gateway.sia.probe();
-    const sidinacc = await adapter.checkAvailability();
+    const sia = await gateway.sia.Sondear();
+    const sidinacc = await adapter.ComprobarDisponibilidad();
 
     const siaAfter = await gateway.sia.query(
       'SELECT COUNT(*) AS migration_count FROM dbo.schema_migracion'

@@ -1,6 +1,6 @@
 'use strict';
 
-const { InfrastructureError } = require('../../common/errors');
+const { ErrorInfraestructura } = require('../../common/errors');
 
 /*
   Filtro de solo lectura para las sentencias que salen hacia SIDINACC_LOCAL.
@@ -54,15 +54,15 @@ const TOP_LEVEL_WORDS = new Set([
  * Rechaza la sentencia antes de enviarla al motor.
  * El mensaje no incluye el texto SQL.
  */
-function reject(message) {
-  throw new InfrastructureError(message);
+function RechazarLectura(message) {
+  throw new ErrorInfraestructura(message);
 }
 
 /**
  * Recoge las palabras de control que están fuera de paréntesis.
  * Un SELECT interno no se confunde así con otra sentencia principal.
  */
-function topLevelKeywords(sqlText) {
+function PalabrasReservadasSuperiores(sqlText) {
   const keywords = [];
   let depth = 0;
   let index = 0;
@@ -98,11 +98,11 @@ function topLevelKeywords(sqlText) {
  * Acepta un SELECT suelto o un WITH seguido de un solo SELECT.
  * Cualquier otra combinación se rechaza.
  */
-function assertSingleRead(keywords) {
+function AfirmarLecturaUnica(keywords) {
   const singleSelect = keywords.length === 1 && keywords[0] === 'select';
   const withQuery = keywords.length === 2 && keywords[0] === 'with' && keywords[1] === 'select';
   if (!singleSelect && !withQuery) {
-    reject('La consulta institucional debe ser una sola sentencia.');
+    RechazarLectura('La consulta institucional debe ser una sola sentencia.');
   }
 }
 
@@ -115,9 +115,9 @@ function assertSingleRead(keywords) {
  *
  * Si no cumple, lanza un error de infraestructura y la consulta no sale.
  */
-function assertInstitutionalRead(sqlText) {
+function AfirmarLecturaInstitucional(sqlText) {
   if (typeof sqlText !== 'string' || sqlText.trim() === '') {
-    reject('La consulta institucional está vacía.');
+    RechazarLectura('La consulta institucional está vacía.');
   }
 
   const withoutComments = sqlText
@@ -127,18 +127,18 @@ function assertInstitutionalRead(sqlText) {
   const withoutStrings = withoutComments.replace(/N?'(?:''|[^'])*'/g, ' ');
 
   if (!/^(select|with)\b/i.test(withoutComments)) {
-    reject('La fuente institucional solo admite consultas de lectura.');
+    RechazarLectura('La fuente institucional solo admite consultas de lectura.');
   }
   if (/\bselect\s+\*/i.test(withoutStrings) || /\.\s*\*/.test(withoutStrings)) {
-    reject('La consulta institucional debe nombrar columnas.');
+    RechazarLectura('La consulta institucional debe nombrar columnas.');
   }
   if (FORBIDDEN_SQL.test(withoutStrings)) {
-    reject('La fuente institucional solo admite consultas de lectura.');
+    RechazarLectura('La fuente institucional solo admite consultas de lectura.');
   }
   if (/;\s*\S/.test(withoutStrings)) {
-    reject('La consulta institucional debe ser una sola sentencia.');
+    RechazarLectura('La consulta institucional debe ser una sola sentencia.');
   }
-  assertSingleRead(topLevelKeywords(withoutStrings));
+  AfirmarLecturaUnica(PalabrasReservadasSuperiores(withoutStrings));
 }
 
-module.exports = { assertInstitutionalRead };
+module.exports = { AfirmarLecturaInstitucional };

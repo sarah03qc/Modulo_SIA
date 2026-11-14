@@ -153,3 +153,79 @@ ninguna escritura. Después del cambio, esas suites quedaron omitidas por defect
   un XLSX descomprimido queda pendiente de medir y acotar.
 - El formato y los nombres internos de API requieren una transición adicional. Renombrar
   objetos desplegados o endurecer tipos y nulos requiere comprobar dependencias y datos.
+
+## H. Seguimiento de la segunda revisión
+
+**Fecha:** 14 de noviembre de 2026 (Costa Rica)  
+**Responsable:** Sarah Priscilla Quesada Chaves  
+**Base:** `main` en `caa8a7e`, con el árbol de trabajo de esta revisión todavía sin commit.
+No se descartaron cambios previos: al inicio el árbol estaba limpio y coincidía con `origin/main`.
+No se ejecutaron migraciones, concesiones de permisos, recreación de bases ni borrado de datos.
+
+Las conclusiones de la sección E se contrastaron con este entorno. No se repitieron. SQL Server
+responde en `127.0.0.1:1433`, Docker está disponible y el enlace de loopback funciona. Las 31
+fallas de API y el fallo de Jest web atribuidos al entorno de la auditoría anterior no aparecen
+con la configuración versionada.
+
+### Comprobaciones de esta revisión
+
+| Comprobación | Resultado |
+| --- | --- |
+| `npm run verify:config` | Aprobada. Cuentas distintas para `SIA_CENCINAI` y `SIDINACC_LOCAL`. |
+| `npm run lint` | Aprobada. |
+| `npm run build` | Aprobada. Vite compiló 19 módulos. |
+| `npm test` en `@sia/web` | Aprobada con `apps/web/jest.config.cjs` y `@swc/jest`. 10 pruebas, 2 suites. No hizo falta un transformador externo. |
+| `npm test` en `@sia/api` | 110 aprobadas, 7 omitidas, 13 suites aprobadas y 2 omitidas. Incluye lecturas reales contra SQL Server. |
+| Escrituras SQL | No ejecutadas. `SIA_TEST_ENABLE_SQL_WRITES` no está definido. Las 7 pruebas omitidas son las 5 de `reference-live.test.js` y las 2 de `sidinacc-reader-permissions.test.js`, que escriben o intentan DDL/DML y después limpian con la cuenta de administración. |
+
+### Clasificación del seguimiento
+
+| ID | Seguimiento | Clasificación |
+| --- | --- | --- |
+| COD-01 | Las operaciones propias de la API quedaron en español, verbo y sustantivo, PascalCase. Las pruebas de API cubren el renombrado. | CORREGIDO Y VERIFICADO |
+| COD-02 | Se documentaron las funciones nuevas de plantilla, descarte del cuerpo y autorización. No se reescribió el comentario del resto del código. | NO APLICA |
+| COD-03 | `reference-template.js` consigna el primer registro Git `f289a6c` del 2026-11-07 y la modificación del 2026-11-14. El formato obligatorio del encabezado en cada JS sigue abierto. | SIN MODIFICAR POR DECISIÓN INSTITUCIONAL |
+| COD-04 | Se partieron las rutas y mensajes que esta revisión alargó por encima de 100 caracteres. La expresión de palabras SQL prohibidas sigue en una sola línea. ESLint no fiscaliza el límite. | NO APLICA |
+| ARQ-01 | El monolito modular no cambió de frontera. | NO APLICA |
+| ARQ-02 | Se mantiene la validación junto a la ruta, después de la capacidad. | CORREGIDO Y VERIFICADO |
+| REF-01 | La plantilla rechaza hojas distintas de Referencia e Instrucciones, fórmulas y enlaces en cualquier hoja admitida, y un ZIP cuyo tamaño declarado al descomprimir supera 4 MiB o 64 entradas. Las pruebas de regresión pasaron. | CORREGIDO Y VERIFICADO |
+| REF-02 | El consecutivo manual no cambió. | NO APLICA |
+| VAL-01 | Las migraciones 020 y 040 ya separan versión, categoría y factor, y cada valoración apunta a una versión. Un factor nuevo entra como fila de otra versión; uno retirado puede quedar inactivo sin borrar valoraciones anteriores. No se construyó el módulo de valoración ni se inventaron instrumentos. | NO APLICA |
+| VAL-02 | Sigue faltando el instrumento confirmado para publicar motivos de referencia como factores. | SIN MODIFICAR POR DECISIÓN INSTITUCIONAL |
+| SEG-01 | Capacidades, ámbitos, campos restringidos y sesiones sintéticas conservan sus códigos. La suite de autorización pasó. | CORREGIDO Y VERIFICADO |
+| SEG-02 | La sesión y la capacidad corren antes de `express.json` y `express.raw`. Un JSON inválido sin sesión responde 401, sin capacidad responde 403, y una plantilla mayor de 1 MiB sin sesión responde 401, no 413. Con sesión y capacidad, el mismo tamaño responde 413 y no precarga. | CORREGIDO Y VERIFICADO |
+| SEG-03 | La guarda `PermitirEscriturasSqlLocales` sigue exigiendo el indicador, entorno de desarrollo o pruebas y loopback. | CORREGIDO Y VERIFICADO |
+| BD-01 | No se renombraron objetos SQL desplegados. | SIN MODIFICAR POR DECISIÓN INSTITUCIONAL |
+| BD-02 | No se cambió `NVARCHAR`. | SIN MODIFICAR POR DECISIÓN INSTITUCIONAL |
+| BD-03 | No se sustituyó `NULL`. | SIN MODIFICAR POR DECISIÓN INSTITUCIONAL |
+| BD-04 | El acceso sigue siendo SQL parametrizado, no procedimientos ni vistas de seguridad. | SIN MODIFICAR POR DECISIÓN INSTITUCIONAL |
+| BD-05 | No se agregaron triggers. | SIN MODIFICAR POR DECISIÓN INSTITUCIONAL |
+| BD-06 | Los scripts 010 y 020 no se volvieron a ejecutar. La suite que los contrasta sigue omitida por la guarda de escritura. | CORREGIDO PENDIENTE DE PRUEBA |
+| BD-07 | No se actualizaron diagramas ni el diccionario. | SIN MODIFICAR POR DECISIÓN INSTITUCIONAL |
+| OPE-01 | No hay evidencia nueva de aceptación, liberación ni respaldos. | SIN MODIFICAR POR DECISIÓN INSTITUCIONAL |
+| OPE-02 | El stack no cambió. | SIN MODIFICAR POR DECISIÓN INSTITUCIONAL |
+
+### Excepciones de nomenclatura que se conservan
+
+- Rutas HTTP, códigos de error, campos JSON ya publicados y el campo `service` de `/health`.
+- Códigos de capacidad (`referral.create` y el resto del catálogo) y las claves `ACCESS_LEVEL`.
+- Variables de entorno, nombres de tablas y columnas, y el SQL de SIDINACC, incluido el alias `service`.
+- Palabras SQL del filtro de lectura, entre ellas `grant` y `shutdown`. El estado interno `invalid` de la credencial también se conservó.
+- Métodos que coinciden con la librería o con el contrato del cliente de base: `query`, `close`, y los niveles `error`, `warn` e `info` del registro.
+- Nombres de archivo y carpeta ya existentes en `apps/api`. Renombrarlos no cambia comportamiento y oscurece el historial. La convención del proyecto pide verificar ese paso antes de hacerlo; no se hizo aquí.
+- La metodología pide, para variables ligadas a tablas, un prefijo corto y camelCase. En JavaScript el proyecto ya fijó camelCase en español, sin ese prefijo. Aplicar el prefijo de tabla en JS sería otra convención, no la misma regla, y queda para UTIC.
+
+### Decisiones que siguen abiertas con UTIC
+
+1. **Objetos programáticos.** DNCC 7.3.4 pide acceder a las tablas mediante procedimientos, vistas u otros objetos programáticos. El diseño actual usa sentencias parametrizadas dentro de transacciones, con un filtro de solo lectura hacia la réplica. La parametrización impide inyectar SQL; no crea el objeto programático que la metodología nombra. Pasar el módulo a procedimientos cambia el despliegue, los permisos y las pruebas de concurrencia. No se hizo.
+2. **Triggers.** La metodología pide auditoría transversal con triggers por tabla. Hoy la auditoría de referencias es un evento escrito por la transacción de negocio. Un trigger vería también cambios hechos fuera de la API; el evento actual solo cubre el camino de la aplicación. Hace falta definir qué columnas llena cada trigger y cómo se evita duplicar el evento ya guardado.
+3. **`NVARCHAR` y `NULL`.** La metodología excluye `NVARCHAR` y limita el uso de nulos. El esquema desplegado y la réplica histórica los usan. Cambiarlos es una migración de tipos y de significado, con prueba de caracteres y de ausencia, no un reemplazo equivalente.
+4. **Nombres físicos y prefijos.** Tablas como `ops.cerrar_caso` y claves `bigint` no siguen el prefijo institucional de objetos nuevos. Renombrar objetos ya migrados rompe el historial de `schema_migracion` y las consultas actuales.
+5. **Encabezados y 100 caracteres.** Falta confirmar si cada archivo JS debe llevar el encabezado histórico completo y qué líneas pueden pasar de 100 caracteres cuando el texto es un contrato, una sentencia SQL o una expresión regular.
+6. **Instrumento de valoración.** Sigue sin publicarse la versión vigente, los códigos de motivo y los tipos de respuesta que la valoración debe admitir. El modelo ya puede incorporarlos por versión sin reescribir valoraciones anteriores.
+
+### Efecto de las correcciones de comportamiento
+
+- Una solicitud a `/api` sin sesión o sin capacidad descarta los bytes crudos y responde antes de interpretar JSON o el libro. El descarte existe para cerrar la conexión; no valida ni transforma el contenido.
+- `LeerLibroPlantilla` lee el directorio central del ZIP antes de ExcelJS. Rechaza contenido activo por nombre de entrada, un tamaño descomprimido declarado mayor de 4 MiB y más de 64 entradas. Una hoja adicional no entra en la precarga. La hoja de instrucciones puede faltar; cualquier otra hoja se rechaza. Las fechas siguen exigiéndose como texto `AAAA-MM-DD`.
+- No se debilitó la autorización ni la proyección de campos. Los códigos de capacidad y las claves restringidas quedaron iguales.

@@ -1,11 +1,11 @@
 'use strict';
 
-const { NotFoundError, AmbiguousInstitutionalLocationError } = require('../../common/errors');
+const { ErrorNoEncontrado, ErrorUbicacionInstitucionalAmbigua } = require('../../common/errors');
 const { ACCESS_LEVEL } = require('../../infrastructure/auth/institutional-roles');
 const { CAPABILITY } = require('../../infrastructure/auth/capabilities');
 const { ExigirCapacidad } = require('../../infrastructure/auth/authorization-policy');
-const { resolveTerritorialScope, assertConfirmedTerritorialAnchor } = require('./territorial-scope');
-const { presentSearch, presentProfile } = require('./person-presenter');
+const { ResolverAmbitoTerritorial, AfirmarAnclaTerritorial } = require('./territorial-scope');
+const { PresentarBusqueda, PresentarFicha } = require('./person-presenter');
 
 /*
   Busqueda y consulta contextual compartidas por HU-005, HU-006, HU-007, HU-008 y HU-009.
@@ -17,11 +17,11 @@ const { presentSearch, presentProfile } = require('./person-presenter');
  * Expone solo las búsquedas de territorio que el ámbito necesita.
  * El adaptador sigue siendo de lectura.
  */
-function territoryPort(adapter) {
+function PuertoTerritorial(adapter) {
   return {
-    findEstablishment: (establishmentId) => adapter.findEstablishment(establishmentId),
-    findLocalOffice: (localOfficeId) => adapter.findLocalOffice(localOfficeId),
-    findRegion: (regionId) => adapter.findRegion(regionId)
+    BuscarEstablecimiento: (establishmentId) => adapter.BuscarEstablecimiento(establishmentId),
+    BuscarOficinaLocal: (localOfficeId) => adapter.BuscarOficinaLocal(localOfficeId),
+    BuscarRegion: (regionId) => adapter.BuscarRegion(regionId)
   };
 }
 
@@ -29,14 +29,14 @@ function territoryPort(adapter) {
  * Copia el ámbito que se puede devolver al cliente, junto con la identidad de la sesión.
  * No incluye capacidades ni concesiones.
  */
-function presentableScope(access, scope) {
+function AmbitoPresentable(acceso, scope) {
   return {
     accessLevel: scope.accessLevel,
     regionId: scope.regionId,
     localOfficeId: scope.localOfficeId,
     establishmentIds: scope.establishmentIds,
     establishmentAppliedAutomatically: scope.establishmentAppliedAutomatically,
-    principalId: access.principalId
+    principalId: acceso.principalId
   };
 }
 
@@ -44,7 +44,7 @@ function presentableScope(access, scope) {
  * Describe un filtro territorial: si se puede elegir, si ya quedó aplicado
  * y si falta elegir el nivel anterior antes de ver opciones.
  */
-function filterGroup(selectable, appliedAutomatically, requiresParent, options) {
+function GrupoFiltro(selectable, appliedAutomatically, requiresParent, options) {
   return {
     selectable,
     appliedAutomatically,
@@ -53,23 +53,23 @@ function filterGroup(selectable, appliedAutomatically, requiresParent, options) 
   };
 }
 
-function createPersonQueryService(dependencies) {
+function CrearServicioConsultaPersona(dependencies) {
   const periodId = dependencies.periodId;
   const adapter = dependencies.adapter;
   const cases = dependencies.cases;
   const clock = dependencies.clock || (() => new Date());
-  const territory = territoryPort(adapter);
+  const territory = PuertoTerritorial(adapter);
 
   /*
     Propósito: resolver el ámbito después de comprobar que el ancla territorial es consultable
     Entrada: contexto interno y filtros ya validados
     Salida: ámbito efectivo para la lectura institucional
   */
-  async function resolve(access, filters) {
-    if (!access || !access.accessLevel) {
-      assertConfirmedTerritorialAnchor(access);
+  async function ResolverConsulta(acceso, filters) {
+    if (!acceso || !acceso.accessLevel) {
+      AfirmarAnclaTerritorial(acceso);
     }
-    return resolveTerritorialScope(access, filters, territory);
+    return ResolverAmbitoTerritorial(acceso, filters, territory);
   }
 
   /*
@@ -78,10 +78,10 @@ function createPersonQueryService(dependencies) {
     Salida: página contextual. Sin capacidad responde 403 y no consulta la réplica
     HU-005 a HU-008, CU-02, RF-009 y RF-012
   */
-  async function searchPersons(access, criteria) {
-    ExigirCapacidad(access, CAPABILITY.PERSON_SEARCH);
-    const scope = await resolve(access, criteria);
-    const exact = await adapter.searchPersons({
+  async function BuscarPersonas(acceso, criteria) {
+    ExigirCapacidad(acceso, CAPABILITY.PERSON_SEARCH);
+    const scope = await ResolverConsulta(acceso, criteria);
+    const exact = await adapter.BuscarPersonas({
       mode: 'identification',
       periodId,
       text: criteria.text,
@@ -93,7 +93,7 @@ function createPersonQueryService(dependencies) {
       ? { matchMode: 'identification', result: exact }
       : {
         matchMode: 'name',
-        result: await adapter.searchPersons({
+        result: await adapter.BuscarPersonas({
           mode: 'name',
           periodId,
           text: criteria.text,
@@ -102,16 +102,16 @@ function createPersonQueryService(dependencies) {
           pageSize: criteria.pageSize
         })
       };
-    return presentSearch({
+    return PresentarBusqueda({
       matchMode: chosen.matchMode,
       page: criteria.page,
       pageSize: criteria.pageSize,
       total: chosen.result.total,
       rows: chosen.result.items,
-      scope: presentableScope(access, scope),
+      scope: AmbitoPresentable(acceso, scope),
       periodId,
       today: clock(),
-      access
+      acceso
     });
   }
 
@@ -122,38 +122,38 @@ function createPersonQueryService(dependencies) {
     Sin person.profile.read responde 403. Fuera de ámbito responde 404
     HU-009, CU-03 y RF-012
   */
-  async function getPerson(access, personId) {
-    ExigirCapacidad(access, CAPABILITY.PERSON_PROFILE_READ);
-    const scope = await resolve(access, {
+  async function ObtenerPersona(acceso, personId) {
+    ExigirCapacidad(acceso, CAPABILITY.PERSON_PROFILE_READ);
+    const scope = await ResolverConsulta(acceso, {
       regionId: null,
       localOfficeId: null,
       establishmentId: null
     });
-    const rows = await adapter.findPersonInScope({
+    const rows = await adapter.BuscarPersonaEnAmbito({
       periodId,
       personId,
       scope
     });
     const locationCounts = rows.map((row) => Number(row.location_count));
     if (rows.length > 1 || locationCounts.some((count) => count > 1)) {
-      throw new AmbiguousInstitutionalLocationError();
+      throw new ErrorUbicacionInstitucionalAmbigua();
     }
     if (rows.length === 0) {
-      throw new NotFoundError('No hay una persona disponible con ese identificador en el ámbito autorizado.');
+      throw new ErrorNoEncontrado('No hay una persona disponible con ese identificador en el ámbito autorizado.');
     }
     const [services, guardianRows, caseSummary] = await Promise.all([
-      adapter.listServices({ periodId, personId }),
-      adapter.listGuardianRows({ periodId, personId }),
-      cases.listAuthorizedSummaries(personId, scope)
+      adapter.ListarServicios({ periodId, personId }),
+      adapter.ListarFilasEncargado({ periodId, personId }),
+      cases.ListarResumenesAutorizados(personId, scope)
     ]);
-    return presentProfile({
+    return PresentarFicha({
       person: rows[0],
       services,
       guardianRows,
       cases: caseSummary,
       periodId,
       today: clock(),
-      access
+      acceso
     });
   }
 
@@ -163,14 +163,14 @@ function createPersonQueryService(dependencies) {
     Salida: opciones de región, oficina y establecimiento
     Exige territory.options.read. Un filtro ajeno no amplía el catálogo
   */
-  async function listTerritoryOptions(access, filters) {
-    ExigirCapacidad(access, CAPABILITY.TERRITORY_OPTIONS_READ);
-    const scope = await resolve(access, filters);
-    const regions = await regionsFor(access, scope);
-    const offices = await officesFor(access, scope);
-    const establishments = await establishmentsFor(access, scope);
+  async function ListarOpcionesTerritorio(acceso, filters) {
+    ExigirCapacidad(acceso, CAPABILITY.TERRITORY_OPTIONS_READ);
+    const scope = await ResolverConsulta(acceso, filters);
+    const regions = await RegionesPara(acceso, scope);
+    const offices = await OficinasPara(acceso, scope);
+    const establishments = await EstablecimientosPara(acceso, scope);
     return {
-      accessLevel: access.accessLevel,
+      accessLevel: acceso.accessLevel,
       selected: {
         regionId: scope.regionId,
         localOfficeId: scope.localOfficeId,
@@ -180,22 +180,22 @@ function createPersonQueryService(dependencies) {
           : null
       },
       filters: {
-        region: filterGroup(
-          access.accessLevel === ACCESS_LEVEL.NATIONAL,
-          access.accessLevel === ACCESS_LEVEL.REGION,
+        region: GrupoFiltro(
+          acceso.accessLevel === ACCESS_LEVEL.NATIONAL,
+          acceso.accessLevel === ACCESS_LEVEL.REGION,
           false,
           regions
         ),
-        localOffice: filterGroup(
-          access.accessLevel === ACCESS_LEVEL.REGION || access.accessLevel === ACCESS_LEVEL.NATIONAL,
-          access.accessLevel === ACCESS_LEVEL.LOCAL_OFFICE,
-          access.accessLevel === ACCESS_LEVEL.NATIONAL && scope.regionId === null,
+        localOffice: GrupoFiltro(
+          acceso.accessLevel === ACCESS_LEVEL.REGION || acceso.accessLevel === ACCESS_LEVEL.NATIONAL,
+          acceso.accessLevel === ACCESS_LEVEL.LOCAL_OFFICE,
+          acceso.accessLevel === ACCESS_LEVEL.NATIONAL && scope.regionId === null,
           offices
         ),
-        establishment: filterGroup(
-          access.accessLevel !== ACCESS_LEVEL.ESTABLISHMENT || !scope.establishmentAppliedAutomatically,
+        establishment: GrupoFiltro(
+          acceso.accessLevel !== ACCESS_LEVEL.ESTABLISHMENT || !scope.establishmentAppliedAutomatically,
           scope.establishmentAppliedAutomatically,
-          access.accessLevel !== ACCESS_LEVEL.ESTABLISHMENT && scope.localOfficeId === null,
+          acceso.accessLevel !== ACCESS_LEVEL.ESTABLISHMENT && scope.localOfficeId === null,
           establishments
         )
       }
@@ -207,19 +207,19 @@ function createPersonQueryService(dependencies) {
    * Nacional lista todas. Establecimiento las deduce de sus establecimientos.
    * Los demás niveles ven solo la región de su ámbito, o ninguna si todavía no hay región.
    */
-  async function regionsFor(access, scope) {
-    if (access.accessLevel === ACCESS_LEVEL.NATIONAL) {
-      const rows = await adapter.listRegions({});
+  async function RegionesPara(acceso, scope) {
+    if (acceso.accessLevel === ACCESS_LEVEL.NATIONAL) {
+      const rows = await adapter.ListarRegiones({});
       return rows.map((row) => ({ id: row.regionId, name: row.name }));
     }
-    if (access.accessLevel === ACCESS_LEVEL.ESTABLISHMENT) {
-      const rows = await adapter.listEstablishments({ establishmentIds: access.establishmentIds });
-      return unique(rows, 'regionId', 'regionName');
+    if (acceso.accessLevel === ACCESS_LEVEL.ESTABLISHMENT) {
+      const rows = await adapter.ListarEstablecimientos({ establishmentIds: acceso.establishmentIds });
+      return UnificarPorIdentificador(rows, 'regionId', 'regionName');
     }
     if (scope.regionId === null) {
       return [];
     }
-    const rows = await adapter.listRegions({ regionId: scope.regionId });
+    const rows = await adapter.ListarRegiones({ regionId: scope.regionId });
     return rows.map((row) => ({ id: row.regionId, name: row.name }));
   }
 
@@ -228,19 +228,19 @@ function createPersonQueryService(dependencies) {
    * Establecimiento las deduce de sus establecimientos y Oficina Local ve la suya.
    * Región y Nacional no listan oficinas mientras no haya una región resuelta.
    */
-  async function officesFor(access, scope) {
-    if (access.accessLevel === ACCESS_LEVEL.ESTABLISHMENT) {
-      const rows = await adapter.listEstablishments({ establishmentIds: access.establishmentIds });
-      return unique(rows, 'localOfficeId', 'localOfficeName');
+  async function OficinasPara(acceso, scope) {
+    if (acceso.accessLevel === ACCESS_LEVEL.ESTABLISHMENT) {
+      const rows = await adapter.ListarEstablecimientos({ establishmentIds: acceso.establishmentIds });
+      return UnificarPorIdentificador(rows, 'localOfficeId', 'localOfficeName');
     }
-    if (access.accessLevel === ACCESS_LEVEL.LOCAL_OFFICE) {
-      const rows = await adapter.listLocalOffices({ localOfficeId: access.localOfficeId });
+    if (acceso.accessLevel === ACCESS_LEVEL.LOCAL_OFFICE) {
+      const rows = await adapter.ListarOficinasLocales({ localOfficeId: acceso.localOfficeId });
       return rows.map((row) => ({ id: row.localOfficeId, name: row.name }));
     }
     if (scope.regionId === null) {
       return [];
     }
-    const rows = await adapter.listLocalOffices({ regionId: scope.regionId });
+    const rows = await adapter.ListarOficinasLocales({ regionId: scope.regionId });
     return rows.map((row) => ({ id: row.localOfficeId, name: row.name }));
   }
 
@@ -249,26 +249,26 @@ function createPersonQueryService(dependencies) {
    * El nivel Establecimiento usa su lista concedida. Los demás niveles necesitan
    * una oficina ya resuelta; si no la hay, la lista queda vacía.
    */
-  async function establishmentsFor(access, scope) {
-    if (access.accessLevel === ACCESS_LEVEL.ESTABLISHMENT) {
-      const rows = await adapter.listEstablishments({ establishmentIds: access.establishmentIds });
-      return rows.map(establishmentOption);
+  async function EstablecimientosPara(acceso, scope) {
+    if (acceso.accessLevel === ACCESS_LEVEL.ESTABLISHMENT) {
+      const rows = await adapter.ListarEstablecimientos({ establishmentIds: acceso.establishmentIds });
+      return rows.map(OpcionEstablecimiento);
     }
     if (scope.localOfficeId === null) {
       return [];
     }
-    const rows = await adapter.listEstablishments({ localOfficeId: scope.localOfficeId });
-    return rows.map(establishmentOption);
+    const rows = await adapter.ListarEstablecimientos({ localOfficeId: scope.localOfficeId });
+    return rows.map(OpcionEstablecimiento);
   }
 
   return {
-    searchPersons,
-    getPerson,
-    listTerritoryOptions
+    BuscarPersonas,
+    ObtenerPersona,
+    ListarOpcionesTerritorio
   };
 }
 
-function establishmentOption(row) {
+function OpcionEstablecimiento(row) {
   return {
     id: row.establishmentId,
     name: row.name,
@@ -280,7 +280,7 @@ function establishmentOption(row) {
 /**
  * Deja una opción por identificador cuando varias filas repiten la misma región u oficina.
  */
-function unique(rows, idKey, nameKey) {
+function UnificarPorIdentificador(rows, idKey, nameKey) {
   const seen = new Map();
   for (const row of rows) {
     if (!seen.has(row[idKey])) {
@@ -290,4 +290,4 @@ function unique(rows, idKey, nameKey) {
   return [...seen.values()];
 }
 
-module.exports = { createPersonQueryService };
+module.exports = { CrearServicioConsultaPersona };

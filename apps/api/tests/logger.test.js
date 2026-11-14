@@ -1,6 +1,6 @@
 'use strict';
 
-const { createLogger } = require('../src/common/logger');
+const { CrearRegistro } = require('../src/common/logger');
 
 describe('logger', () => {
   test('redacta secretos y no imprime el valor', () => {
@@ -8,7 +8,7 @@ describe('logger', () => {
     const original = console.error;
     console.error = (line) => lines.push(line);
     try {
-      createLogger('error').error('fallo de acceso', {
+      CrearRegistro('error').error('fallo de acceso', {
         password: 'sia-secret-value',
         driverCode: 'ELOGIN'
       });

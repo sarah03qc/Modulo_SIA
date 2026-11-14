@@ -37,19 +37,19 @@ const RESTRICTED_FIELDS = Object.freeze({
   Salida: copia sin esos campos. El registro original no se modifica
   Sin capacidad de resumen, el bloque de casos no conserva filas
 */
-function applyFieldPolicy(record, access) {
+function AplicarPoliticaCampos(record, acceso) {
   if (!record || typeof record !== 'object' || Array.isArray(record)) {
     return record;
   }
   const copy = { ...record };
   for (const field of Object.keys(RESTRICTED_FIELDS)) {
-    if (Object.prototype.hasOwnProperty.call(copy, field) && !TieneCapacidad(access, RESTRICTED_FIELDS[field])) {
+    if (Object.prototype.hasOwnProperty.call(copy, field) && !TieneCapacidad(acceso, RESTRICTED_FIELDS[field])) {
       delete copy[field];
     }
   }
   if (copy.interdisciplinaryAttention && typeof copy.interdisciplinaryAttention === 'object') {
     const attention = { ...copy.interdisciplinaryAttention };
-    if (!TieneCapacidad(access, CAPABILITY.CASE_SUMMARY_READ)) {
+    if (!TieneCapacidad(acceso, CAPABILITY.CASE_SUMMARY_READ)) {
       attention.availability = 'BLOCKED';
       attention.reasonCode = 'PERMISSION_PENDING';
       attention.source = null;
@@ -57,7 +57,7 @@ function applyFieldPolicy(record, access) {
       attention.items = null;
       attention.message = 'La consulta de casos autorizados no está permitida para este acceso.';
     } else if (Array.isArray(attention.items)) {
-      attention.items = attention.items.map((item) => applyFieldPolicy(item, access));
+      attention.items = attention.items.map((item) => AplicarPoliticaCampos(item, acceso));
     }
     copy.interdisciplinaryAttention = attention;
   }
@@ -66,5 +66,5 @@ function applyFieldPolicy(record, access) {
 
 module.exports = {
   RESTRICTED_FIELDS,
-  applyFieldPolicy
+  AplicarPoliticaCampos
 };

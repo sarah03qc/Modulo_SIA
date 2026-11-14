@@ -1,6 +1,6 @@
 'use strict';
 
-const { InfrastructureError } = require('../../common/errors');
+const { ErrorInfraestructura } = require('../../common/errors');
 
 /*
   Lectura parametrizada de SIDINACC_LOCAL.
@@ -97,7 +97,7 @@ const NAME_MATCH = `
  * Convierte el texto buscado en un patrón de "contiene".
  * Escapa los comodines de la búsqueda para que el nombre se trate como texto literal.
  */
-function containsPattern(value) {
+function ContienePatron(value) {
   const escaped = value.toUpperCase().replace(/[\\%_[\]]/g, (character) => `\\${character}`);
   return `%${escaped}%`;
 }
@@ -106,13 +106,13 @@ function containsPattern(value) {
  * Arma un filtro IN con un parámetro por establecimiento.
  * Rechaza una lista vacía o un identificador que no sea un entero positivo.
  */
-function bindIdList(columnSql, ids, parameters, prefix) {
+function VincularListaIdentificadores(columnSql, ids, parameters, prefix) {
   if (!Array.isArray(ids) || ids.length === 0) {
-    throw new InfrastructureError('El ámbito de establecimientos no es utilizable.');
+    throw new ErrorInfraestructura('El ámbito de establecimientos no es utilizable.');
   }
   const names = ids.map((id, index) => {
     if (!Number.isInteger(id) || id <= 0) {
-      throw new InfrastructureError('El ámbito de establecimientos no es utilizable.');
+      throw new ErrorInfraestructura('El ámbito de establecimientos no es utilizable.');
     }
     const name = `${prefix}${index}`;
     parameters[name] = id;
@@ -125,7 +125,7 @@ function bindIdList(columnSql, ids, parameters, prefix) {
  * Agrega el ámbito al filtro de personas: región, oficina o establecimientos.
  * Siempre excluye personas marcadas como eliminadas.
  */
-function scopeClauses(scope, parameters) {
+function ClausulasDeAmbito(scope, parameters) {
   const clauses = ['COALESCE(person.BIT_eliminado, 0) = 0'];
   if (scope.regionId !== null && scope.regionId !== undefined) {
     parameters.regionId = scope.regionId;
@@ -136,7 +136,7 @@ function scopeClauses(scope, parameters) {
     clauses.push('office.CAT_idOficinaLocal = @localOfficeId');
   }
   if (Array.isArray(scope.establishmentIds)) {
-    clauses.push(bindIdList(
+    clauses.push(VincularListaIdentificadores(
       'establishment.EST_idEstablecimiento',
       scope.establishmentIds,
       parameters,
@@ -153,9 +153,9 @@ function scopeClauses(scope, parameters) {
  * La ficha busca el identificador aunque haya más de una, para poder informar
  * esa ambigüedad en lugar de ocultarla.
  */
-function buildPersonWhere(criteria, parameters) {
+function ConstruirFiltroPersona(criteria, parameters) {
   parameters.periodId = criteria.periodId;
-  const clauses = scopeClauses(criteria.scope, parameters);
+  const clauses = ClausulasDeAmbito(criteria.scope, parameters);
   if (criteria.mode !== 'profile') {
     // Mas de un detalle en el periodo no se lista. La ficha informa la ambiguedad.
     clauses.push(`${LOCATION_COUNT} = 1`);
@@ -164,13 +164,13 @@ function buildPersonWhere(criteria, parameters) {
     parameters.personId = criteria.text;
     clauses.push('person.PER_idPersona = @personId');
   } else if (criteria.mode === 'name') {
-    parameters.namePattern = containsPattern(criteria.text);
+    parameters.namePattern = ContienePatron(criteria.text);
     clauses.push(NAME_MATCH);
   } else if (criteria.mode === 'profile') {
     parameters.personId = criteria.personId;
     clauses.push('person.PER_idPersona = @personId');
   } else {
-    throw new InfrastructureError('El modo de consulta institucional no es válido.');
+    throw new ErrorInfraestructura('El modo de consulta institucional no es válido.');
   }
   return clauses.join('\n  AND ');
 }
@@ -178,9 +178,9 @@ function buildPersonWhere(criteria, parameters) {
 /**
  * Cuenta coincidencias con los mismos filtros de la página, sin traer filas de persona.
  */
-function buildPersonCountSql(criteria) {
+function ConstruirSqlConteoPersonas(criteria) {
   const parameters = {};
-  const whereSql = buildPersonWhere(criteria, parameters);
+  const whereSql = ConstruirFiltroPersona(criteria, parameters);
   return {
     parameters,
     sql: `SELECT COUNT(*) AS total_matches\n${PERSON_FROM}\nWHERE ${whereSql}`
@@ -191,9 +191,9 @@ function buildPersonCountSql(criteria) {
  * Arma la página de personas, ordenada por apellidos y nombre.
  * El desplazamiento y el tamaño viajan como parámetros.
  */
-function buildPersonPageSql(criteria) {
+function ConstruirSqlPaginaPersonas(criteria) {
   const parameters = {};
-  const whereSql = buildPersonWhere(criteria, parameters);
+  const whereSql = ConstruirFiltroPersona(criteria, parameters);
   parameters.rowOffset = criteria.offset;
   parameters.pageSize = criteria.pageSize;
   return {
@@ -206,9 +206,9 @@ function buildPersonPageSql(criteria) {
  * Arma la ficha de una persona, con contacto y la cantidad de ubicaciones del periodo.
  * No exige una sola ubicación: quien llama decide si esa cantidad es ambigua.
  */
-function buildPersonProfileSql(criteria) {
+function ConstruirSqlFichaPersona(criteria) {
   const parameters = {};
-  const whereSql = buildPersonWhere({ ...criteria, mode: 'profile' }, parameters);
+  const whereSql = ConstruirFiltroPersona({ ...criteria, mode: 'profile' }, parameters);
   return {
     parameters,
     sql: `SELECT ${IDENTITY_COLUMNS}, ${CONTACT_COLUMNS}, ${LOCATION_COUNT} AS location_count\n${PERSON_FROM}\nWHERE ${whereSql}\nORDER BY establishment.EST_idEstablecimiento, family_detail.FAD_idFamiliaDetalle`
@@ -219,7 +219,7 @@ function buildPersonProfileSql(criteria) {
  * Lista los servicios de la persona en el periodo configurado.
  * No vuelve a aplicar el ámbito: la persona ya debió localizarse dentro de él.
  */
-function buildServiceSql() {
+function ConstruirSqlServicios() {
   return `
 SELECT DISTINCT
   service.SER_idServicio AS service_id,
@@ -238,7 +238,7 @@ ORDER BY service.SER_descripcion, service.SER_idServicio
  * Lee al encargado registrado para la persona y el periodo.
  * La relación de madre o padre se deduce después, comparando identificadores.
  */
-function buildGuardianSql() {
+function ConstruirSqlEncargado() {
   return `
 SELECT
   guardian.PER_idPersona AS person_id,
@@ -263,7 +263,7 @@ ORDER BY guardian.PER_idPersona, minor.MEN_idRegistroMenor
  * Busca un establecimiento activo y la oficina y región a las que pertenece.
  * Sirve para comprobar que un filtro territorial sigue dentro del ámbito.
  */
-function buildEstablishmentLookupSql() {
+function ConstruirSqlBusquedaEstablecimiento() {
   return `
 SELECT
   establishment.EST_idEstablecimiento AS establishment_id,
@@ -285,7 +285,7 @@ WHERE establishment.EST_idEstablecimiento = @establishmentId
 /**
  * Busca una oficina local activa y la región a la que pertenece.
  */
-function buildLocalOfficeLookupSql() {
+function ConstruirSqlBusquedaOficina() {
   return `
 SELECT
   office.CAT_idOficinaLocal AS local_office_id,
@@ -300,7 +300,7 @@ WHERE office.CAT_idOficinaLocal = @localOfficeId
 /**
  * Busca una región activa por su identificador.
  */
-function buildRegionLookupSql() {
+function ConstruirSqlBusquedaRegion() {
   return `
 SELECT
   region.CAT_idRegion AS region_id,
@@ -314,7 +314,7 @@ WHERE region.CAT_idRegion = @regionId
 /**
  * Lista regiones activas. Si el ámbito trae región, devuelve solo esa.
  */
-function buildRegionListSql(scope) {
+function ConstruirSqlListaRegiones(scope) {
   const parameters = {};
   const restriction = scope && scope.regionId
     ? ' AND region.CAT_idRegion = @regionId'
@@ -343,7 +343,7 @@ ORDER BY region.REG_nombre, region.CAT_idRegion
  * Si vienen región y oficina, limita a esa oficina solo cuando
  * onlySelectedOffice está activo. Si no, prevalece la región.
  */
-function buildOfficeListSql(scope) {
+function ConstruirSqlListaOficinas(scope) {
   const parameters = {};
   const clauses = ['COALESCE(office.BIT_eliminado, 0) = 0'];
   if (scope.regionId) {
@@ -377,7 +377,7 @@ ORDER BY office.OFL_nombre, office.CAT_idOficinaLocal
  * Si el ámbito trae identificadores, usa esa lista.
  * Si no, exige una oficina. Sin ninguno de los dos, no consulta.
  */
-function buildEstablishmentListSql(scope) {
+function ConstruirSqlListaEstablecimientos(scope) {
   const parameters = {};
   const clauses = [
     'establishment.EST_inActivo = 1',
@@ -386,7 +386,7 @@ function buildEstablishmentListSql(scope) {
     'COALESCE(region.BIT_eliminado, 0) = 0'
   ];
   if (Array.isArray(scope.establishmentIds)) {
-    clauses.push(bindIdList(
+    clauses.push(VincularListaIdentificadores(
       'establishment.EST_idEstablecimiento',
       scope.establishmentIds,
       parameters,
@@ -396,7 +396,7 @@ function buildEstablishmentListSql(scope) {
     parameters.localOfficeId = scope.localOfficeId;
     clauses.push('establishment.CAT_idOficinaLocal = @localOfficeId');
   } else {
-    throw new InfrastructureError('El listado territorial requiere un ámbito.');
+    throw new ErrorInfraestructura('El listado territorial requiere un ámbito.');
   }
   return {
     parameters,
@@ -423,10 +423,10 @@ ORDER BY establishment.EST_descripcion, establishment.EST_idEstablecimiento
  * Lee el conteo devuelto por la búsqueda.
  * Un valor ausente o negativo se trata como fallo de la consulta.
  */
-function readTotal(rows) {
+function LeerTotal(rows) {
   const value = rows && rows[0] ? Number(rows[0].total_matches) : Number.NaN;
   if (!Number.isFinite(value) || value < 0) {
-    throw new InfrastructureError('La búsqueda institucional no devolvió un conteo utilizable.');
+    throw new ErrorInfraestructura('La búsqueda institucional no devolvió un conteo utilizable.');
   }
   return value;
 }
@@ -435,7 +435,7 @@ function readTotal(rows) {
  * Pasa la fila de catálogo a identificadores numéricos.
  * Si la consulta no devolvió fila, el resultado es null: la unidad no está activa o no existe.
  */
-function mapEstablishment(row) {
+function MapearEstablecimiento(row) {
   if (!row) {
     return null;
   }
@@ -449,7 +449,7 @@ function mapEstablishment(row) {
 /**
  * Devuelve la oficina activa, o null si la consulta no trajo fila.
  */
-function mapOffice(row) {
+function MapearOficina(row) {
   if (!row) {
     return null;
   }
@@ -463,7 +463,7 @@ function mapOffice(row) {
 /**
  * Devuelve la región activa, o null si la consulta no trajo fila.
  */
-function mapRegion(row) {
+function MapearRegion(row) {
   if (!row) {
     return null;
   }
@@ -477,20 +477,20 @@ function mapRegion(row) {
  * Lecturas de personas y territorio sobre SIDINACC_LOCAL.
  * Todas pasan por el cliente de solo lectura y no modifican la réplica.
  */
-function createSidinaccPersonReader(client) {
+function CrearLectorPersonasSidinacc(client) {
   return {
     /**
      * Busca personas y devuelve el total junto con la página pedida.
      * Si no hay coincidencias, o la página queda fuera del total, la lista va vacía.
      */
-    async searchPersons(criteria) {
-      const count = buildPersonCountSql(criteria);
+    async BuscarPersonas(criteria) {
+      const count = ConstruirSqlConteoPersonas(criteria);
       const countRows = await client.query(count.sql, count.parameters);
-      const total = readTotal(countRows);
+      const total = LeerTotal(countRows);
       if (total === 0 || criteria.offset >= total) {
         return { total, items: [] };
       }
-      const page = buildPersonPageSql(criteria);
+      const page = ConstruirSqlPaginaPersonas(criteria);
       const items = await client.query(page.sql, page.parameters);
       return { total, items };
     },
@@ -499,8 +499,8 @@ function createSidinaccPersonReader(client) {
      * Lee las filas de ficha de una persona dentro del ámbito.
      * Puede devolver más de una cuando la ubicación del periodo es ambigua.
      */
-    async findPersonInScope(criteria) {
-      const statement = buildPersonProfileSql(criteria);
+    async BuscarPersonaEnAmbito(criteria) {
+      const statement = ConstruirSqlFichaPersona(criteria);
       return client.query(statement.sql, statement.parameters);
     },
 
@@ -508,8 +508,8 @@ function createSidinaccPersonReader(client) {
      * Servicios de la persona en el periodo.
      * No vuelve a comprobar el ámbito territorial.
      */
-    async listServices(criteria) {
-      return client.query(buildServiceSql(), {
+    async ListarServicios(criteria) {
+      return client.query(ConstruirSqlServicios(), {
         personId: criteria.personId,
         periodId: criteria.periodId
       });
@@ -519,8 +519,8 @@ function createSidinaccPersonReader(client) {
      * Filas del encargado de la persona en el periodo.
      * No vuelve a comprobar el ámbito territorial.
      */
-    async listGuardianRows(criteria) {
-      return client.query(buildGuardianSql(), {
+    async ListarFilasEncargado(criteria) {
+      return client.query(ConstruirSqlEncargado(), {
         personId: criteria.personId,
         periodId: criteria.periodId
       });
@@ -529,41 +529,41 @@ function createSidinaccPersonReader(client) {
     /**
      * Busca un establecimiento activo. Devuelve null si no existe o no está activo.
      */
-    async findEstablishment(establishmentId) {
-      const rows = await client.query(buildEstablishmentLookupSql(), { establishmentId });
-      return mapEstablishment(rows[0]);
+    async BuscarEstablecimiento(establishmentId) {
+      const rows = await client.query(ConstruirSqlBusquedaEstablecimiento(), { establishmentId });
+      return MapearEstablecimiento(rows[0]);
     },
 
     /**
      * Busca una oficina activa. Devuelve null si no existe.
      */
-    async findLocalOffice(localOfficeId) {
-      const rows = await client.query(buildLocalOfficeLookupSql(), { localOfficeId });
-      return mapOffice(rows[0]);
+    async BuscarOficinaLocal(localOfficeId) {
+      const rows = await client.query(ConstruirSqlBusquedaOficina(), { localOfficeId });
+      return MapearOficina(rows[0]);
     },
 
     /**
      * Busca una región activa. Devuelve null si no existe.
      */
-    async findRegion(regionId) {
-      const rows = await client.query(buildRegionLookupSql(), { regionId });
-      return mapRegion(rows[0]);
+    async BuscarRegion(regionId) {
+      const rows = await client.query(ConstruirSqlBusquedaRegion(), { regionId });
+      return MapearRegion(rows[0]);
     },
 
     /**
      * Lista las regiones que el ámbito permite ver.
      */
-    async listRegions(scope) {
-      const statement = buildRegionListSql(scope);
+    async ListarRegiones(scope) {
+      const statement = ConstruirSqlListaRegiones(scope);
       const rows = await client.query(statement.sql, statement.parameters);
-      return rows.map(mapRegion);
+      return rows.map(MapearRegion);
     },
 
     /**
      * Lista las oficinas que el ámbito permite ver.
      */
-    async listLocalOffices(scope) {
-      const statement = buildOfficeListSql(scope);
+    async ListarOficinasLocales(scope) {
+      const statement = ConstruirSqlListaOficinas(scope);
       const rows = await client.query(statement.sql, statement.parameters);
       return rows.map((row) => ({
         localOfficeId: Number(row.local_office_id),
@@ -575,8 +575,8 @@ function createSidinaccPersonReader(client) {
     /**
      * Lista los establecimientos activos del ámbito recibido.
      */
-    async listEstablishments(scope) {
-      const statement = buildEstablishmentListSql(scope);
+    async ListarEstablecimientos(scope) {
+      const statement = ConstruirSqlListaEstablecimientos(scope);
       const rows = await client.query(statement.sql, statement.parameters);
       return rows.map((row) => ({
         establishmentId: Number(row.establishment_id),
@@ -595,7 +595,7 @@ function createSidinaccPersonReader(client) {
  * Sirven para comprobar que siguen siendo lecturas de una sola sentencia.
  * No se ejecutan contra la base desde aquí.
  */
-function sampleInstitutionalStatements() {
+function EjemplosSentenciasInstitucionales() {
   const scope = {
     regionId: 1,
     localOfficeId: 101,
@@ -609,25 +609,25 @@ function sampleInstitutionalStatements() {
     pageSize: 20
   };
   return [
-    buildPersonCountSql({ ...search, mode: 'identification' }).sql,
-    buildPersonPageSql({ ...search, mode: 'name' }).sql,
-    buildPersonProfileSql({ periodId: 2026, personId: 'SYN-1100102-01', scope }).sql,
-    buildServiceSql(),
-    buildGuardianSql(),
-    buildEstablishmentLookupSql(),
-    buildLocalOfficeLookupSql(),
-    buildRegionLookupSql(),
-    buildRegionListSql({}).sql,
-    buildRegionListSql({ regionId: 1 }).sql,
-    buildOfficeListSql({ regionId: 1 }).sql,
-    buildOfficeListSql({ localOfficeId: 101 }).sql,
-    buildEstablishmentListSql({ establishmentIds: [1100102, 1010320] }).sql,
-    buildEstablishmentListSql({ localOfficeId: 101 }).sql
+    ConstruirSqlConteoPersonas({ ...search, mode: 'identification' }).sql,
+    ConstruirSqlPaginaPersonas({ ...search, mode: 'name' }).sql,
+    ConstruirSqlFichaPersona({ periodId: 2026, personId: 'SYN-1100102-01', scope }).sql,
+    ConstruirSqlServicios(),
+    ConstruirSqlEncargado(),
+    ConstruirSqlBusquedaEstablecimiento(),
+    ConstruirSqlBusquedaOficina(),
+    ConstruirSqlBusquedaRegion(),
+    ConstruirSqlListaRegiones({}).sql,
+    ConstruirSqlListaRegiones({ regionId: 1 }).sql,
+    ConstruirSqlListaOficinas({ regionId: 1 }).sql,
+    ConstruirSqlListaOficinas({ localOfficeId: 101 }).sql,
+    ConstruirSqlListaEstablecimientos({ establishmentIds: [1100102, 1010320] }).sql,
+    ConstruirSqlListaEstablecimientos({ localOfficeId: 101 }).sql
   ];
 }
 
 module.exports = {
-  createSidinaccPersonReader,
-  sampleInstitutionalStatements,
-  containsPattern
+  CrearLectorPersonasSidinacc,
+  EjemplosSentenciasInstitucionales,
+  ContienePatron
 };

@@ -1,10 +1,10 @@
 'use strict';
 
 const request = require('supertest');
-const { createApp } = require('../src/app');
-const { loadConfig } = require('../src/config/load-config');
-const { createDatabaseGateway } = require('../src/infrastructure/database/sql-client');
-const { createSidinaccAdapter } = require('../src/infrastructure/integrations/sidinacc-adapter');
+const { CrearAplicacion } = require('../src/app');
+const { CargarConfiguracion } = require('../src/config/load-config');
+const { CrearPasarelaBases } = require('../src/infrastructure/database/sql-client');
+const { CrearAdaptadorSidinacc } = require('../src/infrastructure/integrations/sidinacc-adapter');
 
 const placeholder = !process.env.SIA_DB_PASSWORD
   || !process.env.SIDINACC_DB_PASSWORD
@@ -14,17 +14,17 @@ const placeholder = !process.env.SIA_DB_PASSWORD
 
 const describeLive = placeholder ? describe.skip : describe;
 
-function keysDeep(value, found = []) {
+function ClavesEnProfundidad(value, found = []) {
   if (Array.isArray(value)) {
     for (const item of value) {
-      keysDeep(item, found);
+      ClavesEnProfundidad(item, found);
     }
     return found;
   }
   if (value && typeof value === 'object') {
     for (const [key, item] of Object.entries(value)) {
       found.push(key);
-      keysDeep(item, found);
+      ClavesEnProfundidad(item, found);
     }
   }
   return found;
@@ -38,12 +38,12 @@ describeLive('consulta institucional contra SQL Server local', () => {
   let config;
 
   beforeAll(() => {
-    config = loadConfig(process.env);
-    gateway = createDatabaseGateway(config);
-    app = createApp({
+    config = CargarConfiguracion(process.env);
+    gateway = CrearPasarelaBases(config);
+    app = CrearAplicacion({
       config,
       databases: gateway,
-      adapter: createSidinaccAdapter(gateway.sidinacc),
+      adapter: CrearAdaptadorSidinacc(gateway.sidinacc),
       logger: { error: jest.fn(), warn: jest.fn(), info: jest.fn() }
     });
   });
@@ -240,7 +240,7 @@ describeLive('consulta institucional contra SQL Server local', () => {
         closedOn: null
       }
     ]);
-    expect(keysDeep(profile.body)).not.toEqual(expect.arrayContaining([
+    expect(ClavesEnProfundidad(profile.body)).not.toEqual(expect.arrayContaining([
       'riesgo',
       'proteccion',
       'factores',

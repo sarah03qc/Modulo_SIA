@@ -1,20 +1,20 @@
 'use strict';
 
 const request = require('supertest');
-const { createApp } = require('../src/app');
+const { CrearAplicacion } = require('../src/app');
 const { CrearControlErrores } = require('../src/common/http-error-handler');
-const { loadConfig } = require('../src/config/load-config');
-const { validEnv } = require('./env-fixture');
+const { CargarConfiguracion } = require('../src/config/load-config');
+const { EntornoValido } = require('./env-fixture');
 
-function createTestApp(overrides = {}) {
-  const config = loadConfig(validEnv());
+function CrearAplicacionDePrueba(overrides = {}) {
+  const config = CargarConfiguracion(EntornoValido());
   const databases = overrides.databases || {
     sia: {
-      probe: jest.fn(async () => ({ database: 'SIA_CENCINAI', readOnly: false, role: 'sia' }))
+      Sondear: jest.fn(async () => ({ database: 'SIA_CENCINAI', readOnly: false, role: 'sia' }))
     }
   };
   const adapter = overrides.adapter || {
-    checkAvailability: jest.fn(async () => ({
+    ComprobarDisponibilidad: jest.fn(async () => ({
       available: true,
       database: 'SIDINACC_LOCAL',
       readOnly: true
@@ -25,13 +25,13 @@ function createTestApp(overrides = {}) {
     warn: jest.fn(),
     info: jest.fn()
   };
-  const app = createApp({ config, databases, adapter, logger });
+  const app = CrearAplicacion({ config, databases, adapter, logger });
   return { app, databases, adapter, logger };
 }
 
 describe('API técnica', () => {
   test('GET /health responde sin secretos ni cabecera de tecnología', async () => {
-    const { app } = createTestApp();
+    const { app } = CrearAplicacionDePrueba();
     const response = await request(app)
       .get('/health')
       .set('Origin', 'http://127.0.0.1:5174');
@@ -48,7 +48,7 @@ describe('API técnica', () => {
   });
 
   test('rechaza un origen CORS no configurado', async () => {
-    const { app } = createTestApp();
+    const { app } = CrearAplicacionDePrueba();
     const response = await request(app)
       .get('/health')
       .set('Origin', 'http://evil.example');
@@ -56,17 +56,17 @@ describe('API técnica', () => {
   });
 
   test('GET /ready distingue dependencias disponibles y caídas sin filtrar el error', async () => {
-    const readyApp = createTestApp();
+    const readyApp = CrearAplicacionDePrueba();
     const ready = await request(readyApp.app).get('/ready');
     expect(ready.status).toBe(200);
     expect(ready.body.status).toBe('ready');
     expect(ready.body.checks.sia).toEqual({ status: 'up', database: 'SIA_CENCINAI' });
     expect(ready.body.checks.sidinacc.readOnly).toBe(true);
 
-    const down = createTestApp({
+    const down = CrearAplicacionDePrueba({
       databases: {
         sia: {
-          probe: jest.fn(async () => {
+          Sondear: jest.fn(async () => {
             const error = new Error('password=hunter2');
             error.code = 'ELOGIN';
             throw error;
@@ -74,7 +74,7 @@ describe('API técnica', () => {
         }
       },
       adapter: {
-        checkAvailability: jest.fn(async () => {
+        ComprobarDisponibilidad: jest.fn(async () => {
           throw new Error('Server=secret;User ID=sa');
         })
       }
@@ -88,14 +88,14 @@ describe('API técnica', () => {
   });
 
   test('protege las rutas funcionales hasta integrar la sesión institucional', async () => {
-    const { app } = createTestApp();
+    const { app } = CrearAplicacionDePrueba();
     const response = await request(app).get('/api/references');
     expect(response.status).toBe(401);
     expect(response.body.error.code).toBe('AUTHENTICATION_NOT_CONFIGURED');
   });
 
   test('responde 404 controlado', async () => {
-    const { app, logger } = createTestApp();
+    const { app, logger } = CrearAplicacionDePrueba();
     const response = await request(app).get('/recurso-desconocido/dato-sintetico');
     expect(response.status).toBe(404);
     expect(response.body.error.code).toBe('NOT_FOUND');
@@ -146,12 +146,12 @@ describe('control central de errores HTTP', () => {
         return this;
       }
     };
-    const { NotFoundError } = require('../src/common/errors');
+    const { ErrorNoEncontrado } = require('../src/common/errors');
     const req = {
       path: '/api/institutional/persons/SYN-1100102-01',
       route: { path: '/persons/:personId' }
     };
-    handler(new NotFoundError(), req, res, jest.fn());
+    handler(new ErrorNoEncontrado(), req, res, jest.fn());
     expect(JSON.stringify(logger.info.mock.calls)).not.toContain('SYN-1100102-01');
     expect(JSON.stringify(logger.info.mock.calls)).toContain('/persons/:personId');
   });

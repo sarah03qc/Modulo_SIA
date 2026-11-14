@@ -22,12 +22,12 @@ const INSTITUTIONAL_ROLES = Object.freeze(new Set(Object.values(ACCESS_LEVEL)));
   Entrada: código de rol
   Salida: true cuando el código pertenece al catálogo interno
 */
-function isInstitutionalRole(role) {
+function EsRolInstitucional(role) {
   return INSTITUTIONAL_ROLES.has(role);
 }
 
 module.exports = {
   ACCESS_LEVEL,
   INSTITUTIONAL_ROLES,
-  isInstitutionalRole
+  EsRolInstitucional
 };

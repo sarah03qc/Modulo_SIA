@@ -1,20 +1,20 @@
 'use strict';
 
-const { ForbiddenError, ValidationError, AmbiguousInstitutionalLocationError } = require('../src/common/errors');
-const { findDevelopmentPrincipal } = require('../src/infrastructure/auth/development-access');
-const { createUserContext } = require('../src/infrastructure/auth/user-context');
-const { resolveTerritorialScope } = require('../src/modules/institutional/territorial-scope');
-const { createPersonQueryService } = require('../src/modules/institutional/person-query-service');
-const { completedYears, CASE_FIELDS } = require('../src/modules/institutional/person-presenter');
-const { buildCaseSummarySql } = require('../src/infrastructure/persistence/case-summary-reader');
-const { readSearchQuery } = require('../src/modules/institutional/request-validation');
-const { sampleInstitutionalStatements, containsPattern } = require('../src/infrastructure/integrations/sidinacc-person-reader');
-const { assertInstitutionalRead } = require('../src/infrastructure/database/institutional-read');
+const { ErrorProhibido, ErrorValidacion, ErrorUbicacionInstitucionalAmbigua } = require('../src/common/errors');
+const { BuscarPrincipalDesarrollo } = require('../src/infrastructure/auth/development-access');
+const { CrearContextoUsuario } = require('../src/infrastructure/auth/user-context');
+const { ResolverAmbitoTerritorial } = require('../src/modules/institutional/territorial-scope');
+const { CrearServicioConsultaPersona } = require('../src/modules/institutional/person-query-service');
+const { AniosCumplidos, CASE_FIELDS } = require('../src/modules/institutional/person-presenter');
+const { ConstruirSqlResumenCasos } = require('../src/infrastructure/persistence/case-summary-reader');
+const { LeerConsultaBusqueda } = require('../src/modules/institutional/request-validation');
+const { EjemplosSentenciasInstitucionales, ContienePatron } = require('../src/infrastructure/integrations/sidinacc-person-reader');
+const { AfirmarLecturaInstitucional } = require('../src/infrastructure/database/institutional-read');
 
 const TODAY = new Date(2026, 10, 6);
 
-function accessOf(principalId) {
-  return createUserContext(findDevelopmentPrincipal(principalId));
+function AccesoDe(principalId) {
+  return CrearContextoUsuario(BuscarPrincipalDesarrollo(principalId));
 }
 
 function territory() {
@@ -34,121 +34,121 @@ function territory() {
     5: { regionId: 5, name: 'Brunca' }
   };
   return {
-    findEstablishment: async (id) => establishments[id] || null,
-    findLocalOffice: async (id) => offices[id] || null,
-    findRegion: async (id) => regions[id] || null
+    BuscarEstablecimiento: async (id) => establishments[id] || null,
+    BuscarOficinaLocal: async (id) => offices[id] || null,
+    BuscarRegion: async (id) => regions[id] || null
   };
 }
 
-function noFilters() {
+function SinFiltros() {
   return { regionId: null, localOfficeId: null, establishmentId: null };
 }
 
 describe('ámbito territorial', () => {
   test('aplica el único establecimiento y rechaza filtros ajenos', async () => {
-    const access = accessOf('dev-establecimiento-unico');
+    const acceso = AccesoDe('dev-establecimiento-unico');
     const catalog = territory();
-    const applied = await resolveTerritorialScope(access, noFilters(), catalog);
+    const applied = await ResolverAmbitoTerritorial(acceso, SinFiltros(), catalog);
     expect(applied.establishmentIds).toEqual([1100102]);
     expect(applied.establishmentAppliedAutomatically).toBe(true);
 
-    await expect(resolveTerritorialScope(access, {
-      ...noFilters(),
+    await expect(ResolverAmbitoTerritorial(acceso, {
+      ...SinFiltros(),
       establishmentId: 1010320
-    }, catalog)).rejects.toBeInstanceOf(ForbiddenError);
+    }, catalog)).rejects.toBeInstanceOf(ErrorProhibido);
 
-    await expect(resolveTerritorialScope(access, {
-      ...noFilters(),
+    await expect(ResolverAmbitoTerritorial(acceso, {
+      ...SinFiltros(),
       localOfficeId: 101
-    }, catalog)).rejects.toBeInstanceOf(ValidationError);
+    }, catalog)).rejects.toBeInstanceOf(ErrorValidacion);
   });
 
   test('un establecimiento con varios ámbitos solo filtra entre los autorizados', async () => {
-    const access = accessOf('dev-establecimiento-multiple');
+    const acceso = AccesoDe('dev-establecimiento-multiple');
     const catalog = territory();
-    const open = await resolveTerritorialScope(access, noFilters(), catalog);
+    const open = await ResolverAmbitoTerritorial(acceso, SinFiltros(), catalog);
     expect(open.establishmentIds).toEqual([1100102, 1010320]);
     expect(open.establishmentAppliedAutomatically).toBe(false);
 
-    const selected = await resolveTerritorialScope(access, {
-      ...noFilters(),
+    const selected = await ResolverAmbitoTerritorial(acceso, {
+      ...SinFiltros(),
       establishmentId: 1010320
     }, catalog);
     expect(selected.establishmentIds).toEqual([1010320]);
 
-    await expect(resolveTerritorialScope(access, {
-      ...noFilters(),
+    await expect(ResolverAmbitoTerritorial(acceso, {
+      ...SinFiltros(),
       establishmentId: 1190108
-    }, catalog)).rejects.toBeInstanceOf(ForbiddenError);
+    }, catalog)).rejects.toBeInstanceOf(ErrorProhibido);
   });
 
   test('Oficina Local excluye otras oficinas y acepta su establecimiento', async () => {
-    const access = accessOf('dev-oficina-hatillo');
+    const acceso = AccesoDe('dev-oficina-hatillo');
     const catalog = territory();
-    await expect(resolveTerritorialScope(access, {
-      ...noFilters(),
+    await expect(ResolverAmbitoTerritorial(acceso, {
+      ...SinFiltros(),
       localOfficeId: 501
-    }, catalog)).rejects.toBeInstanceOf(ForbiddenError);
+    }, catalog)).rejects.toBeInstanceOf(ErrorProhibido);
 
-    const selected = await resolveTerritorialScope(access, {
-      ...noFilters(),
+    const selected = await ResolverAmbitoTerritorial(acceso, {
+      ...SinFiltros(),
       establishmentId: 1100102
     }, catalog);
     expect(selected.localOfficeId).toBe(101);
     expect(selected.establishmentIds).toEqual([1100102]);
 
-    await expect(resolveTerritorialScope(access, {
-      ...noFilters(),
+    await expect(ResolverAmbitoTerritorial(acceso, {
+      ...SinFiltros(),
       establishmentId: 1190108
-    }, catalog)).rejects.toBeInstanceOf(ForbiddenError);
+    }, catalog)).rejects.toBeInstanceOf(ErrorProhibido);
   });
 
   test('Regional rechaza otra región y una combinación incompatible', async () => {
-    const access = accessOf('dev-region-central-sur');
+    const acceso = AccesoDe('dev-region-central-sur');
     const catalog = territory();
-    await expect(resolveTerritorialScope(access, {
-      ...noFilters(),
+    await expect(ResolverAmbitoTerritorial(acceso, {
+      ...SinFiltros(),
       regionId: 5
-    }, catalog)).rejects.toBeInstanceOf(ForbiddenError);
+    }, catalog)).rejects.toBeInstanceOf(ErrorProhibido);
 
-    const office = await resolveTerritorialScope(access, {
-      ...noFilters(),
+    const office = await ResolverAmbitoTerritorial(acceso, {
+      ...SinFiltros(),
       localOfficeId: 101
     }, catalog);
     expect(office.regionId).toBe(1);
     expect(office.localOfficeId).toBe(101);
 
-    await expect(resolveTerritorialScope(access, {
-      ...noFilters(),
+    await expect(ResolverAmbitoTerritorial(acceso, {
+      ...SinFiltros(),
       localOfficeId: 101,
       establishmentId: 1010202
-    }, catalog)).rejects.toBeInstanceOf(ValidationError);
+    }, catalog)).rejects.toBeInstanceOf(ErrorValidacion);
 
-    await expect(resolveTerritorialScope(access, {
-      ...noFilters(),
+    await expect(ResolverAmbitoTerritorial(acceso, {
+      ...SinFiltros(),
       localOfficeId: 501
-    }, catalog)).rejects.toBeInstanceOf(ForbiddenError);
+    }, catalog)).rejects.toBeInstanceOf(ErrorProhibido);
   });
 
   test('Nacional exige coherencia y no arma un listado sin ámbito falso', async () => {
-    const access = accessOf('dev-nacional');
+    const acceso = AccesoDe('dev-nacional');
     const catalog = territory();
-    const open = await resolveTerritorialScope(access, noFilters(), catalog);
+    const open = await ResolverAmbitoTerritorial(acceso, SinFiltros(), catalog);
     expect(open.establishmentIds).toBeNull();
     expect(open.regionId).toBeNull();
 
-    await expect(resolveTerritorialScope(access, {
+    await expect(ResolverAmbitoTerritorial(acceso, {
       regionId: 1,
       localOfficeId: 501,
       establishmentId: null
-    }, catalog)).rejects.toBeInstanceOf(ValidationError);
+    }, catalog)).rejects.toBeInstanceOf(ErrorValidacion);
 
-    await expect(resolveTerritorialScope(access, {
-      ...noFilters(),
+    await expect(ResolverAmbitoTerritorial(acceso, {
+      ...SinFiltros(),
       localOfficeId: 999
-    }, catalog)).rejects.toBeInstanceOf(ValidationError);
+    }, catalog)).rejects.toBeInstanceOf(ErrorValidacion);
 
-    const chained = await resolveTerritorialScope(access, {
+    const chained = await ResolverAmbitoTerritorial(acceso, {
       regionId: 5,
       localOfficeId: 501,
       establishmentId: 1190108
@@ -157,30 +157,30 @@ describe('ámbito territorial', () => {
   });
 
   test('sin contexto de acceso no consulta', async () => {
-    await expect(resolveTerritorialScope(null, noFilters(), territory()))
-      .rejects.toBeInstanceOf(ForbiddenError);
+    await expect(ResolverAmbitoTerritorial(null, SinFiltros(), territory()))
+      .rejects.toBeInstanceOf(ErrorProhibido);
   });
 });
 
 describe('búsqueda contextual', () => {
-  function serviceWith(searchPersons) {
+  function serviceWith(BuscarPersonas) {
     const adapter = {
-      searchPersons: jest.fn(searchPersons),
-      findPersonInScope: jest.fn(async () => []),
-      listServices: jest.fn(async () => []),
-      listGuardianRows: jest.fn(async () => []),
-      findEstablishment: territory().findEstablishment,
-      findLocalOffice: territory().findLocalOffice,
-      findRegion: territory().findRegion,
-      listRegions: jest.fn(async () => []),
-      listLocalOffices: jest.fn(async () => []),
-      listEstablishments: jest.fn(async () => [])
+      BuscarPersonas: jest.fn(BuscarPersonas),
+      BuscarPersonaEnAmbito: jest.fn(async () => []),
+      ListarServicios: jest.fn(async () => []),
+      ListarFilasEncargado: jest.fn(async () => []),
+      BuscarEstablecimiento: territory().BuscarEstablecimiento,
+      BuscarOficinaLocal: territory().BuscarOficinaLocal,
+      BuscarRegion: territory().BuscarRegion,
+      ListarRegiones: jest.fn(async () => []),
+      ListarOficinasLocales: jest.fn(async () => []),
+      ListarEstablecimientos: jest.fn(async () => [])
     };
-    const cases = { listAuthorizedSummaries: jest.fn() };
+    const cases = { ListarResumenesAutorizados: jest.fn() };
     return {
       adapter,
       cases,
-      service: createPersonQueryService({
+      service: CrearServicioConsultaPersona({
         periodId: 2026,
         adapter,
         cases,
@@ -196,17 +196,17 @@ describe('búsqueda contextual', () => {
       }
       return { total: 4, items: [] };
     });
-    const body = await service.searchPersons(accessOf('dev-establecimiento-unico'), {
+    const body = await service.BuscarPersonas(AccesoDe('dev-establecimiento-unico'), {
       text: 'SYN-1100102-01',
       page: 1,
       pageSize: 20,
       offset: 0,
-      ...noFilters()
+      ...SinFiltros()
     });
     expect(body.query.matchMode).toBe('identification');
     expect(body.result.total).toBe(1);
     expect(body.result.returned).toBe(1);
-    expect(adapter.searchPersons).toHaveBeenCalledTimes(1);
+    expect(adapter.BuscarPersonas).toHaveBeenCalledTimes(1);
     expect(body.scope.establishmentAppliedAutomatically).toBe(true);
     expect(body.provenance.periodId).toBe('2026');
   });
@@ -218,12 +218,12 @@ describe('búsqueda contextual', () => {
       }
       return { total: 0, items: [] };
     });
-    const body = await service.searchPersons(accessOf('dev-oficina-hatillo'), {
+    const body = await service.BuscarPersonas(AccesoDe('dev-oficina-hatillo'), {
       text: 'Nombre Inexistente',
       page: 1,
       pageSize: 20,
       offset: 0,
-      ...noFilters()
+      ...SinFiltros()
     });
     expect(body.query.matchMode).toBe('name');
     expect(body.result.total).toBe(0);
@@ -270,12 +270,12 @@ describe('búsqueda contextual', () => {
         ]
       };
     });
-    const body = await service.searchPersons(accessOf('dev-oficina-hatillo'), {
+    const body = await service.BuscarPersonas(AccesoDe('dev-oficina-hatillo'), {
       text: 'Campos',
       page: 1,
       pageSize: 1,
       offset: 0,
-      ...noFilters()
+      ...SinFiltros()
     });
     expect(body.result.total).toBe(2);
     expect(body.result.returned).toBe(2);
@@ -288,23 +288,23 @@ describe('búsqueda contextual', () => {
   test('el criterio malicioso viaja como parámetro, no como sentencia', async () => {
     const { adapter, service } = serviceWith(async () => ({ total: 0, items: [] }));
     const text = "SYN-1100102-01' OR 1=1 --";
-    await service.searchPersons(accessOf('dev-nacional'), {
+    await service.BuscarPersonas(AccesoDe('dev-nacional'), {
       text,
       page: 1,
       pageSize: 20,
       offset: 0,
-      ...noFilters()
+      ...SinFiltros()
     });
-    expect(adapter.searchPersons).toHaveBeenCalledWith(expect.objectContaining({
+    expect(adapter.BuscarPersonas).toHaveBeenCalledWith(expect.objectContaining({
       text,
       mode: 'identification'
     }));
-    expect(containsPattern('%_Ana')).toBe('%\\%\\_ANA%');
+    expect(ContienePatron('%_Ana')).toBe('%\\%\\_ANA%');
   });
 });
 
 describe('consulta básica', () => {
-  const personRow = {
+  const FilaDePersona = {
     person_id: 'SYN-1100102-01',
     given_name: 'Ana',
     first_surname: 'Campos',
@@ -324,18 +324,18 @@ describe('consulta básica', () => {
 
   function profileService(overrides = {}) {
     const cases = {
-      listAuthorizedSummaries: jest.fn(async () => overrides.cases || {
+      ListarResumenesAutorizados: jest.fn(async () => overrides.cases || {
         availability: 'AVAILABLE',
         items: []
       })
     };
     const adapter = {
-      searchPersons: jest.fn(),
-      findPersonInScope: jest.fn(async () => overrides.rows || [personRow]),
-      listServices: jest.fn(async () => overrides.services || [
+      BuscarPersonas: jest.fn(),
+      BuscarPersonaEnAmbito: jest.fn(async () => overrides.rows || [FilaDePersona]),
+      ListarServicios: jest.fn(async () => overrides.services || [
         { service_id: 1, service_name: 'Servicio Demo 1 (SINTETICO)' }
       ]),
-      listGuardianRows: jest.fn(async () => overrides.guardian || [{
+      ListarFilasEncargado: jest.fn(async () => overrides.guardian || [{
         person_id: 'SYN-1100102-81',
         given_name: 'Rosa',
         first_surname: 'Solano',
@@ -344,16 +344,16 @@ describe('consulta básica', () => {
         father_id: 'SYN-1100102-82',
         guardian_id: 'SYN-1100102-81'
       }]),
-      findEstablishment: territory().findEstablishment,
-      findLocalOffice: territory().findLocalOffice,
-      findRegion: territory().findRegion,
-      listRegions: jest.fn(async () => []),
-      listLocalOffices: jest.fn(async () => []),
-      listEstablishments: jest.fn(async () => [])
+      BuscarEstablecimiento: territory().BuscarEstablecimiento,
+      BuscarOficinaLocal: territory().BuscarOficinaLocal,
+      BuscarRegion: territory().BuscarRegion,
+      ListarRegiones: jest.fn(async () => []),
+      ListarOficinasLocales: jest.fn(async () => []),
+      ListarEstablecimientos: jest.fn(async () => [])
     };
     return {
       cases,
-      service: createPersonQueryService({
+      service: CrearServicioConsultaPersona({
         periodId: 2026,
         adapter,
         cases,
@@ -364,7 +364,7 @@ describe('consulta básica', () => {
 
   test('devuelve identidad, ubicación, servicio y encargado sin tratarlo como cliente', async () => {
     const { service } = profileService();
-    const body = await service.getPerson(accessOf('dev-establecimiento-unico'), 'SYN-1100102-01');
+    const body = await service.ObtenerPersona(AccesoDe('dev-establecimiento-unico'), 'SYN-1100102-01');
     expect(body.personId).toBe('SYN-1100102-01');
     expect(body.fullName).toBe('Ana Campos Jimenez');
     expect(body.establishment.id).toBe(1100102);
@@ -382,22 +382,22 @@ describe('consulta básica', () => {
 
   test('persona fuera de ámbito o inexistente usa la misma respuesta', async () => {
     const { service } = profileService({ rows: [] });
-    await expect(service.getPerson(accessOf('dev-region-brunca'), 'SYN-1100102-01'))
+    await expect(service.ObtenerPersona(AccesoDe('dev-region-brunca'), 'SYN-1100102-01'))
       .rejects.toMatchObject({ status: 404 });
   });
 
   test('no elige una ubicación institucional ambigua', async () => {
-    const { service } = profileService({ rows: [personRow, { ...personRow, establishment_id: 1010320 }] });
-    await expect(service.getPerson(accessOf('dev-nacional'), 'SYN-1100102-01'))
-      .rejects.toBeInstanceOf(AmbiguousInstitutionalLocationError);
+    const { service } = profileService({ rows: [FilaDePersona, { ...FilaDePersona, establishment_id: 1010320 }] });
+    await expect(service.ObtenerPersona(AccesoDe('dev-nacional'), 'SYN-1100102-01'))
+      .rejects.toBeInstanceOf(ErrorUbicacionInstitucionalAmbigua);
   });
 
   test('un detalle fuera del ámbito también deja la ficha sin elegir fila', async () => {
     const { service } = profileService({
-      rows: [{ ...personRow, location_count: 2 }]
+      rows: [{ ...FilaDePersona, location_count: 2 }]
     });
-    await expect(service.getPerson(accessOf('dev-establecimiento-unico'), 'SYN-1100102-01'))
-      .rejects.toBeInstanceOf(AmbiguousInstitutionalLocationError);
+    await expect(service.ObtenerPersona(AccesoDe('dev-establecimiento-unico'), 'SYN-1100102-01'))
+      .rejects.toBeInstanceOf(ErrorUbicacionInstitucionalAmbigua);
   });
 
   test('el encargado distinto de madre y padre no recibe una relación inventada', async () => {
@@ -412,14 +412,14 @@ describe('consulta básica', () => {
         guardian_id: 'SYN-1100102-87'
       }]
     });
-    const body = await service.getPerson(accessOf('dev-establecimiento-unico'), 'SYN-1100102-03');
+    const body = await service.ObtenerPersona(AccesoDe('dev-establecimiento-unico'), 'SYN-1100102-03');
     expect(body.guardian.person.personId).toBe('SYN-1100102-87');
     expect(body.guardian.person.relationship).toBeNull();
   });
 
   test('sin permiso de casos no simula resultados ni expone columnas restringidas', async () => {
     const { service } = profileService({ cases: { availability: 'BLOCKED', items: null } });
-    const body = await service.getPerson(accessOf('dev-establecimiento-unico'), 'SYN-1100102-01');
+    const body = await service.ObtenerPersona(AccesoDe('dev-establecimiento-unico'), 'SYN-1100102-01');
     expect(body.interdisciplinaryAttention.availability).toBe('BLOCKED');
     expect(body.interdisciplinaryAttention.items).toBeNull();
     expect(JSON.stringify(body)).not.toMatch(/riesgo|proteccion|factor|planOperativo|valoracion/i);
@@ -438,7 +438,7 @@ describe('consulta básica', () => {
         }]
       }
     });
-    const body = await service.getPerson(accessOf('dev-establecimiento-multiple'), 'SYN-1100102-01');
+    const body = await service.ObtenerPersona(AccesoDe('dev-establecimiento-multiple'), 'SYN-1100102-01');
     expect(Object.keys(body.interdisciplinaryAttention.items[0]).sort()).toEqual([...CASE_FIELDS].sort());
     expect(body.interdisciplinaryAttention.items[0]).toEqual({
       caseId: '15',
@@ -447,14 +447,14 @@ describe('consulta básica', () => {
       openedOn: '2026-02-01',
       closedOn: null
     });
-    const statement = buildCaseSummarySql({
+    const statement = ConstruirSqlResumenCasos({
       regionId: null,
       localOfficeId: null,
       establishmentIds: [1100102, 1010320]
     });
     expect(statement.sql).not.toMatch(/riesgo|proteccion|factor|caso_plan|ses_valoracion|ate_|doc_/i);
-    expect(() => assertInstitutionalRead(statement.sql)).not.toThrow();
-    expect(cases.listAuthorizedSummaries).toHaveBeenCalledWith('SYN-1100102-01', expect.objectContaining({
+    expect(() => AfirmarLecturaInstitucional(statement.sql)).not.toThrow();
+    expect(cases.ListarResumenesAutorizados).toHaveBeenCalledWith('SYN-1100102-01', expect.objectContaining({
       establishmentIds: [1100102, 1010320]
     }));
   });
@@ -462,23 +462,23 @@ describe('consulta básica', () => {
 
 describe('validación y lecturas institucionales', () => {
   test('exige criterio, limita la página y rechaza identificadores no numéricos', () => {
-    expect(() => readSearchQuery({})).toThrow(ValidationError);
-    expect(() => readSearchQuery({ q: 'A' })).toThrow(/2 caracteres/);
-    expect(() => readSearchQuery({ q: 'Ana', pageSize: '100' })).toThrow(/tamaño de página/);
-    expect(() => readSearchQuery({ q: 'Ana', regionId: '1 OR 1=1' })).toThrow(ValidationError);
-    const parsed = readSearchQuery({ q: '  Ana  ', page: '2', pageSize: '10' });
+    expect(() => LeerConsultaBusqueda({})).toThrow(ErrorValidacion);
+    expect(() => LeerConsultaBusqueda({ q: 'A' })).toThrow(/2 caracteres/);
+    expect(() => LeerConsultaBusqueda({ q: 'Ana', pageSize: '100' })).toThrow(/tamaño de página/);
+    expect(() => LeerConsultaBusqueda({ q: 'Ana', regionId: '1 OR 1=1' })).toThrow(ErrorValidacion);
+    const parsed = LeerConsultaBusqueda({ q: '  Ana  ', page: '2', pageSize: '10' });
     expect(parsed).toMatchObject({ text: 'Ana', page: 2, pageSize: 10, offset: 10 });
   });
 
   test('la edad usa la fecha del servidor y no adelanta un cumpleaños', () => {
-    expect(completedYears('2015-11-07', TODAY)).toBe(10);
-    expect(completedYears('2015-11-06', TODAY)).toBe(11);
-    expect(completedYears(null, TODAY)).toBeNull();
+    expect(AniosCumplidos('2015-11-07', TODAY)).toBe(10);
+    expect(AniosCumplidos('2015-11-06', TODAY)).toBe(11);
+    expect(AniosCumplidos(null, TODAY)).toBeNull();
   });
 
   test('las sentencias de la réplica son una sola lectura con columnas nombradas', () => {
-    for (const sql of sampleInstitutionalStatements()) {
-      expect(() => assertInstitutionalRead(sql)).not.toThrow();
+    for (const sql of EjemplosSentenciasInstitucionales()) {
+      expect(() => AfirmarLecturaInstitucional(sql)).not.toThrow();
     }
   });
 });
