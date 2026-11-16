@@ -49,8 +49,8 @@ La clasificación entre atención grupal de A.I. y sesiones educativas generales
 | HU | Estado | Evidencia | Dependencia o bloqueo |
 | --- | --- | --- | --- |
 | HU-001 | Implementada | `GET /api/proceso/resumen`. Inicio de Establecimiento muestra referencias y personas con caso del ámbito | Posibles referencias no están en este lote |
-| HU-002 | Parcial | Inicio de Oficina Local, 2026-11-16 por la tarde: alerta «Vencida» con 6 actividades, 4 próximas acciones que abren el caso, sesiones y acceso a Programación. Posibles referencias siguen sin fuente | La detección automática sigue `NEEDS_VALIDATION`. Resolver una actividad en vivo espera el script `060`, que no se ejecutó |
-| HU-044 | Parcial | `GET /api/programacion/actividades` devolvió 19 actividades de la oficina 101; 6 marcadas vencidas. Reprogramada no se marca vencida. Las próximas acciones salen de la última atención y no de la frecuencia del plan. Establecimiento recibió 403 | Falta `INSERT`/`UPDATE` de programación. El alta respondió 503. El historial y las personas asociadas respondieron bloqueados. No se resolvió la actividad vencida de la semilla |
+| HU-002 | Parcial | Inicio de Oficina Local, 2026-11-16 por la noche: alerta «Vencida» con texto y color, 6 actividades, enlace a Programación, 4 próximas acciones y apertura del caso 10089. El conteo siguió en 6 después de crear y resolver actividades futuras | La detección automática sigue `NEEDS_VALIDATION`. No se resolvieron las seis vencidas de la semilla. La zona horaria institucional sigue pendiente |
+| HU-044 | Verificada en el alcance confirmado | Alta, realizada, reprogramada y cancelada persistidas en SQL el 2026-11-16 por la noche. Actividades 10033 a 10039. Historial, personas, idempotencia y concurrencia comprobados. El navegador creó la 10039 y, tras recargar, la marcó realizada | Una reprogramada no vuelve a `PROGRAMADA`: `NEEDS_VALIDATION`. La etiqueta vigente del catálogo es «Visita a establecimiento de A.I.» y no se sustituyó. HU-045 y HU-046 no entran en este ciclo |
 | HU-005 a HU-009 | Implementada | APIs institucionales ya existentes y pantalla Buscar persona | Réplica `SIDINACC_LOCAL` y periodo configurado |
 | HU-013 a HU-014 | Implementada | `POST /api/references/validation`, `POST /api/references`, borradores y plantilla | Catálogo de motivos ya sembrado |
 | HU-015 a HU-017 | Implementada | Listado, detalle y documento de referencia | El diseño documental de la impresión sigue el pendiente previo |
@@ -102,12 +102,61 @@ ni el expediente.
 - El script `040` ya está aplicado en este desarrollo local. No volver a ejecutarlo sin revisar permisos.
 - Clasificación de actividades educativas generales: `NEEDS_VALIDATION`.
 - Directorio de profesionales distintos de la sesión actual: `NEEDS_VALIDATION`.
-- Programación operativa para resolver una actividad vencida.
 - El script `050` ya está aplicado en este desarrollo local. No volver a ejecutarlo. No concede `DELETE` sobre casos ni `INSERT` directo sobre `caso_cierre`; el cierre entra por `ops.cerrar_caso`.
-- Aplicar manualmente `database/sia-cencinai/security/060_grant_scheduling_to_app.sql` antes de crear o resolver actividades. No se ejecutó. No concede `DELETE` ni cambia la fecha prevista.
+- El script `060` ya está aplicado en este desarrollo local. No volver a ejecutarlo. Permite insertar la actividad, el cambio y la persona, y actualizar `fecha_vigente`, `estado` y `motivo_vigente`. No concede `DELETE` ni cambia `fecha_prevista`.
+- Las seis actividades vencidas de la semilla, 1, 597, 602, 625, 672 y 677, siguen programadas. No se usaron para demostrar la resolución.
 - Catálogos vigentes de institución y estado de coordinación, y plantilla oficial del reporte: `NEEDS_VALIDATION`. Por eso HU-030 no queda completa.
 - No se preparó un índice único de `aud_evento.codigo_cambio`. La concurrencia observada dejó una sola auditoría. Un plan que no tome el bloqueo de rango no se observó.
 - Zona horaria institucional de las fechas de resumen.
+
+## Validación de programación posterior al script 060, 2026-11-16
+
+Los scripts `030`, `040`, `050` y `060` no se volvieron a ejecutar. No se borraron filas
+ni se reiniciaron las bases. `SIA_CENCINAI` y `SIDINACC_LOCAL` respondieron en
+`127.0.0.1:1433`. La réplica siguió en solo lectura: un intento de escritura fue
+rechazado por el filtro antes de llegar al motor. La cuenta de aplicación no es
+`sysadmin`, `db_owner`, `db_datawriter` ni `db_datareader`. Puede insertar
+`prog_actividad`, `prog_cambio` y `prog_persona`, y actualizar `estado`,
+`fecha_vigente` y `motivo_vigente`. No puede borrar la actividad ni cambiar
+`fecha_prevista` o el título.
+
+Antes de escribir: 943 actividades, 380 cambios y 931 personas. La oficina 101 tenía
+19 actividades y 6 vencidas. Después: 950, 392 y 934. La oficina quedó en 26 y las
+vencidas siguieron en 6. Las originales 1, 597, 602, 625, 672 y 677 permanecen
+`PROGRAMADA` con su fecha vigente. El caso 89, del establecimiento 1010321, solo se
+asoció; no se modificó. Los casos reservados de demostración no se usaron.
+
+| Flujo | Estado | Evidencia SQL/API/navegador | Pendiente |
+| --- | --- | --- | --- |
+| Crear actividad | PASS | API 201 para 10033, caso 89, estado `PROGRAMADA`. Reintento 200 de la misma clave. El navegador creó 10039; al recargar seguía en la lista | Ninguno de este flujo |
+| Marcar realizada | PASS | 10034 y 10039 pasaron a `REALIZADA`. La fecha prevista se conservó. Hay dos cambios y una auditoría. Otro efecto respondió 409. El navegador mostró el estado al recargar la lista | Ninguno de este flujo |
+| Reprogramar | PASS | 10035 conservó `fecha_prevista` 2026-12-22 y quedó `fecha_vigente` 2027-01-20, con motivo e historial. No entra en vencidas. Volver a realizada respondió 409 | Volver de reprogramada a programada sigue `NEEDS_VALIDATION` |
+| Cancelar | PASS | 10036 quedó `CANCELADA` con motivo, sin borrarse. El filtro del navegador mostró 4 de 26 e incluyó esa fila. Una resolución posterior respondió 409 | Ninguno de este flujo |
+| Historial e idempotencia | PASS | Cada clave dejó una auditoría. Dos altas simultáneas con la misma clave dejaron la 10038. Dos resoluciones simultáneas de la 10037 dejaron un estado y dos cambios. Los negativos no aumentaron los conteos | No se agregó un índice único. La prueba observada no duplicó filas |
+| Inicio y vencidas | PASS | El resumen y la pantalla siguieron en 6, con el texto «Vencida». Las nuevas no entraron porque su fecha vigente es futura o su estado ya no es `PROGRAMADA`. Cuatro próximas acciones abrieron el caso 10089 | No se produjo una baja del conteo: las seis de la semilla se conservaron y una actividad nueva no admite fecha pasada |
+
+Establecimiento recibió 403 al listar y al crear. Otra Oficina Local recibió 403 al
+usar el establecimiento 1100102, no vio las actividades de validación y recibió 404
+al resolver la 10033. La actividad inexistente respondió 404. Fecha inválida, fecha
+pasada, título vacío, tipo no vigente, casos repetidos, territorio o estado enviados
+por el cliente, persona de otra oficina y la misma fecha al reprogramar respondieron
+400. La 10038 no cambió.
+
+Se corrigieron dos defectos. El formulario anunciaba el alta aunque enviaba la
+consulta: el cliente de la API espera `metodo` y `json`, y la pantalla usaba otros
+nombres. Ahora el alta y la resolución usan ese contrato. El listado muestra la
+cantidad filtrada respecto del total del ámbito, por ejemplo 4 de 26.
+
+No hizo falta otro permiso ni otra migración. Una próxima acción no se convierte en
+actividad. La frecuencia del plan no se consulta para crear programación. Posibles
+referencias siguen sin fuente. La zona horaria institucional de la fecha de consulta
+sigue pendiente: hoy la consulta usa la fecha UTC del servidor.
+
+Al cierre, `npm run verify:config`, `npm run lint`, `npm test`, `npm run build` y
+`npm run health` terminaron bien. La API sumó 161 pruebas aprobadas y 7 omitidas;
+la web, 12. Salud y preparación respondieron 200, con `SIDINACC_LOCAL` en solo lectura.
+
+HU-038 y HU-039 no forman parte de este avance.
 
 ## Programación operativa, 2026-11-16
 

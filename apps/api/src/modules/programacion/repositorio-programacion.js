@@ -1,6 +1,7 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-16.
+ * Modificación: 2026-11-16. El conteo del ámbito no aplica los filtros.
  * HU-044. La reprogramación actualiza la fecha vigente y conserva la fila.
  */
 'use strict';
@@ -215,6 +216,19 @@ WHERE i.activo = 1
   AND i.codigo_catalogo = @catalogo
 ORDER BY i.orden, i.cat_item_id
 `, { catalogo: Parametro(sql.NVarChar(40), CATALOGO_TIPO) });
+    },
+
+    async Contar(registro) {
+      const filas = await Consultar(`
+SELECT COUNT(*) AS total
+FROM dbo.prog_actividad
+WHERE oficina_local_id = @oficina
+  AND region_id = @region
+`, {
+        oficina: Parametro(sql.Int, registro.oficinaLocalId),
+        region: Parametro(sql.Int, registro.regionId)
+      });
+      return Number(filas[0].total);
     },
 
     async Listar(registro) {

@@ -1,6 +1,7 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-16.
+ * Modificación: 2026-11-16. La consulta informa el total del ámbito.
  * HU-044 y HU-002. La frecuencia del plan no crea una actividad.
  */
 'use strict';
@@ -172,6 +173,10 @@ function CrearServicioProgramacion(dependencias) {
         establecimientoId: filtros.establecimientoId,
         estado: filtros.estado
       }));
+      const total = await Reintentar(() => repositorio.Contar({
+        oficinaLocalId: ambito.localOfficeId,
+        regionId: ambito.regionId
+      }));
       const ids = filas.map((fila) => Number(fila.actividad_id));
       let personas = [];
       let personasDisponibles = true;
@@ -249,6 +254,7 @@ function CrearServicioProgramacion(dependencias) {
       return {
         fechaConsulta: hoy,
         cantidad: actividades.length,
+        total,
         actividades,
         personas: personasDisponibles
           ? { disponibilidad: 'DISPONIBLE' }

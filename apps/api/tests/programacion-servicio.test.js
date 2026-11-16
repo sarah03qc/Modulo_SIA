@@ -161,6 +161,7 @@ describe('programación de Oficina Local', () => {
         observaciones: null,
         creada_por: 'semilla'
       }]),
+      Contar: jest.fn(async () => 8),
       ListarPersonas: jest.fn(async () => []),
       ListarCambios: jest.fn(async () => []),
       ListarProximasAcciones: jest.fn(async () => [{
@@ -175,6 +176,8 @@ describe('programación de Oficina Local', () => {
       establecimientoId: null,
       estado: null
     });
+    expect(consulta.cantidad).toBe(2);
+    expect(consulta.total).toBe(8);
     expect(consulta.actividades[0].vencida).toBe(true);
     expect(consulta.actividades[0].alerta).toBe('Vencida');
     expect(consulta.actividades[1].vencida).toBe(false);

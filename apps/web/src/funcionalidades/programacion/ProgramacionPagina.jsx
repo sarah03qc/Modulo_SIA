@@ -1,6 +1,7 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-16.
+ * Modificación: 2026-11-16. El alta y la resolución usan metodo y json.
  * HU-044 y HU-002. La resolución no borra la actividad anterior.
  */
 import { useEffect, useState } from 'react';
@@ -95,8 +96,8 @@ export default function ProgramacionPagina({
         .map((item) => Number(item));
       const resultado = await solicitarApi(direccionApi, '/api/programacion/actividades', {
         identidad,
-        method: 'POST',
-        body: {
+        metodo: 'POST',
+        json: {
           fecha: actividad.fecha,
           tipoItemId: Number(actividad.tipoItemId),
           titulo: actividad.titulo,
@@ -134,8 +135,8 @@ export default function ProgramacionPagina({
         `/api/programacion/actividades/${seleccion.actividadId}/resoluciones`,
         {
           identidad,
-          method: 'POST',
-          body: {
+          metodo: 'POST',
+          json: {
             efecto: resolucion.efecto,
             nuevaFecha: resolucion.efecto === 'REPROGRAMADA' ? resolucion.nuevaFecha : null,
             motivo: resolucion.efecto === 'REALIZADA' ? null : resolucion.motivo,
@@ -204,7 +205,7 @@ export default function ProgramacionPagina({
         </Campo>
         <button type="submit">Aplicar filtros</button>
       </form>
-      <p>{consulta.cantidad} actividades.</p>
+      <p>{consulta.cantidad} de {consulta.total ?? consulta.cantidad} actividades.</p>
       {consulta.cantidad === 0 ? <Vacio texto="No hay actividades para este corte." /> : (
         <div className="tabla-contenedor">
           <table>
