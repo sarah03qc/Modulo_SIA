@@ -1,6 +1,7 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-14.
+ * Modificación: 2026-11-16. Especificación por factor y versión de abordaje.
  * Valoración, decisión y apertura de una situación. HU-020 a HU-022.
  */
 import { useState } from 'react';
@@ -37,6 +38,7 @@ export default function SituacionTrabajo({
   const [resolucion, establecerResolucion] = useState('REQUIERE_AI');
   const [justificacion, establecerJustificacion] = useState('');
   const [apertura, establecerApertura] = useState(APERTURA_VACIA);
+  const [actualizarAbordaje, establecerActualizarAbordaje] = useState(false);
   const [error, establecerError] = useState('');
   const instrumento = catalogos && catalogos.instrumento;
 
@@ -70,10 +72,19 @@ export default function SituacionTrabajo({
   async function GuardarValoracion() {
     establecerError('');
     try {
+      const cuerpo = { situacionId: situacion.situacionId, ...valoracion };
+      if (situacion.casoId && actualizarAbordaje) {
+        cuerpo.abordaje = {
+          propositos: apertura.propositos.split('\n').map((linea) => linea.trim()).filter(Boolean),
+          estrategias: apertura.estrategias,
+          disciplinas: apertura.disciplinas,
+          frecuenciaCodigo: apertura.frecuenciaCodigo
+        };
+      }
       const guardada = await solicitarApi(direccionApi, '/api/proceso/valoraciones', {
         identidad,
         metodo: 'POST',
-        json: { situacionId: situacion.situacionId, ...valoracion }
+        json: cuerpo
       });
       establecerValoracion((actual) => ({ ...actual, valoracionId: guardada.valoracionId }));
       alInformar(`Valoración registrada. Prioridad ${guardada.prioridadEtiqueta}.`);
@@ -173,9 +184,10 @@ export default function SituacionTrabajo({
                         />
                         {factor.etiqueta}
                       </label>
-                      {factor.esAbierto && seleccionado ? (
+                      {seleccionado ? (
                         <input
                           aria-label={`Especificación de ${factor.etiqueta}`}
+                          required={factor.esAbierto}
                           value={seleccionado.especificacion || ''}
                           onChange={(evento) => {
                             const factores = respuesta.factores.map((item) => (
@@ -183,7 +195,10 @@ export default function SituacionTrabajo({
                                 ? { ...item, especificacion: evento.target.value }
                                 : item
                             ));
-                            CambiarCategoria(categoria.categoriaId, { respuesta: 'FACTORES', factores });
+                            CambiarCategoria(categoria.categoriaId, {
+                              respuesta: 'FACTORES',
+                              factores
+                            });
                           }}
                         />
                       ) : null}
@@ -230,6 +245,84 @@ export default function SituacionTrabajo({
           <strong className={ClasePrioridad(prioridad.prioridadCodigo)}>{prioridad.prioridadEtiqueta}</strong>
           . No es editable.
         </p>
+      ) : null}
+      {situacion.casoId ? (
+        <fieldset>
+          <legend>Abordaje del caso activo</legend>
+          <p>
+            La revaloración conserva las anteriores y no abre otro caso.
+            La prioridad sigue calculándose por la matriz y no se edita.
+          </p>
+          <label>
+            <input
+              type="checkbox"
+              checked={actualizarAbordaje}
+              onChange={(evento) => establecerActualizarAbordaje(evento.target.checked)}
+            />
+            Registrar una nueva versión del plan
+          </label>
+          {actualizarAbordaje ? (
+            <>
+              <Campo id={`propositos-plan-${situacion.situacionId}`} etiqueta="Propósitos, uno por línea">
+                <textarea
+                  id={`propositos-plan-${situacion.situacionId}`}
+                  value={apertura.propositos}
+                  onChange={(evento) => establecerApertura({
+                    ...apertura,
+                    propositos: evento.target.value
+                  })}
+                />
+              </Campo>
+              <fieldset>
+                <legend>Estrategias de la nueva versión</legend>
+                {(catalogos.estrategias.items || []).map((item) => (
+                  <label key={`revalora-${item.itemId}`}>
+                    <input
+                      type="checkbox"
+                      checked={apertura.estrategias.includes(item.itemId)}
+                      onChange={() => establecerApertura({
+                        ...apertura,
+                        estrategias: Alternar(apertura.estrategias, item.itemId)
+                      })}
+                    />
+                    {item.etiqueta}
+                  </label>
+                ))}
+              </fieldset>
+              <fieldset>
+                <legend>Disciplinas de la nueva versión</legend>
+                {(catalogos.disciplinas.items || []).map((item) => (
+                  <label key={`revalora-disc-${item.itemId}`}>
+                    <input
+                      type="checkbox"
+                      checked={apertura.disciplinas.includes(item.itemId)}
+                      onChange={() => establecerApertura({
+                        ...apertura,
+                        disciplinas: Alternar(apertura.disciplinas, item.itemId)
+                      })}
+                    />
+                    {item.etiqueta}
+                  </label>
+                ))}
+              </fieldset>
+              <Campo id={`frecuencia-plan-${situacion.situacionId}`} etiqueta="Frecuencia planificada">
+                <select
+                  id={`frecuencia-plan-${situacion.situacionId}`}
+                  value={apertura.frecuenciaCodigo}
+                  onChange={(evento) => establecerApertura({
+                    ...apertura,
+                    frecuenciaCodigo: evento.target.value
+                  })}
+                >
+                  <option value="">Seleccione</option>
+                  {(catalogos.frecuencias.items || []).map((item) => (
+                    <option key={item.codigo} value={item.codigo}>{item.etiqueta}</option>
+                  ))}
+                </select>
+              </Campo>
+            </>
+          ) : null}
+        </fieldset>
       ) : null}
       {situacion.referenciaId && valoracion.valoracionId ? (
         <div>

@@ -1,6 +1,7 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-14.
+ * Modificación: 2026-11-16. Paginación, exportación del corte y línea de tiempo.
  * HU-023, HU-024 y HU-025. El establecimiento no recibe el detalle interno.
  */
 import { useEffect, useState } from 'react';
@@ -24,6 +25,7 @@ export default function CasosPagina({
   const [consulta, establecerConsulta] = useState(CONSULTA_VACIA);
   const [aplicada, establecerAplicada] = useState(CONSULTA_VACIA);
   const [pagina, establecerPagina] = useState(null);
+  const [numeroPagina, establecerNumeroPagina] = useState(1);
   const [detalle, establecerDetalle] = useState(null);
   const [error, establecerError] = useState('');
   const [cargando, establecerCargando] = useState(true);
@@ -46,6 +48,7 @@ export default function CasosPagina({
     if (aplicada.establecimientoId) {
       parametros.set('establecimientoId', aplicada.establecimientoId);
     }
+    parametros.set('pagina', String(numeroPagina));
     solicitarApi(direccionApi, `/api/proceso/casos?${parametros.toString()}`, { identidad })
       .then((datos) => {
         if (vigente) {
@@ -62,7 +65,7 @@ export default function CasosPagina({
     return () => {
       vigente = false;
     };
-  }, [direccionApi, identidad, aplicada, solicitarApi]);
+  }, [direccionApi, identidad, aplicada, numeroPagina, solicitarApi]);
 
   async function VerDetalle(casoId) {
     establecerError('');
@@ -85,6 +88,12 @@ export default function CasosPagina({
     if (aplicada.identificacion) {
       parametros.set('identificacion', aplicada.identificacion);
     }
+    if (aplicada.nombre) {
+      parametros.set('nombre', aplicada.nombre);
+    }
+    if (aplicada.establecimientoId) {
+      parametros.set('establecimientoId', aplicada.establecimientoId);
+    }
     try {
       const archivo = await solicitarApi(
         direccionApi,
@@ -100,7 +109,12 @@ export default function CasosPagina({
   return (
     <>
       <h1>{contexto.puedeVerCasosOficina ? 'Casos de la Oficina Local' : 'Lista de Atención Interdisciplinaria'}</h1>
-      <form onSubmit={(evento) => { evento.preventDefault(); establecerCargando(true); establecerAplicada(consulta); }}>
+      <form onSubmit={(evento) => {
+        evento.preventDefault();
+        establecerCargando(true);
+        establecerNumeroPagina(1);
+        establecerAplicada(consulta);
+      }}>
         <Campo id="caso-identificacion" etiqueta="Identificación">
           <input id="caso-identificacion" value={consulta.identificacion} onChange={(evento) => establecerConsulta({ ...consulta, identificacion: evento.target.value, nombre: '' })} />
         </Campo>
@@ -166,9 +180,37 @@ export default function CasosPagina({
           </table>
         </div>
       ) : null}
+      {pagina && pagina.total > pagina.devueltos ? (
+        <div className="acciones">
+          <button
+            type="button"
+            className="secundario"
+            disabled={numeroPagina <= 1}
+            onClick={() => {
+              establecerCargando(true);
+              establecerNumeroPagina(numeroPagina - 1);
+            }}
+          >
+            Página anterior
+          </button>
+          <button
+            type="button"
+            className="secundario"
+            disabled={numeroPagina * (pagina.consulta?.tamano || pagina.devueltos) >= pagina.total}
+            onClick={() => {
+              establecerCargando(true);
+              establecerNumeroPagina(numeroPagina + 1);
+            }}
+          >
+            Página siguiente
+          </button>
+        </div>
+      ) : null}
       {contexto.puedeExportarCasos ? (
         <div className="acciones">
-          <button type="button" className="secundario" onClick={Exportar}>Exportar este corte</button>
+          <button type="button" className="secundario" onClick={Exportar}>
+            Exportar el corte filtrado completo
+          </button>
         </div>
       ) : null}
       {detalle && contexto.puedeVerDetalleCaso ? (
@@ -205,6 +247,63 @@ export default function CasosPagina({
           ) : <p>No hay plan vigente.</p>}
           <h3>Última atención</h3>
           <p>{detalle.ultimaAtencion.mensaje || detalle.ultimaAtencion.fecha}</p>
+          <h3>Línea de tiempo</h3>
+          {detalle.lineaTiempo && detalle.lineaTiempo.length > 0 ? (
+            <ol>
+              {detalle.lineaTiempo.map((evento) => (
+                <li key={`${evento.tipo}-${evento.fecha}-${evento.texto}`}>
+                  {evento.fecha} — {evento.texto}
+                  {evento.responsable ? ` — ${evento.responsable}` : ''}
+                </li>
+              ))}
+            </ol>
+          ) : <p>Sin eventos persistidos para mostrar.</p>}
+          <h3>Atenciones individuales</h3>
+          {detalle.atenciones && detalle.atenciones.length > 0 ? (
+            <ul>
+              {detalle.atenciones.map((item) => (
+                <li key={item.atencionId}>
+                  {item.fechaAtencion}. Registro: {item.fechaRegistro}. {item.acciones}
+                </li>
+              ))}
+            </ul>
+          ) : <p>Sin atenciones individuales registradas.</p>}
+          <h3>Participaciones grupales</h3>
+          {detalle.consultaGrupal && detalle.consultaGrupal.disponibilidad !== 'DISPONIBLE'
+            ? <p>{detalle.consultaGrupal.mensaje}</p>
+            : null}
+          {detalle.consultaGrupal && detalle.consultaGrupal.disponibilidad === 'DISPONIBLE'
+            && detalle.participacionesGrupales && detalle.participacionesGrupales.length > 0 ? (
+            <ul>
+              {detalle.participacionesGrupales.map((item) => (
+                <li key={item.atencionGrupalId}>
+                  {item.fechaAtencion} — {item.tema}
+                  {item.asistio === true ? ' — asistió' : ''}
+                  {item.asistio === false ? ' — no asistió' : ''}
+                  {item.asistio === null ? ' — asistencia no registrada' : ''}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {(!detalle.consultaGrupal || detalle.consultaGrupal.disponibilidad === 'DISPONIBLE')
+            && (!detalle.participacionesGrupales || detalle.participacionesGrupales.length === 0)
+            ? <p>Sin participaciones grupales registradas.</p>
+            : null}
+          <h3>Versiones del plan</h3>
+          {detalle.planes && detalle.planes.length > 0 ? (
+            <ul>
+              {detalle.planes.map((item) => (
+                <li key={item.planId}>
+                  Versión {item.numero} — {item.fecha}
+                  {item.vigente ? ' (vigente)' : ''} — {item.frecuenciaEtiqueta}
+                </li>
+              ))}
+            </ul>
+          ) : <p>Sin versiones adicionales consultables.</p>}
+          <h3>Documentos</h3>
+          <p>{detalle.documentos ? detalle.documentos.mensaje || detalle.documentos.cantidad : 'Sin documentos registrados.'}</p>
+          <h3>Coordinaciones</h3>
+          <p>{detalle.coordinaciones ? detalle.coordinaciones.mensaje || detalle.coordinaciones.cantidad : 'Sin coordinaciones registradas.'}</p>
           <h3>Historial de estado</h3>
           <ul>
             {detalle.historial.map((item) => (

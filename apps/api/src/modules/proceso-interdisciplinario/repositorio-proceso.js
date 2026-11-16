@@ -1,7 +1,8 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-14.
- * Persistencia de sesión, valoración, resolución y caso. HU-019 a HU-025.
+ * Modificación: 2026-11-16. Versión de plan, expediente y seguimiento sin atención.
+ * Persistencia de sesión, valoración, resolución y caso. HU-019 a HU-025 y HU-048.
  */
 'use strict';
 
@@ -67,6 +68,89 @@ function AgregarAmbito(alias, ambito, parametros, clausulas) {
     return;
   }
   throw new ErrorInfraestructura('El nivel no tiene una consulta de casos confirmada en este lote.');
+}
+
+/**
+ * Conserva el plan anterior y deja vigente la versión nueva.
+ * Exige UPDATE de es_vigente, concedido aparte del script 030.
+ *
+ * @param {object} transaccion Transacción ya abierta.
+ * @param {object} registro Caso, abordaje, responsable y fecha.
+ * @returns {Promise<number>} Identificador del plan vigente.
+ */
+async function GuardarVersionPlan(transaccion, registro) {
+  await transaccion.query(`
+UPDATE dbo.caso_plan
+SET es_vigente = 0
+WHERE caso_id = @casoId
+  AND es_vigente = 1
+`, { casoId: Parametro(sql.BigInt, registro.casoId) });
+  const versiones = await transaccion.query(`
+SELECT ISNULL(MAX(numero_version), 0) AS maximo
+FROM dbo.caso_plan
+WHERE caso_id = @casoId
+`, { casoId: Parametro(sql.BigInt, registro.casoId) });
+  const numero = Number(versiones[0].maximo) + 1;
+  const planes = await transaccion.query(`
+INSERT INTO dbo.caso_plan (
+  caso_id, numero_version, es_vigente, frecuencia_item_id, frecuencia_catalogo,
+  responsable_usuario, fecha_plan, registrado_en
+)
+OUTPUT INSERTED.plan_id
+VALUES (
+  @casoId, @numero, 1, @frecuenciaId, N'FRECUENCIA',
+  @responsable, @fecha, CAST(SYSUTCDATETIME() AS datetime2(0))
+)
+`, {
+    casoId: Parametro(sql.BigInt, registro.casoId),
+    numero: Parametro(sql.Int, numero),
+    frecuenciaId: Parametro(sql.BigInt, registro.abordaje.frecuenciaItemId),
+    responsable: Parametro(sql.NVarChar(128), registro.responsable),
+    fecha: Parametro(sql.Date, registro.fecha)
+  });
+  const planId = Number(planes[0].plan_id);
+  for (let indice = 0; indice < registro.abordaje.propositos.length; indice += 1) {
+    await transaccion.query(`
+INSERT INTO dbo.caso_plan_proposito (plan_id, orden, texto)
+VALUES (@planId, @orden, @texto)
+`, {
+      planId: Parametro(sql.BigInt, planId),
+      orden: Parametro(sql.Int, indice + 1),
+      texto: Parametro(sql.NVarChar(1000), registro.abordaje.propositos[indice])
+    });
+  }
+  for (const estrategiaId of registro.abordaje.estrategias) {
+    await transaccion.query(`
+INSERT INTO dbo.caso_plan_estrategia (plan_id, estrategia_item_id, estrategia_catalogo)
+VALUES (@planId, @estrategiaId, N'ESTRATEGIA')
+`, {
+      planId: Parametro(sql.BigInt, planId),
+      estrategiaId: Parametro(sql.BigInt, estrategiaId)
+    });
+  }
+  for (const disciplinaId of registro.abordaje.disciplinas) {
+    await transaccion.query(`
+INSERT INTO dbo.caso_plan_disciplina (plan_id, disciplina_item_id, disciplina_catalogo)
+VALUES (@planId, @disciplinaId, N'DISCIPLINA')
+`, {
+      planId: Parametro(sql.BigInt, planId),
+      disciplinaId: Parametro(sql.BigInt, disciplinaId)
+    });
+  }
+  const actualizados = await transaccion.query(`
+UPDATE dbo.caso_ai
+SET plan_vigente_id = @planId
+OUTPUT INSERTED.caso_id
+WHERE caso_id = @casoId
+  AND estado = N'ACTIVO'
+`, {
+    planId: Parametro(sql.BigInt, planId),
+    casoId: Parametro(sql.BigInt, registro.casoId)
+  });
+  if (actualizados.length !== 1) {
+    throw ErrorDominio('ESTADO_INVALIDO');
+  }
+  return planId;
 }
 
 function ListaPersonas(ids, parametros) {
@@ -422,6 +506,14 @@ WHERE caso_id = @casoId
 `, {
             valoracionId: Parametro(sql.BigInt, valoracionId),
             casoId: Parametro(sql.BigInt, registro.casoId)
+          });
+        }
+        if (registro.casoId !== null && registro.abordaje) {
+          await GuardarVersionPlan(transaccion, {
+            casoId: registro.casoId,
+            abordaje: registro.abordaje,
+            responsable: registro.responsable,
+            fecha: registro.fecha
           });
         }
         await transaccion.query(`
@@ -843,6 +935,7 @@ SELECT
   v.riesgo_codigo,
   v.proteccion_codigo,
   v.prioridad_codigo,
+  v.instrumento_version_id,
   v.responsable_usuario,
   CONVERT(char(10), v.fecha_valoracion, 23) AS fecha_valoracion,
   ses.sesion_id,
@@ -936,8 +1029,221 @@ FROM dbo.ate_individual
 WHERE caso_id = @casoId
 `, { casoId: Parametro(sql.BigInt, casoId) });
       return filas[0] ? filas[0].fecha_atencion : null;
+    },
+
+    async ListarAtencionesIndividuales(casoId) {
+      return Consultar(`
+SELECT
+  atencion_individual_id,
+  CONVERT(char(10), fecha_atencion, 23) AS fecha_atencion,
+  CONVERT(char(19), digitada_en, 120) AS digitada_en,
+  acciones,
+  recomendaciones,
+  profesional_usuario,
+  proxima_accion,
+  CONVERT(char(10), fecha_proxima, 23) AS fecha_proxima,
+  disciplina_item_id,
+  estrategia_item_id
+FROM dbo.ate_individual
+WHERE caso_id = @casoId
+ORDER BY fecha_atencion, atencion_individual_id
+`, { casoId: Parametro(sql.BigInt, casoId) });
+    },
+
+    async ListarParticipacionesGrupales(casoId) {
+      return Consultar(`
+SELECT
+  g.atencion_grupal_id,
+  CONVERT(char(10), g.fecha_atencion, 23) AS fecha_atencion,
+  g.tema,
+  p.asistio,
+  p.per_id_persona
+FROM dbo.ate_grupal_participante AS p
+INNER JOIN dbo.ate_grupal AS g
+  ON g.atencion_grupal_id = p.atencion_grupal_id
+WHERE p.caso_id = @casoId
+ORDER BY g.fecha_atencion, g.atencion_grupal_id
+`, { casoId: Parametro(sql.BigInt, casoId) });
+    },
+
+    async ListarPlanesCaso(casoId) {
+      return Consultar(`
+SELECT
+  p.plan_id,
+  p.numero_version,
+  p.es_vigente,
+  CONVERT(char(10), p.fecha_plan, 23) AS fecha_plan,
+  p.responsable_usuario,
+  i.etiqueta AS frecuencia_etiqueta
+FROM dbo.caso_plan AS p
+INNER JOIN dbo.cat_item AS i
+  ON i.cat_item_id = p.frecuencia_item_id
+ AND i.codigo_catalogo = p.frecuencia_catalogo
+WHERE p.caso_id = @casoId
+ORDER BY p.numero_version
+`, { casoId: Parametro(sql.BigInt, casoId) });
+    },
+
+    async ContarDocumentosCaso(casoId) {
+      const filas = await Consultar(`
+SELECT COUNT(*) AS total
+FROM dbo.doc_documento
+WHERE caso_id = @casoId
+`, { casoId: Parametro(sql.BigInt, casoId) });
+      return Number(filas[0].total);
+    },
+
+    async ContarCoordinacionesCaso(casoId) {
+      const filas = await Consultar(`
+SELECT COUNT(*) AS total
+FROM dbo.doc_coordinacion
+WHERE caso_id = @casoId
+`, { casoId: Parametro(sql.BigInt, casoId) });
+      return Number(filas[0].total);
+    },
+
+    async ContarAtencionesAmbito(ambito) {
+      const individuales = {};
+      const clausulasIndividual = [];
+      AgregarAmbito('caso', ambito, individuales, clausulasIndividual);
+      const filasIndividual = await Consultar(`
+SELECT COUNT(*) AS total
+FROM dbo.ate_individual AS atencion
+INNER JOIN dbo.caso_ai AS caso
+  ON caso.caso_id = atencion.caso_id
+WHERE ${clausulasIndividual.join(' AND ')}
+`, individuales);
+      const grupales = { grupalesDisponibles: true, grupales: 0 };
+      try {
+        const parametrosGrupo = {};
+        const clausulasGrupo = ['p.asistio = 1'];
+        AgregarAmbito('caso', ambito, parametrosGrupo, clausulasGrupo);
+        const filasGrupo = await Consultar(`
+SELECT COUNT(DISTINCT g.atencion_grupal_id) AS total
+FROM dbo.ate_grupal_participante AS p
+INNER JOIN dbo.ate_grupal AS g
+  ON g.atencion_grupal_id = p.atencion_grupal_id
+INNER JOIN dbo.caso_ai AS caso
+  ON caso.caso_id = p.caso_id
+WHERE ${clausulasGrupo.join(' AND ')}
+`, parametrosGrupo);
+        grupales.grupales = Number(filasGrupo[0].total);
+      } catch (error) {
+        if (error && error.code === 'PERMISO') {
+          grupales.grupalesDisponibles = false;
+        } else {
+          throw error;
+        }
+      }
+      return {
+        individuales: Number(filasIndividual[0].total),
+        ...grupales
+      };
+    },
+
+    async ListarProximasAcciones(ambito, fecha, limite) {
+      const parametros = {
+        fecha: Parametro(sql.Date, fecha),
+        limite: Parametro(sql.Int, limite)
+      };
+      const clausulas = ['atencion.fecha_proxima >= @fecha'];
+      AgregarAmbito('caso', ambito, parametros, clausulas);
+      return Consultar(`
+SELECT TOP (@limite)
+  atencion.caso_id,
+  atencion.per_id_persona,
+  atencion.proxima_accion,
+  CONVERT(char(10), atencion.fecha_proxima, 23) AS fecha_proxima
+FROM dbo.ate_individual AS atencion
+INNER JOIN dbo.caso_ai AS caso
+  ON caso.caso_id = atencion.caso_id
+WHERE ${clausulas.join(' AND ')}
+ORDER BY atencion.fecha_proxima, atencion.atencion_individual_id
+`, parametros);
+    },
+
+    async ContarActividadesVencidas(oficinaLocalId, fecha) {
+      const filas = await Consultar(`
+SELECT COUNT(*) AS total
+FROM dbo.prog_actividad
+WHERE oficina_local_id = @oficina
+  AND estado = N'PROGRAMADA'
+  AND fecha_vigente < @fecha
+`, {
+        oficina: Parametro(sql.Int, oficinaLocalId),
+        fecha: Parametro(sql.Date, fecha)
+      });
+      return Number(filas[0].total);
+    },
+
+    /**
+     * Casos activos del ámbito sin atención efectiva dentro del período.
+     * La programación no cuenta. La asistencia grupal nula o ausente tampoco.
+     *
+     * @param {object} consulta Ámbito, fechas y página.
+     * @returns {Promise<object>} Total y filas.
+     */
+    async ListarCasosSinAtencion(consulta) {
+      const parametros = {
+        desde: Parametro(sql.Date, consulta.desde),
+        hasta: Parametro(sql.Date, consulta.hasta),
+        desplazamiento: Parametro(sql.Int, consulta.desplazamiento),
+        tamano: Parametro(sql.Int, consulta.tamano)
+      };
+      const clausulas = ["caso.estado = N'ACTIVO'"];
+      AgregarAmbito('caso', consulta.ambito, parametros, clausulas);
+      const donde = clausulas.join(' AND ');
+      const ausencia = `
+  AND NOT EXISTS (
+    SELECT 1
+    FROM dbo.ate_individual AS individual
+    WHERE individual.caso_id = caso.caso_id
+      AND individual.fecha_atencion >= @desde
+      AND individual.fecha_atencion <= @hasta
+  )
+  AND NOT EXISTS (
+    SELECT 1
+    FROM dbo.ate_grupal_participante AS participante
+    INNER JOIN dbo.ate_grupal AS grupal
+      ON grupal.atencion_grupal_id = participante.atencion_grupal_id
+    WHERE participante.caso_id = caso.caso_id
+      AND participante.asistio = 1
+      AND grupal.fecha_atencion >= @desde
+      AND grupal.fecha_atencion <= @hasta
+  )`;
+      const conteo = await Consultar(`
+SELECT COUNT(*) AS total
+FROM dbo.caso_ai AS caso
+WHERE ${donde}
+${ausencia}
+`, parametros);
+      const filas = await Consultar(`
+SELECT
+  caso.caso_id,
+  caso.per_id_persona,
+  caso.establecimiento_id,
+  CONVERT(char(10), (
+    SELECT MAX(fecha_atencion)
+    FROM dbo.ate_individual AS individual
+    WHERE individual.caso_id = caso.caso_id
+  ), 23) AS ultima_individual,
+  CONVERT(char(10), (
+    SELECT MAX(grupal.fecha_atencion)
+    FROM dbo.ate_grupal_participante AS participante
+    INNER JOIN dbo.ate_grupal AS grupal
+      ON grupal.atencion_grupal_id = participante.atencion_grupal_id
+    WHERE participante.caso_id = caso.caso_id
+      AND participante.asistio = 1
+  ), 23) AS ultima_grupal
+FROM dbo.caso_ai AS caso
+WHERE ${donde}
+${ausencia}
+ORDER BY caso.caso_id
+OFFSET @desplazamiento ROWS FETCH NEXT @tamano ROWS ONLY
+`, parametros);
+      return { total: Number(conteo[0].total), filas };
     }
   };
 }
 
-module.exports = { CrearRepositorioProceso };
+module.exports = { CrearRepositorioProceso, AgregarAmbito, Parametro };

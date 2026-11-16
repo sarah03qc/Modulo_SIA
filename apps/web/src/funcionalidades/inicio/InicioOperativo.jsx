@@ -1,6 +1,7 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-14.
+ * Modificación: 2026-11-16. Atenciones y próximas acciones cuando la cuenta puede leerlas.
  * HU-001 y HU-002. Un indicador ausente no se muestra como cero.
  */
 import { useEffect, useState } from 'react';
@@ -8,15 +9,16 @@ import { Aviso, Cargando } from '../../componentes/interfaz';
 import { SolicitarApi } from '../../servicios/cliente-api';
 
 function Tarjeta({ titulo, indicador, accion, textoAccion }) {
-  const cantidad = indicador && indicador.disponibilidad === 'DISPONIBLE'
-    ? indicador.cantidad
-    : null;
+  const conCantidad = indicador && (
+    indicador.disponibilidad === 'DISPONIBLE' || indicador.disponibilidad === 'PARCIAL'
+  );
   return (
     <section className="panel">
       <h2>{titulo}</h2>
-      {indicador && indicador.disponibilidad === 'DISPONIBLE' ? <p>{cantidad}</p> : null}
-      {indicador && indicador.disponibilidad !== 'DISPONIBLE'
-        ? <Aviso tipo="pendiente">{indicador.motivo || 'No disponible.'}</Aviso>
+      {conCantidad ? <p>{indicador.cantidad}</p> : null}
+      {indicador && indicador.motivo ? <Aviso tipo="pendiente">{indicador.motivo}</Aviso> : null}
+      {indicador && !conCantidad && !indicador.motivo
+        ? <Aviso tipo="pendiente">No disponible.</Aviso>
         : null}
       {accion ? <button type="button" onClick={accion}>{textoAccion}</button> : null}
     </section>
@@ -102,9 +104,28 @@ export default function InicioOperativo({ direccionApi, identidad, contexto, nav
           </section>
         ) : null}
         <Tarjeta titulo="Posibles referencias" indicador={resumen.posiblesReferencias} />
+        <Tarjeta
+          titulo="Atenciones individuales registradas"
+          indicador={resumen.atencionesRegistradas}
+        />
         <Tarjeta titulo="Actividades vencidas" indicador={resumen.actividadesVencidas} />
         <Tarjeta titulo="Próximas acciones" indicador={resumen.proximasAcciones} />
       </div>
+      {resumen.proximasAcciones && resumen.proximasAcciones.disponibilidad === 'DISPONIBLE'
+        && resumen.proximasAcciones.items && resumen.proximasAcciones.items.length > 0 ? (
+          <section className="panel">
+            <h2>Detalle de próximas acciones</h2>
+            <ul>
+              {resumen.proximasAcciones.items.map((item) => (
+                <li key={`${item.casoId}-${item.fecha}`}>
+                  <button type="button" className="secundario" onClick={() => navegar('casos')}>
+                    {item.fecha} — caso {item.casoId} — {item.accion}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
       <div className="acciones">
         {contexto.puedeCrearReferencia
           ? <button type="button" onClick={() => navegar('referencia-nueva')}>Nueva referencia</button>

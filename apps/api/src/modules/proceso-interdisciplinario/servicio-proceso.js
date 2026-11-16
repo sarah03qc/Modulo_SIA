@@ -1,7 +1,8 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-14.
- * HU-001, HU-002 y HU-018 a HU-025. El equipo decide; RN-009 calcula la prioridad.
+ * Modificación: 2026-11-16. Revaloración del plan, expediente, exportación y seguimiento.
+ * HU-001, HU-002 y HU-018 a HU-025, HU-048. El equipo decide; RN-009 calcula la prioridad.
  */
 'use strict';
 
@@ -28,6 +29,8 @@ const NO_ENCONTRADO = 'El recurso solicitado no existe.';
 const CASO_ACTIVO = 'No se puede abrir el caso porque la persona ya tiene un caso de Atención Interdisciplinaria activo.';
 const INTENTOS = 3;
 const LIMITE_NOMBRES = 100;
+const LIMITE_EXPORTACION = 2000;
+const LIMITE_ACCIONES = 8;
 const ETIQUETA_EJE = Object.freeze({
   PROTECTOR: 'Factor protector',
   RIESGO: 'Factor de riesgo',
@@ -82,6 +85,17 @@ function TraducirPersistencia(error, mensajes) {
   throw new ErrorInfraestructura('La operación de base de datos no se completó.');
 }
 
+async function LeerOpcional(trabajo) {
+  try {
+    return { disponibilidad: 'DISPONIBLE', datos: await trabajo() };
+  } catch (error) {
+    if (error && error.code === 'PERMISO') {
+      return { disponibilidad: 'BLOQUEADO', datos: null };
+    }
+    return TraducirPersistencia(error, {});
+  }
+}
+
 async function SiPermiso(trabajo, bloqueado) {
   try {
     return await trabajo();
@@ -95,6 +109,91 @@ async function SiPermiso(trabajo, bloqueado) {
 
 function IndicadorNoDisponible(motivo) {
   return { disponibilidad: 'NO_DISPONIBLE', cantidad: null, motivo };
+}
+
+function FechaEvento(valor) {
+  return valor ? String(valor).slice(0, 10) : '';
+}
+
+function AgregarEventos(destino, filas, construir) {
+  for (const fila of filas) {
+    destino.push(construir(fila));
+  }
+}
+
+/**
+ * Línea de tiempo solo con eventos ya persistidos.
+ *
+ * @param {object} partes Historial, valoraciones, planes y atenciones.
+ * @returns {object[]} Eventos ordenados por fecha.
+ */
+function ConstruirLineaTiempo(partes) {
+  const eventos = [];
+  AgregarEventos(eventos, partes.historial, (fila) => ({
+    tipo: 'ESTADO',
+    fecha: FechaEvento(fila.ocurridoEn),
+    texto: `Estado ${fila.estado}`,
+    responsable: null
+  }));
+  AgregarEventos(eventos, partes.valoraciones, (fila) => ({
+    tipo: 'VALORACION',
+    fecha: fila.fecha,
+    texto: `Valoración ${fila.numero}. Prioridad ${fila.prioridadEtiqueta}.`,
+    responsable: fila.responsable
+  }));
+  AgregarEventos(eventos, partes.planes, (fila) => ({
+    tipo: 'PLAN',
+    fecha: fila.fecha,
+    texto: `Plan versión ${fila.numero}${fila.vigente ? ', vigente' : ''}.`,
+    responsable: fila.responsable
+  }));
+  AgregarEventos(eventos, partes.atenciones, (fila) => ({
+    tipo: 'ATENCION_INDIVIDUAL',
+    fecha: fila.fechaAtencion,
+    texto: fila.acciones,
+    responsable: fila.profesional
+  }));
+  AgregarEventos(eventos, partes.grupales, (fila) => ({
+    tipo: 'ATENCION_GRUPAL',
+    fecha: fila.fechaAtencion,
+    texto: fila.asistio === true
+      ? `Participación con asistencia. ${fila.tema}`
+      : `Participación sin asistencia confirmada. ${fila.tema}`,
+    responsable: null
+  }));
+  eventos.sort((izquierda, derecha) => {
+    const porFecha = izquierda.fecha.localeCompare(derecha.fecha);
+    return porFecha === 0 ? izquierda.tipo.localeCompare(derecha.tipo) : porFecha;
+  });
+  return eventos;
+}
+
+function PresentarConteo(resultado, vacio, bloqueo) {
+  if (resultado.disponibilidad !== 'DISPONIBLE') {
+    return {
+      disponibilidad: 'BLOQUEADO',
+      cantidad: null,
+      mensaje: bloqueo
+    };
+  }
+  return {
+    disponibilidad: 'DISPONIBLE',
+    cantidad: resultado.datos,
+    mensaje: resultado.datos === 0 ? vacio : null
+  };
+}
+
+function UltimaFecha(individual, grupal) {
+  if (!individual && !grupal) {
+    return null;
+  }
+  if (!individual) {
+    return grupal;
+  }
+  if (!grupal) {
+    return individual;
+  }
+  return individual >= grupal ? individual : grupal;
 }
 
 function FechaHoy() {
@@ -239,8 +338,8 @@ function ValidarCategorias(instrumento, respuestas) {
         throw new ErrorValidacion('Un factor no pertenece a la categoría o está repetido.');
       }
       vistos.add(factor.factorId);
-      if (!definido.esAbierto && factor.especificacion) {
-        throw new ErrorValidacion('Ese factor no admite una especificación.');
+      if (definido.esAbierto && !factor.especificacion) {
+        throw new ErrorValidacion('Un factor abierto exige la especificación correspondiente.');
       }
       return factor;
     });
@@ -356,6 +455,110 @@ function CrearServicioProceso(dependencias) {
     return AgruparMatriz(await repositorio.ListarMatrizVigente());
   }
 
+  async function LeerIndicadorAtenciones(ambito) {
+    try {
+      const conteo = await repositorio.ContarAtencionesAmbito(ambito);
+      return {
+        disponibilidad: conteo.grupalesDisponibles ? 'DISPONIBLE' : 'PARCIAL',
+        cantidad: conteo.individuales,
+        grupalesConAsistencia: conteo.grupalesDisponibles ? conteo.grupales : null,
+        motivo: conteo.grupalesDisponibles
+          ? null
+          : 'La asistencia grupal no está disponible para la cuenta técnica actual.'
+      };
+    } catch (error) {
+      if (error && error.code === 'PERMISO') {
+        return {
+          disponibilidad: 'BLOQUEADO',
+          cantidad: null,
+          grupalesConAsistencia: null,
+          motivo: 'La consulta de atenciones no está disponible para la cuenta técnica actual.'
+        };
+      }
+      return TraducirPersistencia(error, {});
+    }
+  }
+
+  async function LeerProximasAcciones(ambito) {
+    try {
+      const filas = await repositorio.ListarProximasAcciones(ambito, FechaHoy(), LIMITE_ACCIONES);
+      return {
+        disponibilidad: 'DISPONIBLE',
+        cantidad: filas.length,
+        items: filas.map((fila) => ({
+          casoId: Number(fila.caso_id),
+          identificacion: fila.per_id_persona,
+          fecha: fila.fecha_proxima,
+          accion: fila.proxima_accion
+        }))
+      };
+    } catch (error) {
+      if (error && error.code === 'PERMISO') {
+        return {
+          disponibilidad: 'BLOQUEADO',
+          cantidad: null,
+          items: null,
+          motivo: 'Las próximas acciones no están disponibles para la cuenta técnica actual.'
+        };
+      }
+      return TraducirPersistencia(error, {});
+    }
+  }
+
+  async function LeerActividadesVencidas(oficinaLocalId) {
+    try {
+      const cantidad = await repositorio.ContarActividadesVencidas(oficinaLocalId, FechaHoy());
+      return {
+        disponibilidad: 'DISPONIBLE',
+        cantidad,
+        motivo: cantidad > 0
+          ? 'Siguen programadas después de su fecha. Resolverlas como realizada, reprogramada o cancelada pertenece al módulo de programación.'
+          : null
+      };
+    } catch (error) {
+      if (error && error.code === 'PERMISO') {
+        return {
+          disponibilidad: 'BLOQUEADO',
+          cantidad: null,
+          motivo: 'La programación no está disponible para la cuenta técnica actual.'
+        };
+      }
+      return TraducirPersistencia(error, {});
+    }
+  }
+
+  async function PrepararAbordaje(solicitud) {
+    const catalogo = await repositorio.ListarCatalogo(['ESTRATEGIA', 'DISCIPLINA', 'FRECUENCIA']);
+    const estrategias = PresentarCatalogo(catalogo, 'ESTRATEGIA');
+    const disciplinas = PresentarCatalogo(catalogo, 'DISCIPLINA');
+    const frecuencias = PresentarCatalogo(catalogo, 'FRECUENCIA');
+    if (estrategias.disponibilidad !== 'DISPONIBLE' || disciplinas.disponibilidad !== 'DISPONIBLE') {
+      throw new ErrorValidacion(
+        'Falta el catálogo vigente de estrategias o disciplinas. No se inventan valores.'
+      );
+    }
+    const frecuencia = (frecuencias.items || []).find((item) => item.codigo === solicitud.frecuenciaCodigo);
+    if (!frecuencia) {
+      throw new ErrorValidacion('La frecuencia no pertenece al catálogo vigente.');
+    }
+    const estrategiasValidas = new Set(estrategias.items.map((item) => item.itemId));
+    const disciplinasValidas = new Set(disciplinas.items.map((item) => item.itemId));
+    for (const itemId of solicitud.estrategias) {
+      if (!estrategiasValidas.has(itemId)) {
+        throw new ErrorValidacion('Una estrategia no pertenece al catálogo vigente.');
+      }
+    }
+    for (const itemId of solicitud.disciplinas) {
+      if (!disciplinasValidas.has(itemId)) {
+        throw new ErrorValidacion('Una disciplina no pertenece al catálogo vigente.');
+      }
+    }
+    return {
+      ...solicitud,
+      frecuenciaItemId: frecuencia.itemId
+    };
+  }
+
   return {
     ObtenerContexto(acceso) {
       const nivel = acceso && acceso.accessLevel ? acceso.accessLevel : null;
@@ -378,6 +581,10 @@ function CrearServicioProceso(dependencias) {
         puedeVerDetalleCaso: TieneCapacidad(acceso, CAPABILITY.CASE_READ)
           && nivel === ACCESS_LEVEL.LOCAL_OFFICE,
         puedeExportarCasos: TieneCapacidad(acceso, CAPABILITY.CASE_READ)
+          && nivel === ACCESS_LEVEL.LOCAL_OFFICE,
+        puedeRegistrarAtencion: TieneCapacidad(acceso, CAPABILITY.ATTENTION_WRITE)
+          && nivel === ACCESS_LEVEL.LOCAL_OFFICE,
+        puedeConsultarSeguimiento: TieneCapacidad(acceso, CAPABILITY.ATTENTION_DETAIL_READ)
           && nivel === ACCESS_LEVEL.LOCAL_OFFICE
       };
     },
@@ -434,12 +641,13 @@ function CrearServicioProceso(dependencias) {
         posiblesReferencias: IndicadorNoDisponible(
           'La detección de posibles referencias no forma parte de este lote.'
         ),
-        actividadesVencidas: IndicadorNoDisponible(
-          'La programación operativa no forma parte de este lote.'
-        ),
-        proximasAcciones: IndicadorNoDisponible(
-          'El seguimiento de atenciones no forma parte de este lote.'
-        )
+        atencionesRegistradas: await LeerIndicadorAtenciones(ambito),
+        proximasAcciones: await LeerProximasAcciones(ambito),
+        actividadesVencidas: contexto.nivel === ACCESS_LEVEL.LOCAL_OFFICE
+          ? await LeerActividadesVencidas(ambito.localOfficeId)
+          : IndicadorNoDisponible(
+            'La programación se consulta en el ámbito de Oficina Local.'
+          )
       };
       if (contexto.nivel === ACCESS_LEVEL.LOCAL_OFFICE) {
         try {
@@ -658,6 +866,12 @@ function CrearServicioProceso(dependencias) {
         solicitud.riesgoCodigo,
         solicitud.proteccionCodigo
       );
+      if (solicitud.abordaje && casoId === null) {
+        throw new ErrorValidacion(
+          'El abordaje se actualiza en la revaloración de un caso activo. La apertura sigue siendo un paso aparte.'
+        );
+      }
+      const abordaje = solicitud.abordaje ? await PrepararAbordaje(solicitud.abordaje) : null;
       const anteriores = await repositorio.ContarValoraciones(referenciaId, casoId);
       const valoracionId = await Reintentar(() => repositorio.RegistrarValoracion({
         situacionId: solicitud.situacionId,
@@ -670,6 +884,7 @@ function CrearServicioProceso(dependencias) {
         proteccionCodigo: solicitud.proteccionCodigo,
         prioridadCodigo: prioridad.prioridadCodigo,
         categorias,
+        abordaje,
         responsable: ExigirResponsable(acceso),
         rol: acceso.accessLevel,
         fecha: situacion.fecha,
@@ -679,6 +894,7 @@ function CrearServicioProceso(dependencias) {
         valoracionId,
         prioridadCodigo: prioridad.prioridadCodigo,
         prioridadEtiqueta: ETIQUETA_PRIORIDAD[prioridad.prioridadCodigo],
+        planActualizado: Boolean(abordaje),
         editable: false
       };
     },
@@ -715,31 +931,7 @@ function CrearServicioProceso(dependencias) {
     async AbrirCaso(acceso, solicitud) {
       ExigirOficina(acceso, CAPABILITY.CASE_OPEN);
       const ambito = await Ambito(acceso, null);
-      const catalogo = await repositorio.ListarCatalogo(['ESTRATEGIA', 'DISCIPLINA', 'FRECUENCIA']);
-      const estrategias = PresentarCatalogo(catalogo, 'ESTRATEGIA');
-      const disciplinas = PresentarCatalogo(catalogo, 'DISCIPLINA');
-      const frecuencias = PresentarCatalogo(catalogo, 'FRECUENCIA');
-      if (estrategias.disponibilidad !== 'DISPONIBLE' || disciplinas.disponibilidad !== 'DISPONIBLE') {
-        throw new ErrorValidacion(
-          'Falta el catálogo vigente de estrategias o disciplinas. La apertura queda pendiente de validación y no se inventan valores.'
-        );
-      }
-      const frecuencia = (frecuencias.items || []).find((item) => item.codigo === solicitud.frecuenciaCodigo);
-      if (!frecuencia) {
-        throw new ErrorValidacion('La frecuencia no pertenece al catálogo vigente.');
-      }
-      const estrategiasValidas = new Set(estrategias.items.map((item) => item.itemId));
-      const disciplinasValidas = new Set(disciplinas.items.map((item) => item.itemId));
-      for (const itemId of solicitud.estrategias) {
-        if (!estrategiasValidas.has(itemId)) {
-          throw new ErrorValidacion('Una estrategia no pertenece al catálogo vigente.');
-        }
-      }
-      for (const itemId of solicitud.disciplinas) {
-        if (!disciplinasValidas.has(itemId)) {
-          throw new ErrorValidacion('Una disciplina no pertenece al catálogo vigente.');
-        }
-      }
+      const abordaje = await PrepararAbordaje(solicitud);
       const referencia = await repositorio.BuscarReferencia(solicitud.referenciaId, ambito);
       if (!referencia || referencia.estado !== 'PENDIENTE_REVISION') {
         throw new ErrorNoEncontrado(NO_ENCONTRADO);
@@ -756,10 +948,10 @@ function CrearServicioProceso(dependencias) {
         personaId: referencia.per_id_persona,
         oficinaLocalId: ambito.localOfficeId,
         regionId: ambito.regionId,
-        frecuenciaItemId: frecuencia.itemId,
-        propositos: solicitud.propositos,
-        estrategias: solicitud.estrategias,
-        disciplinas: solicitud.disciplinas,
+        frecuenciaItemId: abordaje.frecuenciaItemId,
+        propositos: abordaje.propositos,
+        estrategias: abordaje.estrategias,
+        disciplinas: abordaje.disciplinas,
         fecha: FechaHoy(),
         responsable: ExigirResponsable(acceso),
         rol: acceso.accessLevel,
@@ -809,9 +1001,29 @@ function CrearServicioProceso(dependencias) {
 
     async ExportarCasos(acceso, consulta) {
       ExigirOficina(acceso, CAPABILITY.CASE_READ);
-      const listado = await this.ListarCasos(acceso, { ...consulta, pagina: 1, tamano: 50, desplazamiento: 0 });
-      if (listado.total > 50) {
-        throw new ErrorValidacion('La exportación supera una página. Precise los filtros.');
+      const sonda = await this.ListarCasos(acceso, {
+        ...consulta,
+        pagina: 1,
+        tamano: 1,
+        desplazamiento: 0
+      });
+      if (sonda.total > LIMITE_EXPORTACION) {
+        throw new ErrorValidacion(
+          'El corte filtrado supera 2000 filas. Precise los filtros. No se exporta una página parcial.'
+        );
+      }
+      const listado = sonda.total === 0
+        ? { ...sonda, items: [] }
+        : await this.ListarCasos(acceso, {
+          ...consulta,
+          pagina: 1,
+          tamano: sonda.total,
+          desplazamiento: 0
+        });
+      if (listado.items.length !== sonda.total) {
+        throw new ErrorConflicto(
+          'La exportación no coincide con el total filtrado. No se entregó un archivo parcial.'
+        );
       }
       const encabezado = [
         'identificacion',
@@ -872,6 +1084,64 @@ function CrearServicioProceso(dependencias) {
         }
       }
       const vigente = detalle.valoraciones.find((fila) => fila.es_vigente === true || fila.es_vigente === 1);
+      const individuales = await LeerOpcional(() => repositorio.ListarAtencionesIndividuales(casoId));
+      const grupales = await LeerOpcional(() => repositorio.ListarParticipacionesGrupales(casoId));
+      const planes = await LeerOpcional(() => repositorio.ListarPlanesCaso(casoId));
+      const documentos = await LeerOpcional(() => repositorio.ContarDocumentosCaso(casoId));
+      const coordinaciones = await LeerOpcional(() => repositorio.ContarCoordinacionesCaso(casoId));
+      const atenciones = individuales.disponibilidad === 'DISPONIBLE'
+        ? individuales.datos.map((fila) => ({
+          atencionId: Number(fila.atencion_individual_id),
+          fechaAtencion: fila.fecha_atencion,
+          fechaRegistro: fila.digitada_en,
+          acciones: fila.acciones,
+          recomendaciones: fila.recomendaciones,
+          profesional: fila.profesional_usuario,
+          proximaAccion: fila.proxima_accion,
+          fechaProxima: fila.fecha_proxima
+        }))
+        : [];
+      const participaciones = grupales.disponibilidad === 'DISPONIBLE'
+        ? grupales.datos.map((fila) => ({
+          atencionGrupalId: Number(fila.atencion_grupal_id),
+          fechaAtencion: fila.fecha_atencion,
+          tema: fila.tema,
+          asistio: fila.asistio === true || fila.asistio === 1
+            ? true
+            : (fila.asistio === false || fila.asistio === 0 ? false : null)
+        }))
+        : [];
+      const versionesPlan = planes.disponibilidad === 'DISPONIBLE'
+        ? planes.datos.map((fila) => ({
+          planId: Number(fila.plan_id),
+          numero: Number(fila.numero_version),
+          vigente: fila.es_vigente === true || fila.es_vigente === 1,
+          fecha: fila.fecha_plan,
+          responsable: fila.responsable_usuario,
+          frecuenciaEtiqueta: fila.frecuencia_etiqueta
+        }))
+        : [];
+      const valoraciones = detalle.valoraciones.map((fila) => ({
+        valoracionId: Number(fila.valoracion_id),
+        numero: Number(fila.numero),
+        vigente: fila.es_vigente === true || fila.es_vigente === 1,
+        riesgoCodigo: fila.riesgo_codigo,
+        proteccionCodigo: fila.proteccion_codigo,
+        prioridadCodigo: fila.prioridad_codigo,
+        prioridadEtiqueta: ETIQUETA_PRIORIDAD[fila.prioridad_codigo],
+        responsable: fila.responsable_usuario,
+        fecha: fila.fecha_valoracion,
+        sesionId: Number(fila.sesion_id),
+        fechaSesion: fila.fecha_sesion,
+        instrumentoVersionId: fila.instrumento_version_id === undefined
+          || fila.instrumento_version_id === null
+          ? null
+          : Number(fila.instrumento_version_id)
+      }));
+      const historial = detalle.historial.map((fila) => ({
+        estado: fila.estado,
+        ocurridoEn: fila.ocurrido_en
+      }));
       return {
         casoId: Number(detalle.caso.caso_id),
         identificacion: detalle.caso.per_id_persona,
@@ -891,19 +1161,7 @@ function CrearServicioProceso(dependencias) {
           contacto: detalle.caso.contacto,
           direccion: detalle.caso.direccion
         },
-        valoraciones: detalle.valoraciones.map((fila) => ({
-          valoracionId: Number(fila.valoracion_id),
-          numero: Number(fila.numero),
-          vigente: fila.es_vigente === true || fila.es_vigente === 1,
-          riesgoCodigo: fila.riesgo_codigo,
-          proteccionCodigo: fila.proteccion_codigo,
-          prioridadCodigo: fila.prioridad_codigo,
-          prioridadEtiqueta: ETIQUETA_PRIORIDAD[fila.prioridad_codigo],
-          responsable: fila.responsable_usuario,
-          fecha: fila.fecha_valoracion,
-          sesionId: Number(fila.sesion_id),
-          fechaSesion: fila.fecha_sesion
-        })),
+        valoraciones,
         factores: detalle.factores.map((fila) => ({
           valoracionId: Number(fila.valoracion_id),
           eje: fila.eje,
@@ -918,15 +1176,85 @@ function CrearServicioProceso(dependencias) {
           estrategias: detalle.plan.estrategias.map((fila) => fila.etiqueta),
           disciplinas: detalle.plan.disciplinas.map((fila) => fila.etiqueta)
         } : null,
-        historial: detalle.historial.map((fila) => ({
-          estado: fila.estado,
-          ocurridoEn: fila.ocurrido_en
-        })),
+        historial,
+        planes: versionesPlan,
+        atenciones,
+        participacionesGrupales: participaciones,
+        consultaGrupal: {
+          disponibilidad: grupales.disponibilidad,
+          mensaje: grupales.disponibilidad === 'DISPONIBLE'
+            ? null
+            : 'La asistencia grupal no está disponible para la cuenta técnica actual.'
+        },
+        documentos: PresentarConteo(
+          documentos,
+          'Sin documentos registrados.',
+          'La consulta de documentos no está disponible para la cuenta técnica actual.'
+        ),
+        coordinaciones: PresentarConteo(
+          coordinaciones,
+          'Sin coordinaciones registradas.',
+          'La consulta de coordinaciones no está disponible para la cuenta técnica actual.'
+        ),
+        lineaTiempo: ConstruirLineaTiempo({
+          historial,
+          valoraciones,
+          planes: versionesPlan,
+          atenciones,
+          grupales: participaciones
+        }),
         ultimaAtencion,
-        coberturaHistorial: 'PARCIAL',
+        coberturaHistorial: grupales.disponibilidad === 'DISPONIBLE'
+          && individuales.disponibilidad === 'DISPONIBLE'
+          ? 'OPERATIVA'
+          : 'PARCIAL',
         pendientes: [
-          'Atenciones, actividades grupales, coordinaciones, traslados y reportes no forman parte de este lote.'
-        ]
+          grupales.disponibilidad === 'DISPONIBLE'
+            ? null
+            : 'La asistencia grupal no está disponible para la cuenta técnica actual.',
+          'Traslados y reportes internos no forman parte de este incremento.'
+        ].filter(Boolean)
+      };
+    },
+
+    async ListarSinAtencion(acceso, consulta) {
+      ExigirOficina(acceso, CAPABILITY.ATTENTION_DETAIL_READ);
+      const ambito = await Ambito(acceso, null);
+      let pagina;
+      try {
+        pagina = await repositorio.ListarCasosSinAtencion({ ...consulta, ambito });
+      } catch (error) {
+        if (error && error.code === 'PERMISO') {
+          return {
+            disponibilidad: 'BLOQUEADO',
+            total: null,
+            items: [],
+            motivo: 'El seguimiento de atenciones no está disponible para la cuenta técnica actual.'
+          };
+        }
+        TraducirPersistencia(error, {});
+      }
+      const nombres = await Nombres(ambito, pagina.filas.map((fila) => fila.per_id_persona));
+      return {
+        disponibilidad: 'DISPONIBLE',
+        desde: consulta.desde,
+        hasta: consulta.hasta,
+        pagina: consulta.pagina,
+        tamano: consulta.tamano,
+        total: pagina.total,
+        devueltos: pagina.filas.length,
+        items: pagina.filas.map((fila) => {
+          const nombre = nombres.get(fila.per_id_persona);
+          const ultima = UltimaFecha(fila.ultima_individual, fila.ultima_grupal);
+          return {
+            casoId: Number(fila.caso_id),
+            identificacion: fila.per_id_persona,
+            nombre: nombre ? nombre.fullName : null,
+            establecimientoId: Number(fila.establecimiento_id),
+            ultimaAtencion: ultima,
+            situacion: ultima ? 'ATENDIDO_FUERA_DEL_PERIODO' : 'SIN_ATENCION_REGISTRADA'
+          };
+        })
       };
     }
   };

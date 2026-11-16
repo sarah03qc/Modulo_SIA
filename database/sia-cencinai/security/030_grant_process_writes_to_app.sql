@@ -6,7 +6,12 @@ Creacion: 2026-11-14.
 
 Este script NO es una migracion y la API no lo ejecuta.
 Lo aplica, por separado, un principal administrativo del ambiente local.
-No se ejecuto al preparar esta entrega.
+No se ejecuto al preparar la entrega del 2026-11-14.
+
+Actualizacion 2026-11-16:
+En el ambiente local de desarrollo el equipo ya aplico este script de forma
+manual. La creacion de sesiones se probo desde la aplicacion y funciono.
+No volver a ejecutarlo sin una revision de permisos. No forma parte del arranque.
 
 Concede el DML de sesion, valoracion, resolucion, apertura de caso y
 la lectura del detalle operativo. No concede db_owner, db_datawriter,

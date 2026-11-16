@@ -1,6 +1,7 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-14.
+ * Modificación: 2026-11-16. Seguimiento de casos activos sin atención.
  * Rutas del proceso interdisciplinario. La capacidad se exige otra vez en el servicio.
  */
 'use strict';
@@ -19,6 +20,7 @@ const {
   LeerConsultaCasos,
   LeerConsultaPrioridad,
   LeerEntero,
+  LeerPeriodoSeguimiento,
   LeerResolucion,
   LeerSesion,
   LeerSituacion,
@@ -165,6 +167,17 @@ function CrearEnrutadorProceso(servicio) {
     json,
     EnvolverAsincrono(async (req, res) => {
       res.status(201).json(await servicio.AbrirCaso(req.acceso, LeerApertura(req.body)));
+    })
+  );
+
+  router.get(
+    '/seguimiento/sin-atencion',
+    ExigirOficinaEnRuta(CAPABILITY.ATTENTION_DETAIL_READ),
+    EnvolverAsincrono(async (req, res) => {
+      res.status(200).json(await servicio.ListarSinAtencion(
+        req.acceso,
+        LeerPeriodoSeguimiento(req.query)
+      ));
     })
   );
 

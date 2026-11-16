@@ -1,7 +1,8 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-14.
- * HU-019 a HU-025. La prioridad no se acepta como dato de entrada.
+ * Modificación: 2026-11-16. Abordaje opcional de revaloración y período de seguimiento.
+ * HU-019 a HU-025, HU-048. La prioridad no se acepta como dato de entrada.
  */
 'use strict';
 
@@ -15,6 +16,7 @@ const ENTERO = /^[1-9][0-9]*$/;
 const ENTERO_MAXIMO = 2147483647;
 const TAMANO_PAGINA = 20;
 const TAMANO_MAXIMO = 50;
+const DIAS_PERIODO_MAXIMO = 366;
 const DESPLAZAMIENTO_MAXIMO = 5000;
 const TEXTO_LUGAR = 200;
 const TEXTO_PROPOSITO = 1000;
@@ -227,7 +229,8 @@ function LeerValoracion(cuerpo) {
     situacionId,
     categorias,
     riesgoCodigo: LeerNivel(cuerpo.riesgoCodigo, RIESGO, 'riesgo'),
-    proteccionCodigo: LeerNivel(cuerpo.proteccionCodigo, PROTECCION, 'nivel de protección')
+    proteccionCodigo: LeerNivel(cuerpo.proteccionCodigo, PROTECCION, 'nivel de protección'),
+    abordaje: LeerAbordajeOpcional(cuerpo)
   };
 }
 
@@ -259,14 +262,12 @@ function LeerResolucion(cuerpo) {
   };
 }
 
-function LeerApertura(cuerpo) {
-  Objeto(cuerpo, 'La apertura no tiene un cuerpo utilizable.');
-  RechazarPrioridadManual(cuerpo);
+function LeerContenidoAbordaje(cuerpo, etiqueta) {
   if (!Array.isArray(cuerpo.propositos) || cuerpo.propositos.length === 0) {
-    EntradaInvalida('La apertura exige al menos un propósito.');
+    EntradaInvalida(`${etiqueta} exige al menos un propósito.`);
   }
   if (cuerpo.propositos.length > PROPOSITOS_MAXIMOS) {
-    EntradaInvalida('La apertura supera la cantidad de propósitos permitida.');
+    EntradaInvalida(`${etiqueta} supera la cantidad de propósitos permitida.`);
   }
   const propositos = cuerpo.propositos.map((texto) => {
     const limpio = LeerTextoOpcional(texto, 'propósito', TEXTO_PROPOSITO);
@@ -278,21 +279,98 @@ function LeerApertura(cuerpo) {
   const estrategias = LeerListaEnteros(cuerpo.estrategias, 'estrategias');
   const disciplinas = LeerListaEnteros(cuerpo.disciplinas, 'disciplinas');
   if (estrategias.length === 0 || disciplinas.length === 0) {
-    EntradaInvalida('La apertura exige estrategias y disciplinas del catálogo vigente.');
+    EntradaInvalida(`${etiqueta} exige estrategias y disciplinas del catálogo vigente.`);
   }
   if (typeof cuerpo.frecuenciaCodigo !== 'string' || cuerpo.frecuenciaCodigo.trim() === '') {
-    EntradaInvalida('La apertura exige una frecuencia del catálogo vigente.');
+    EntradaInvalida(`${etiqueta} exige una frecuencia del catálogo vigente.`);
   }
   return {
-    referenciaId: LeerEntero(
-      typeof cuerpo.referenciaId === 'number' ? String(cuerpo.referenciaId) : cuerpo.referenciaId,
-      'referencia'
-    ),
     propositos,
     estrategias,
     disciplinas,
     frecuenciaCodigo: cuerpo.frecuenciaCodigo.trim()
   };
+}
+
+function LeerAbordajeOpcional(cuerpo) {
+  if (!Object.prototype.hasOwnProperty.call(cuerpo, 'abordaje') || cuerpo.abordaje === null) {
+    return null;
+  }
+  Objeto(cuerpo.abordaje, 'El abordaje no tiene un cuerpo utilizable.');
+  RechazarPrioridadManual(cuerpo.abordaje);
+  return LeerContenidoAbordaje(cuerpo.abordaje, 'La actualización del abordaje');
+}
+
+function LeerApertura(cuerpo) {
+  Objeto(cuerpo, 'La apertura no tiene un cuerpo utilizable.');
+  RechazarPrioridadManual(cuerpo);
+  return {
+    referenciaId: LeerEntero(
+      typeof cuerpo.referenciaId === 'number' ? String(cuerpo.referenciaId) : cuerpo.referenciaId,
+      'referencia'
+    ),
+    ...LeerContenidoAbordaje(cuerpo, 'La apertura')
+  };
+}
+
+function DiasEntre(desde, hasta) {
+  const inicio = Date.UTC(
+    Number(desde.slice(0, 4)),
+    Number(desde.slice(5, 7)) - 1,
+    Number(desde.slice(8, 10))
+  );
+  const fin = Date.UTC(
+    Number(hasta.slice(0, 4)),
+    Number(hasta.slice(5, 7)) - 1,
+    Number(hasta.slice(8, 10))
+  );
+  const milisegundosPorDia = 24 * 60 * 60 * 1000;
+  return Math.round((fin - inicio) / milisegundosPorDia);
+}
+
+/**
+ * Período explícito de HU-048. No aplica un umbral institucional de atraso.
+ * El tope de 366 días es técnico, para no barrer un intervalo indefinido.
+ *
+ * @param {object} consulta Parámetros de la ruta.
+ * @returns {object} Fechas inclusivas y página.
+ */
+function LeerPeriodoSeguimiento(consulta) {
+  const origen = consulta || {};
+  const anioTexto = LeerTextoOpcional(origen.anio, 'año', 4);
+  const desdeTexto = LeerTextoOpcional(origen.desde, 'fecha inicial', 10);
+  const hastaTexto = LeerTextoOpcional(origen.hasta, 'fecha final', 10);
+  const pagina = LeerPagina(origen);
+  if (anioTexto && (desdeTexto || hastaTexto)) {
+    EntradaInvalida('Indique un año o un intervalo, no ambos.');
+  }
+  if (anioTexto) {
+    if (!/^\d{4}$/.test(anioTexto)) {
+      EntradaInvalida('El año no es válido.');
+    }
+    const anio = Number(anioTexto);
+    if (anio < ANIO_MINIMO || anio > ANIO_MAXIMO) {
+      EntradaInvalida('El año no es válido.');
+    }
+    return {
+      ...pagina,
+      desde: `${anioTexto}-01-01`,
+      hasta: `${anioTexto}-12-31`,
+      anio
+    };
+  }
+  if (!desdeTexto || !hastaTexto) {
+    EntradaInvalida('Indique el año o las dos fechas del período.');
+  }
+  const desde = LeerFecha(desdeTexto, 'fecha inicial');
+  const hasta = LeerFecha(hastaTexto, 'fecha final');
+  if (hasta < desde) {
+    EntradaInvalida('La fecha final debe ser igual o posterior a la inicial.');
+  }
+  if (DiasEntre(desde, hasta) > DIAS_PERIODO_MAXIMO) {
+    EntradaInvalida('El intervalo supera un año. Use un año o un período más corto.');
+  }
+  return { ...pagina, desde, hasta, anio: null };
 }
 
 function LeerConsultaCasos(consulta) {
@@ -336,5 +414,6 @@ module.exports = {
   LeerApertura,
   LeerConsultaCasos,
   LeerConsultaPrioridad,
+  LeerPeriodoSeguimiento,
   LeerEntero
 };
