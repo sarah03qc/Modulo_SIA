@@ -49,7 +49,8 @@ La clasificación entre atención grupal de A.I. y sesiones educativas generales
 | HU | Estado | Evidencia | Dependencia o bloqueo |
 | --- | --- | --- | --- |
 | HU-001 | Implementada | `GET /api/proceso/resumen`. Inicio de Establecimiento muestra referencias y personas con caso del ámbito | Posibles referencias no están en este lote |
-| HU-002 | Parcial | Inicio de Oficina Local, después del script `040`: 13 pendientes, 83 atenciones individuales, 6 actividades vencidas y 3 próximas acciones. Tras esta validación, Inicio mostró 18 casos activos | Posibles referencias siguen `NO_DISPONIBLE`. Las actividades vencidas se consultan, pero resolverlas como realizada, reprogramada o cancelada no está implementado. Los 22 activos de la mañana bajaron a 18 por cuatro cierres sintéticos aislados |
+| HU-002 | Parcial | Inicio de Oficina Local, 2026-11-16 por la tarde: alerta «Vencida» con 6 actividades, 4 próximas acciones que abren el caso, sesiones y acceso a Programación. Posibles referencias siguen sin fuente | La detección automática sigue `NEEDS_VALIDATION`. Resolver una actividad en vivo espera el script `060`, que no se ejecutó |
+| HU-044 | Parcial | `GET /api/programacion/actividades` devolvió 19 actividades de la oficina 101; 6 marcadas vencidas. Reprogramada no se marca vencida. Las próximas acciones salen de la última atención y no de la frecuencia del plan. Establecimiento recibió 403 | Falta `INSERT`/`UPDATE` de programación. El alta respondió 503. El historial y las personas asociadas respondieron bloqueados. No se resolvió la actividad vencida de la semilla |
 | HU-005 a HU-009 | Implementada | APIs institucionales ya existentes y pantalla Buscar persona | Réplica `SIDINACC_LOCAL` y periodo configurado |
 | HU-013 a HU-014 | Implementada | `POST /api/references/validation`, `POST /api/references`, borradores y plantilla | Catálogo de motivos ya sembrado |
 | HU-015 a HU-017 | Implementada | Listado, detalle y documento de referencia | El diseño documental de la impresión sigue el pendiente previo |
@@ -69,8 +70,9 @@ La clasificación entre atención grupal de A.I. y sesiones educativas generales
 | HU-030 | Parcial | Caso 1777: se conservó «Informe de avance» con su propósito y el estado siguió `ACTIVO`. La vista provisional se consultó e imprimió desde el navegador. El reintento no duplicó el metadato | No está satisfecha por completo: no se conserva el documento emitido y la plantilla oficial sigue `NEEDS_VALIDATION`. La vista se regenera con el expediente vigente |
 | HU-031 | Implementada en el alcance confirmado | Caso 1434, cierre satisfactorio sin reporte previo. Caso 1377, dos cierres simultáneos y una sola fila. Caso 1171, Otro con explicación obligatoria. Otro intento con otra clave respondió 409. La atención posterior respondió 404 y no insertó fila. El expediente histórico siguió consultable | No hay regla institucional para reabrir. No se cerraron los casos de demostración 1, 5, 1092, 1304, 1305, 1435, 1775, 1776, 1817 ni 10089 |
 
-Quedan fuera, sin cifras ficticias: HU-003, HU-004, reportería regional y nacional,
-asistente conversacional, posibles referencias automáticas y la resolución de la programación.
+Quedan fuera de este avance, sin cifras ficticias: HU-003, HU-004, HU-038, HU-039,
+HU-045, HU-046, reportería regional y nacional, el asistente de HU-050 y las posibles
+referencias automáticas.
 
 ## Endpoints de este incremento
 
@@ -83,12 +85,15 @@ asistente conversacional, posibles referencias automáticas y la resolución de 
 - `GET /api/ciclo/catalogos`, `POST /api/ciclo/coordinaciones`, `POST /api/ciclo/reportes`
 - `GET /api/ciclo/casos/:casoId/vista-reporte`, `POST /api/ciclo/cierres`
 - `GET /api/proceso/resumen`, `GET /api/proceso/contexto`
+- `GET /api/programacion/catalogos`, `GET /api/programacion/actividades`
+- `POST /api/programacion/actividades`, `POST /api/programacion/actividades/:actividadId/resoluciones`
 
 ## Pantallas
 
 Inicio, Buscar persona, Nueva referencia, Referencias, Pendientes, Sesiones, Casos,
-Atenciones y Sin atención. El expediente de Oficina Local incluye coordinación, reporte y cierre.
-Establecimiento no ve Sesiones, Atenciones, Sin atención ni el expediente.
+Atenciones, Sin atención y Programación. El expediente de Oficina Local incluye coordinación,
+reporte y cierre. Establecimiento no ve Sesiones, Atenciones, Sin atención, Programación
+ni el expediente.
 
 ## Pendientes
 
@@ -99,9 +104,41 @@ Establecimiento no ve Sesiones, Atenciones, Sin atención ni el expediente.
 - Directorio de profesionales distintos de la sesión actual: `NEEDS_VALIDATION`.
 - Programación operativa para resolver una actividad vencida.
 - El script `050` ya está aplicado en este desarrollo local. No volver a ejecutarlo. No concede `DELETE` sobre casos ni `INSERT` directo sobre `caso_cierre`; el cierre entra por `ops.cerrar_caso`.
+- Aplicar manualmente `database/sia-cencinai/security/060_grant_scheduling_to_app.sql` antes de crear o resolver actividades. No se ejecutó. No concede `DELETE` ni cambia la fecha prevista.
 - Catálogos vigentes de institución y estado de coordinación, y plantilla oficial del reporte: `NEEDS_VALIDATION`. Por eso HU-030 no queda completa.
 - No se preparó un índice único de `aud_evento.codigo_cambio`. La concurrencia observada dejó una sola auditoría. Un plan que no tome el bloqueo de rango no se observó.
 - Zona horaria institucional de las fechas de resumen.
+
+## Programación operativa, 2026-11-16
+
+No se ejecutaron los scripts `030`, `040`, `050` ni `060`. No se borraron actividades
+ni se resolvió la programación vencida de la semilla.
+
+La consulta de Oficina Local devolvió 19 actividades. Seis siguen `PROGRAMADA` con
+fecha vigente anterior al 2026-11-16 y la API las marca `vencida` con el texto
+«Vencida». Una reprogramada no entra en ese conteo. El establecimiento recibió 403.
+Cuatro próximas acciones salen de la última atención individual que tiene acción y
+fecha. La frecuencia del plan no se consulta ni crea una fila de programación.
+
+Crear una actividad futura respondió 503: la cuenta puede leer `prog_actividad`,
+pero no insertarla ni leer `prog_cambio` o `prog_persona`. El script `060` queda
+preparado y sin ejecutar. Hasta aplicarlo, realizada, reprogramada y cancelada
+no persisten. La reprogramación prevista no borra la fila: actualiza la fecha
+vigente y agrega el cambio. Solo una actividad `PROGRAMADA` puede cambiar. La
+misma clave de operación no debe duplicar el alta ni la resolución.
+
+En el navegador, Inicio mostró la alerta con texto y color, el acceso a Programación
+y las próximas acciones. La pantalla de programación mostró las 19 actividades y
+la nota de que la próxima acción no es la frecuencia del plan.
+
+Las pruebas de este cambio: API 161 aprobadas y 7 omitidas; web 11. El lint de los
+archivos nuevos no reportó errores.
+
+`NEEDS_VALIDATION`: una actividad reprogramada no vuelve a `PROGRAMADA`. La
+especificación no confirma esa transición. Tampoco se convierte sola una próxima
+acción en actividad, para no duplicarla en un reintento.
+
+HU-038 y HU-039 no forman parte de este avance.
 
 ## Validación posterior al script 050, 2026-11-16
 

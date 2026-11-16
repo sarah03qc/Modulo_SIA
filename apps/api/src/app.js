@@ -2,7 +2,7 @@
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Primer registro del archivo en Git: 2026-11-06 (5fabddc).
  * Modificación del 2026-11-14: proceso interdisciplinario, autorización y CORS.
- * Modificación del 2026-11-16: registro de atenciones y ciclo del caso.
+ * Modificación del 2026-11-16: registro de atenciones, ciclo y programación.
  */
 'use strict';
 
@@ -21,6 +21,8 @@ const { CrearModuloAtenciones } = require('./modules/atenciones/crear-modulo-ate
 const { CrearEnrutadorAtenciones } = require('./modules/atenciones/rutas-atenciones');
 const { CrearModuloCiclo } = require('./modules/ciclo-caso/crear-modulo-ciclo');
 const { CrearEnrutadorCiclo } = require('./modules/ciclo-caso/rutas-ciclo');
+const { CrearModuloProgramacion } = require('./modules/programacion/crear-modulo-programacion');
+const { CrearEnrutadorProgramacion } = require('./modules/programacion/rutas-programacion');
 
 /**
  * Aplica encabezados para que el navegador no interprete mal el contenido,
@@ -107,6 +109,11 @@ function CrearAplicacion(dependencies) {
   app.use('/api/proceso', CrearEnrutadorProceso(proceso));
   app.use('/api/atenciones', CrearEnrutadorAtenciones(atenciones));
   app.use('/api/ciclo', CrearEnrutadorCiclo(ciclo));
+  const programacion = dependencies.programacion || CrearModuloProgramacion({
+    adapter: dependencies.adapter,
+    sia: dependencies.databases && dependencies.databases.sia
+  });
+  app.use('/api/programacion', CrearEnrutadorProgramacion(programacion));
   app.use(ResponderRutaNoEncontrada);
   app.use(CrearControlErrores(logger));
   return app;

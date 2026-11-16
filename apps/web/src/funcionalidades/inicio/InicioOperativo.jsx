@@ -1,7 +1,7 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-14.
- * Modificación: 2026-11-16. Atenciones y próximas acciones cuando la cuenta puede leerlas.
+ * Modificación: 2026-11-16. Alerta de actividades vencidas y acceso a programación.
  * HU-001 y HU-002. Un indicador ausente no se muestra como cero.
  */
 import { useEffect, useState } from 'react';
@@ -108,9 +108,21 @@ export default function InicioOperativo({ direccionApi, identidad, contexto, nav
           titulo="Atenciones individuales registradas"
           indicador={resumen.atencionesRegistradas}
         />
-        <Tarjeta titulo="Actividades vencidas" indicador={resumen.actividadesVencidas} />
+        <Tarjeta
+          titulo="Actividades vencidas"
+          indicador={resumen.actividadesVencidas}
+          accion={contexto.puedeConsultarProgramacion ? () => navegar('programacion') : null}
+          textoAccion="Resolver en programación"
+        />
         <Tarjeta titulo="Próximas acciones" indicador={resumen.proximasAcciones} />
       </div>
+      {resumen.actividadesVencidas && resumen.actividadesVencidas.disponibilidad === 'DISPONIBLE'
+        && resumen.actividadesVencidas.cantidad > 0 ? (
+          <p className="alerta-vencida" role="status">
+            Vencida: {resumen.actividadesVencidas.cantidad} actividades siguen programadas
+            después de su fecha. Puede resolverlas como realizada, reprogramada o cancelada.
+          </p>
+        ) : null}
       {resumen.proximasAcciones && resumen.proximasAcciones.disponibilidad === 'DISPONIBLE'
         && resumen.proximasAcciones.items && resumen.proximasAcciones.items.length > 0 ? (
           <section className="panel">
@@ -118,7 +130,11 @@ export default function InicioOperativo({ direccionApi, identidad, contexto, nav
             <ul>
               {resumen.proximasAcciones.items.map((item) => (
                 <li key={`${item.casoId}-${item.fecha}`}>
-                  <button type="button" className="secundario" onClick={() => navegar('casos')}>
+                  <button
+                    type="button"
+                    className="secundario"
+                    onClick={() => navegar('casos', { casoId: item.casoId })}
+                  >
                     {item.fecha} — caso {item.casoId} — {item.accion}
                   </button>
                 </li>

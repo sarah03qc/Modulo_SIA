@@ -1,8 +1,7 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-14.
- * Modificación: 2026-11-16. Expediente con coordinaciones, reportes, cierre y traslado.
- * La línea de tiempo asigna una clave distinta a cada evento.
+ * Modificación: 2026-11-16. Expediente, línea de tiempo y acceso a programación.
  * HU-001, HU-002 y HU-018 a HU-025, HU-048. El equipo decide; RN-009 calcula la prioridad.
  */
 'use strict';
@@ -550,7 +549,7 @@ function CrearServicioProceso(dependencias) {
         disponibilidad: 'DISPONIBLE',
         cantidad,
         motivo: cantidad > 0
-          ? 'Siguen programadas después de su fecha. Resolverlas como realizada, reprogramada o cancelada pertenece al módulo de programación.'
+          ? 'Hay actividades vencidas. Siguen programadas después de su fecha.'
           : null
       };
     } catch (error) {
@@ -629,6 +628,10 @@ function CrearServicioProceso(dependencias) {
         puedeGenerarReporte: TieneCapacidad(acceso, CAPABILITY.CASE_REPORT_WRITE)
           && nivel === ACCESS_LEVEL.LOCAL_OFFICE,
         puedeCerrarCaso: TieneCapacidad(acceso, CAPABILITY.CASE_CLOSE)
+          && nivel === ACCESS_LEVEL.LOCAL_OFFICE,
+        puedeConsultarProgramacion: TieneCapacidad(acceso, CAPABILITY.SCHEDULING_READ)
+          && nivel === ACCESS_LEVEL.LOCAL_OFFICE,
+        puedeGestionarProgramacion: TieneCapacidad(acceso, CAPABILITY.SCHEDULING_MANAGE)
           && nivel === ACCESS_LEVEL.LOCAL_OFFICE
       };
     },
