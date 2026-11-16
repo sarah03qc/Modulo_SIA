@@ -87,8 +87,15 @@ export default function SeguimientoPagina({
                       <td>{TEXTOS[item.situacion] || item.situacion}</td>
                       <td>{item.ultimaAtencion || 'Sin atención registrada'}</td>
                       <td>
-                        <button type="button" className="secundario" onClick={() => navegar('casos')}>
-                          Ir a casos
+                        <button
+                          type="button"
+                          className="secundario"
+                          onClick={() => navegar('casos', {
+                            identificacion: item.identificacion,
+                            casoId: item.casoId
+                          })}
+                        >
+                          Consultar caso
                         </button>
                       </td>
                     </tr>

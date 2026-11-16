@@ -1,7 +1,8 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-14.
- * Modificación: 2026-11-16. Paginación, exportación del corte y línea de tiempo.
+ * Modificación: 2026-11-16. Paginación, exportación, línea de tiempo
+ * y apertura directa desde el seguimiento.
  * HU-023, HU-024 y HU-025. El establecimiento no recibe el detalle interno.
  */
 import { useEffect, useState } from 'react';
@@ -16,14 +17,23 @@ const CONSULTA_VACIA = {
   establecimientoId: ''
 };
 
+function ConsultaInicial(parametros) {
+  const identificacion = parametros && typeof parametros.identificacion === 'string'
+    ? parametros.identificacion
+    : '';
+  return { ...CONSULTA_VACIA, identificacion };
+}
+
 export default function CasosPagina({
   direccionApi,
   identidad,
   contexto,
+  parametros = {},
   solicitarApi = SolicitarApi
 }) {
-  const [consulta, establecerConsulta] = useState(CONSULTA_VACIA);
-  const [aplicada, establecerAplicada] = useState(CONSULTA_VACIA);
+  const inicial = ConsultaInicial(parametros);
+  const [consulta, establecerConsulta] = useState(inicial);
+  const [aplicada, establecerAplicada] = useState(inicial);
   const [pagina, establecerPagina] = useState(null);
   const [numeroPagina, establecerNumeroPagina] = useState(1);
   const [detalle, establecerDetalle] = useState(null);
@@ -66,6 +76,28 @@ export default function CasosPagina({
       vigente = false;
     };
   }, [direccionApi, identidad, aplicada, numeroPagina, solicitarApi]);
+
+  useEffect(() => {
+    const casoId = Number(parametros.casoId);
+    if (!Number.isInteger(casoId) || casoId <= 0 || !contexto || !contexto.puedeVerDetalleCaso) {
+      return undefined;
+    }
+    let vigente = true;
+    solicitarApi(direccionApi, `/api/proceso/casos/${casoId}`, { identidad })
+      .then((datos) => {
+        if (vigente) {
+          establecerDetalle(datos);
+        }
+      })
+      .catch((fallo) => {
+        if (vigente) {
+          establecerError(fallo.message);
+        }
+      });
+    return () => {
+      vigente = false;
+    };
+  }, [contexto, direccionApi, identidad, parametros.casoId, solicitarApi]);
 
   async function VerDetalle(casoId) {
     establecerError('');

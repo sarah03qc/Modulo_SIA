@@ -1022,11 +1022,28 @@ ORDER BY i.orden
       return { caso, valoraciones, factores, historial, plan };
     },
 
+    /**
+     * Última atención efectiva del caso. RF-126 cuenta la atención individual
+     * y la asistencia grupal. Una convocatoria sin asistencia no cuenta.
+     *
+     * @param {number} casoId Caso ya autorizado.
+     * @returns {Promise<string|null>} Fecha o null si nunca hubo atención efectiva.
+     */
     async ObtenerUltimaAtencion(casoId) {
       const filas = await Consultar(`
-SELECT CONVERT(char(10), MAX(fecha_atencion), 23) AS fecha_atencion
-FROM dbo.ate_individual
-WHERE caso_id = @casoId
+SELECT CONVERT(char(10), MAX(fecha), 23) AS fecha_atencion
+FROM (
+  SELECT individual.fecha_atencion AS fecha
+  FROM dbo.ate_individual AS individual
+  WHERE individual.caso_id = @casoId
+  UNION ALL
+  SELECT grupal.fecha_atencion
+  FROM dbo.ate_grupal_participante AS participante
+  INNER JOIN dbo.ate_grupal AS grupal
+    ON grupal.atencion_grupal_id = participante.atencion_grupal_id
+  WHERE participante.caso_id = @casoId
+    AND participante.asistio = 1
+) AS efectivas
 `, { casoId: Parametro(sql.BigInt, casoId) });
       return filas[0] ? filas[0].fecha_atencion : null;
     },
