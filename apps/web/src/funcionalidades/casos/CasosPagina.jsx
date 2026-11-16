@@ -1,12 +1,13 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-14.
- * Modificación: 2026-11-16. Paginación, exportación, línea de tiempo
- * y apertura directa desde el seguimiento.
+ * Modificación: 2026-11-16. Paginación, exportación, línea de tiempo,
+ * ciclo del caso y apertura directa desde el seguimiento.
  * HU-023, HU-024 y HU-025. El establecimiento no recibe el detalle interno.
  */
 import { useEffect, useState } from 'react';
 import { Aviso, Cargando, Campo, ClasePrioridad, Vacio } from '../../componentes/interfaz';
+import CicloCaso from './CicloCaso';
 import { DescargarArchivo, SolicitarApi } from '../../servicios/cliente-api';
 
 const CONSULTA_VACIA = {
@@ -251,7 +252,10 @@ export default function CasosPagina({
           <p>{detalle.nombre || 'Nombre no disponible'} — {detalle.identificacion}</p>
           <p>Establecimiento: {detalle.establecimientoNombre || detalle.establecimientoId}</p>
           <p>Consecutivo de origen: {detalle.consecutivo}</p>
-          <p>Estado: {detalle.estado}. Apertura: {detalle.fechaApertura}.</p>
+          <p>
+            Estado: {detalle.estado}. Apertura: {detalle.fechaApertura}.
+            {detalle.fechaCierre ? ` Cierre: ${detalle.fechaCierre}.` : ''}
+          </p>
           <p>
             Prioridad vigente: <strong className={ClasePrioridad(detalle.prioridadCodigo)}>{detalle.prioridadEtiqueta || 'Sin valoración vigente'}</strong>
           </p>
@@ -290,6 +294,10 @@ export default function CasosPagina({
               ))}
             </ol>
           ) : <p>Sin eventos persistidos para mostrar.</p>}
+          {detalle.consultaIndividual
+            && detalle.consultaIndividual.disponibilidad !== 'DISPONIBLE' ? (
+              <p>{detalle.consultaIndividual.mensaje}</p>
+            ) : null}
           <h3>Atenciones individuales</h3>
           {detalle.atenciones && detalle.atenciones.length > 0 ? (
             <ul>
@@ -322,7 +330,11 @@ export default function CasosPagina({
             ? <p>Sin participaciones grupales registradas.</p>
             : null}
           <h3>Versiones del plan</h3>
-          {detalle.planes && detalle.planes.length > 0 ? (
+          {detalle.consultaPlanes && detalle.consultaPlanes.disponibilidad !== 'DISPONIBLE' ? (
+            <p>{detalle.consultaPlanes.mensaje}</p>
+          ) : null}
+          {detalle.planes && detalle.planes.length > 0
+            && (!detalle.consultaPlanes || detalle.consultaPlanes.disponibilidad === 'DISPONIBLE') ? (
             <ul>
               {detalle.planes.map((item) => (
                 <li key={item.planId}>
@@ -331,11 +343,21 @@ export default function CasosPagina({
                 </li>
               ))}
             </ul>
-          ) : <p>Sin versiones adicionales consultables.</p>}
+          ) : (
+            detalle.consultaPlanes && detalle.consultaPlanes.disponibilidad !== 'DISPONIBLE'
+              ? null
+              : <p>Sin versiones adicionales consultables.</p>
+          )}
           <h3>Documentos</h3>
           <p>{detalle.documentos ? detalle.documentos.mensaje || detalle.documentos.cantidad : 'Sin documentos registrados.'}</p>
-          <h3>Coordinaciones</h3>
-          <p>{detalle.coordinaciones ? detalle.coordinaciones.mensaje || detalle.coordinaciones.cantidad : 'Sin coordinaciones registradas.'}</p>
+          <CicloCaso
+            direccionApi={direccionApi}
+            identidad={identidad}
+            contexto={contexto}
+            detalle={detalle}
+            solicitarApi={solicitarApi}
+            alActualizar={() => VerDetalle(detalle.casoId)}
+          />
           <h3>Historial de estado</h3>
           <ul>
             {detalle.historial.map((item) => (

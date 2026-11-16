@@ -203,6 +203,15 @@ th, td {
   padding: 0 1rem 1rem;
 }
 
+@media print {
+  header,
+  nav,
+  form,
+  .no-imprimir {
+    display: none;
+  }
+}
+
 @media (max-width: 40rem) {
   .bienvenida, .aplicacion {
     padding: 1.25rem 1rem 2rem;

@@ -117,6 +117,13 @@ describe('catálogo de capacidades', () => {
     expect(TieneCapacidad(region, CAPABILITY.CASE_CLOSE)).toBe(false);
     expect(TieneCapacidad(national, CAPABILITY.SCHEDULING_MANAGE)).toBe(false);
     expect(TieneCapacidad(office, CAPABILITY.CASE_CLOSE)).toBe(true);
+    expect(TieneCapacidad(office, CAPABILITY.COORDINATION_WRITE)).toBe(true);
+    expect(TieneCapacidad(office, CAPABILITY.CASE_REPORT_WRITE)).toBe(true);
+    expect(TieneCapacidad(establishment, CAPABILITY.CASE_CLOSE)).toBe(false);
+    expect(TieneCapacidad(establishment, CAPABILITY.COORDINATION_WRITE)).toBe(false);
+    expect(TieneCapacidad(establishment, CAPABILITY.CASE_REPORT_WRITE)).toBe(false);
+    expect(TieneCapacidad(region, CAPABILITY.COORDINATION_WRITE)).toBe(false);
+    expect(TieneCapacidad(region, CAPABILITY.CASE_REPORT_WRITE)).toBe(false);
     expect(TieneCapacidad(office, CAPABILITY.ASSESSMENT_WRITE)).toBe(true);
 
     expect(CapacidadesDeRoles(['ESTABLECIMIENTO', 'NACIONAL'])).not.toContain(CAPABILITY.CATALOG_MANAGE);

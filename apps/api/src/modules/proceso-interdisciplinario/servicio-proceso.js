@@ -1,7 +1,7 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-14.
- * Modificación: 2026-11-16. Revaloración del plan, expediente, exportación y seguimiento.
+ * Modificación: 2026-11-16. Expediente con coordinaciones, reportes, cierre y traslado.
  * HU-001, HU-002 y HU-018 a HU-025, HU-048. El equipo decide; RN-009 calcula la prioridad.
  */
 'use strict';
@@ -115,6 +115,13 @@ function FechaEvento(valor) {
   return valor ? String(valor).slice(0, 10) : '';
 }
 
+function IdentificadorOpcional(valor) {
+  if (valor === null || valor === undefined) {
+    return null;
+  }
+  return Number(valor);
+}
+
 function AgregarEventos(destino, filas, construir) {
   for (const fila of filas) {
     destino.push(construir(fila));
@@ -161,6 +168,33 @@ function ConstruirLineaTiempo(partes) {
       : `Participación sin asistencia confirmada. ${fila.tema}`,
     responsable: null
   }));
+  AgregarEventos(eventos, partes.coordinaciones || [], (fila) => ({
+    tipo: 'COORDINACION',
+    fecha: FechaEvento(fila.fecha),
+    texto: `Coordinación con ${fila.institucion}. Estado ${fila.estado}.`,
+    responsable: fila.profesional
+  }));
+  AgregarEventos(eventos, partes.reportes || [], (fila) => ({
+    tipo: 'REPORTE',
+    fecha: FechaEvento(fila.fecha),
+    texto: `Reporte conservado: ${fila.tipoProposito}.`,
+    responsable: fila.responsable
+  }));
+  if (partes.cierre) {
+    const traslado = partes.cierre.motivoCodigo === 'TRASLADO';
+    const destino = partes.cierre.destinoNombre
+      || (partes.cierre.destinoEstablecimientoId
+        ? `establecimiento ${partes.cierre.destinoEstablecimientoId}`
+        : 'sin nombre adicional');
+    eventos.push({
+      tipo: traslado ? 'TRASLADO' : 'CIERRE',
+      fecha: FechaEvento(partes.cierre.fecha),
+      texto: traslado
+        ? `Traslado. Destino ${destino}.`
+        : `Cierre. Motivo ${partes.cierre.motivoEtiqueta}.`,
+      responsable: partes.cierre.responsable
+    });
+  }
   eventos.sort((izquierda, derecha) => {
     const porFecha = izquierda.fecha.localeCompare(derecha.fecha);
     return porFecha === 0 ? izquierda.tipo.localeCompare(derecha.tipo) : porFecha;
@@ -585,6 +619,12 @@ function CrearServicioProceso(dependencias) {
         puedeRegistrarAtencion: TieneCapacidad(acceso, CAPABILITY.ATTENTION_WRITE)
           && nivel === ACCESS_LEVEL.LOCAL_OFFICE,
         puedeConsultarSeguimiento: TieneCapacidad(acceso, CAPABILITY.ATTENTION_DETAIL_READ)
+          && nivel === ACCESS_LEVEL.LOCAL_OFFICE,
+        puedeRegistrarCoordinacion: TieneCapacidad(acceso, CAPABILITY.COORDINATION_WRITE)
+          && nivel === ACCESS_LEVEL.LOCAL_OFFICE,
+        puedeGenerarReporte: TieneCapacidad(acceso, CAPABILITY.CASE_REPORT_WRITE)
+          && nivel === ACCESS_LEVEL.LOCAL_OFFICE,
+        puedeCerrarCaso: TieneCapacidad(acceso, CAPABILITY.CASE_CLOSE)
           && nivel === ACCESS_LEVEL.LOCAL_OFFICE
       };
     },
@@ -1088,7 +1128,9 @@ function CrearServicioProceso(dependencias) {
       const grupales = await LeerOpcional(() => repositorio.ListarParticipacionesGrupales(casoId));
       const planes = await LeerOpcional(() => repositorio.ListarPlanesCaso(casoId));
       const documentos = await LeerOpcional(() => repositorio.ContarDocumentosCaso(casoId));
-      const coordinaciones = await LeerOpcional(() => repositorio.ContarCoordinacionesCaso(casoId));
+      const coordinaciones = await LeerOpcional(() => repositorio.ListarCoordinacionesCaso(casoId));
+      const reportes = await LeerOpcional(() => repositorio.ListarReportesCaso(casoId));
+      const cierre = await LeerOpcional(() => repositorio.ObtenerCierreCaso(casoId));
       const atenciones = individuales.disponibilidad === 'DISPONIBLE'
         ? individuales.datos.map((fila) => ({
           atencionId: Number(fila.atencion_individual_id),
@@ -1142,6 +1184,58 @@ function CrearServicioProceso(dependencias) {
         estado: fila.estado,
         ocurridoEn: fila.ocurrido_en
       }));
+      const registrosCoordinacion = coordinaciones.disponibilidad === 'DISPONIBLE'
+        ? coordinaciones.datos.map((fila) => ({
+          coordinacionId: Number(fila.coordinacion_id),
+          institucion: fila.institucion_texto,
+          profesional: fila.profesional_responsable,
+          digitador: fila.digitador_usuario,
+          motivo: fila.motivo,
+          fecha: fila.fecha_coordinacion,
+          estado: fila.estado_texto
+        }))
+        : [];
+      const registrosReporte = reportes.disponibilidad === 'DISPONIBLE'
+        ? reportes.datos.map((fila) => ({
+          reporteId: Number(fila.reporte_id),
+          tipoProposito: fila.tipo_proposito,
+          fecha: fila.fecha_reporte,
+          responsable: fila.responsable_usuario,
+          motivo: fila.motivo,
+          creadoEn: fila.creado_en,
+          conservacion: 'METADATOS'
+        }))
+        : [];
+      const registroCierre = cierre.disponibilidad === 'DISPONIBLE' && cierre.datos
+        ? {
+          motivoCodigo: cierre.datos.motivo_codigo,
+          motivoEtiqueta: cierre.datos.motivo_etiqueta,
+          explicacion: cierre.datos.explicacion,
+          fecha: cierre.datos.fecha_cierre,
+          responsable: cierre.datos.responsable_usuario,
+          destinoEstablecimientoId: IdentificadorOpcional(
+            cierre.datos.destino_establecimiento_id
+          ),
+          destinoOficinaLocalId: IdentificadorOpcional(
+            cierre.datos.destino_oficina_local_id
+          ),
+          destinoRegionId: IdentificadorOpcional(cierre.datos.destino_region_id),
+          destinoNombre: cierre.datos.destino_nombre,
+          casoDestinoCreado: false
+        }
+        : null;
+      const consultaIndividual = {
+        disponibilidad: individuales.disponibilidad,
+        mensaje: individuales.disponibilidad === 'DISPONIBLE'
+          ? null
+          : 'La consulta de atenciones individuales no está disponible para la cuenta técnica actual.'
+      };
+      const consultaPlanes = {
+        disponibilidad: planes.disponibilidad,
+        mensaje: planes.disponibilidad === 'DISPONIBLE'
+          ? null
+          : 'La consulta de planes no está disponible para la cuenta técnica actual.'
+      };
       return {
         casoId: Number(detalle.caso.caso_id),
         identificacion: detalle.caso.per_id_persona,
@@ -1151,6 +1245,7 @@ function CrearServicioProceso(dependencias) {
         consecutivo: detalle.caso.consecutivo_origen,
         estado: detalle.caso.estado,
         fechaApertura: detalle.caso.fecha_apertura,
+        fechaCierre: registroCierre ? registroCierre.fecha : null,
         prioridadCodigo: vigente ? vigente.prioridad_codigo : null,
         prioridadEtiqueta: vigente ? ETIQUETA_PRIORIDAD[vigente.prioridad_codigo] : null,
         riesgoCodigo: vigente ? vigente.riesgo_codigo : null,
@@ -1180,39 +1275,83 @@ function CrearServicioProceso(dependencias) {
         planes: versionesPlan,
         atenciones,
         participacionesGrupales: participaciones,
+        consultaIndividual,
         consultaGrupal: {
           disponibilidad: grupales.disponibilidad,
           mensaje: grupales.disponibilidad === 'DISPONIBLE'
             ? null
             : 'La asistencia grupal no está disponible para la cuenta técnica actual.'
         },
+        consultaPlanes,
         documentos: PresentarConteo(
           documentos,
           'Sin documentos registrados.',
           'La consulta de documentos no está disponible para la cuenta técnica actual.'
         ),
-        coordinaciones: PresentarConteo(
-          coordinaciones,
-          'Sin coordinaciones registradas.',
-          'La consulta de coordinaciones no está disponible para la cuenta técnica actual.'
-        ),
+        coordinaciones: {
+          disponibilidad: coordinaciones.disponibilidad,
+          cantidad: coordinaciones.disponibilidad === 'DISPONIBLE'
+            ? registrosCoordinacion.length
+            : null,
+          registros: registrosCoordinacion,
+          mensaje: coordinaciones.disponibilidad === 'DISPONIBLE'
+            ? (registrosCoordinacion.length === 0 ? 'Sin coordinaciones registradas.' : null)
+            : 'La consulta de coordinaciones no está disponible para la cuenta técnica actual.'
+        },
+        reportes: {
+          disponibilidad: reportes.disponibilidad,
+          cantidad: reportes.disponibilidad === 'DISPONIBLE' ? registrosReporte.length : null,
+          registros: registrosReporte,
+          mensaje: reportes.disponibilidad === 'DISPONIBLE'
+            ? (registrosReporte.length === 0
+              ? 'Sin reportes conservados.'
+              : 'Cada reporte conserva fecha, tipo, responsable y motivo.')
+            : 'La consulta de reportes no está disponible para la cuenta técnica actual.'
+        },
+        cierre: {
+          disponibilidad: cierre.disponibilidad,
+          registro: registroCierre,
+          mensaje: cierre.disponibilidad === 'DISPONIBLE'
+            ? (registroCierre ? null : 'Sin cierre registrado.')
+            : 'La consulta del cierre no está disponible para la cuenta técnica actual.'
+        },
         lineaTiempo: ConstruirLineaTiempo({
           historial,
           valoraciones,
           planes: versionesPlan,
           atenciones,
-          grupales: participaciones
+          grupales: participaciones,
+          coordinaciones: registrosCoordinacion,
+          reportes: registrosReporte,
+          cierre: registroCierre
         }),
         ultimaAtencion,
-        coberturaHistorial: grupales.disponibilidad === 'DISPONIBLE'
-          && individuales.disponibilidad === 'DISPONIBLE'
+        coberturaHistorial: [
+          grupales,
+          individuales,
+          planes,
+          coordinaciones,
+          reportes,
+          cierre,
+          documentos
+        ].every((lectura) => lectura.disponibilidad === 'DISPONIBLE')
           ? 'OPERATIVA'
           : 'PARCIAL',
         pendientes: [
+          consultaIndividual.mensaje,
           grupales.disponibilidad === 'DISPONIBLE'
             ? null
             : 'La asistencia grupal no está disponible para la cuenta técnica actual.',
-          'Traslados y reportes internos no forman parte de este incremento.'
+          consultaPlanes.mensaje,
+          coordinaciones.disponibilidad === 'DISPONIBLE'
+            ? null
+            : 'La consulta de coordinaciones no está disponible para la cuenta técnica actual.',
+          reportes.disponibilidad === 'DISPONIBLE'
+            ? null
+            : 'La consulta de reportes no está disponible para la cuenta técnica actual.',
+          cierre.disponibilidad === 'DISPONIBLE'
+            ? null
+            : 'La consulta del cierre no está disponible para la cuenta técnica actual.'
         ].filter(Boolean)
       };
     },

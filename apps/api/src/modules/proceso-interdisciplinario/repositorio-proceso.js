@@ -1,7 +1,7 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-14.
- * Modificación: 2026-11-16. Versión de plan, expediente y seguimiento sin atención.
+ * Modificación: 2026-11-16. Versión de plan, expediente, seguimiento y ciclo.
  * Persistencia de sesión, valoración, resolución y caso. HU-019 a HU-025 y HU-048.
  */
 'use strict';
@@ -1259,6 +1259,57 @@ ORDER BY caso.caso_id
 OFFSET @desplazamiento ROWS FETCH NEXT @tamano ROWS ONLY
 `, parametros);
       return { total: Number(conteo[0].total), filas };
+    },
+
+    async ListarCoordinacionesCaso(casoId) {
+      return Consultar(`
+SELECT
+  coordinacion_id,
+  institucion_texto,
+  profesional_responsable,
+  digitador_usuario,
+  motivo,
+  CONVERT(char(10), fecha_coordinacion, 23) AS fecha_coordinacion,
+  estado_texto
+FROM dbo.doc_coordinacion
+WHERE caso_id = @casoId
+ORDER BY fecha_coordinacion, coordinacion_id
+`, { casoId: Parametro(sql.BigInt, casoId) });
+    },
+
+    async ListarReportesCaso(casoId) {
+      return Consultar(`
+SELECT
+  reporte_id,
+  tipo_proposito,
+  CONVERT(char(10), fecha_reporte, 23) AS fecha_reporte,
+  responsable_usuario,
+  motivo,
+  CONVERT(char(19), creado_en, 120) AS creado_en
+FROM dbo.doc_reporte_caso
+WHERE caso_id = @casoId
+ORDER BY fecha_reporte, reporte_id
+`, { casoId: Parametro(sql.BigInt, casoId) });
+    },
+
+    async ObtenerCierreCaso(casoId) {
+      const filas = await Consultar(`
+SELECT
+  cierre.motivo_codigo,
+  item.etiqueta AS motivo_etiqueta,
+  cierre.explicacion,
+  CONVERT(char(10), cierre.fecha_cierre, 23) AS fecha_cierre,
+  cierre.responsable_usuario,
+  cierre.destino_establecimiento_id,
+  cierre.destino_oficina_local_id,
+  cierre.destino_region_id,
+  cierre.destino_nombre
+FROM dbo.caso_cierre AS cierre
+INNER JOIN dbo.cat_item AS item
+  ON item.cat_item_id = cierre.motivo_item_id
+WHERE cierre.caso_id = @casoId
+`, { casoId: Parametro(sql.BigInt, casoId) });
+      return filas[0] || null;
     }
   };
 }

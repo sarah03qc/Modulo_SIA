@@ -366,4 +366,82 @@ describe('servicio del proceso interdisciplinario', () => {
       status: 400
     });
   });
+
+  test('el expediente incorpora coordinación, reporte y traslado persistidos', async () => {
+    const servicio = CrearServicioProceso({
+      periodId: '2026',
+      adaptador: { BuscarPersonaEnAmbito: jest.fn(async () => []) },
+      repositorio: {
+        ObtenerDetalleCaso: jest.fn(async () => ({
+          caso: {
+            caso_id: 50,
+            per_id_persona: 'SYN-CICLO',
+            estado: 'CERRADO',
+            fecha_apertura: '2024-01-01',
+            establecimiento_id: 1100102,
+            consecutivo_origen: 'CONS-50',
+            encargado_nombre: null,
+            relacion_encargado: null,
+            contacto: null,
+            direccion: null,
+            establecimiento_nombre: 'Establecimiento sintético'
+          },
+          valoraciones: [],
+          factores: [],
+          historial: [
+            { estado: 'ACTIVO', ocurrido_en: '2024-01-01 00:00:00' },
+            { estado: 'CERRADO', ocurrido_en: '2026-11-16 00:00:00' }
+          ],
+          plan: null
+        })),
+        ObtenerUltimaAtencion: jest.fn(async () => null),
+        ListarAtencionesIndividuales: jest.fn(async () => []),
+        ListarParticipacionesGrupales: jest.fn(async () => []),
+        ListarPlanesCaso: jest.fn(async () => []),
+        ContarDocumentosCaso: jest.fn(async () => 0),
+        ListarCoordinacionesCaso: jest.fn(async () => [{
+          coordinacion_id: 7,
+          institucion_texto: 'Centro de salud',
+          profesional_responsable: 'Profesional declarado',
+          digitador_usuario: 'dev-oficina-hatillo',
+          motivo: 'Seguimiento',
+          fecha_coordinacion: '2026-11-01',
+          estado_texto: 'Realizada'
+        }]),
+        ListarReportesCaso: jest.fn(async () => [{
+          reporte_id: 3,
+          tipo_proposito: 'Informe de avance',
+          fecha_reporte: '2026-11-02',
+          responsable_usuario: 'dev-oficina-hatillo',
+          motivo: null,
+          creado_en: '2026-11-02 10:00:00'
+        }]),
+        ObtenerCierreCaso: jest.fn(async () => ({
+          motivo_codigo: 'TRASLADO',
+          motivo_etiqueta: 'Traslado',
+          explicacion: null,
+          fecha_cierre: '2026-11-16',
+          responsable_usuario: 'dev-oficina-hatillo',
+          destino_establecimiento_id: 1190108,
+          destino_oficina_local_id: 501,
+          destino_region_id: 5,
+          destino_nombre: 'Destino sintético'
+        }))
+      }
+    });
+    const expediente = await servicio.ObtenerCaso(AccesoOficina(), 50);
+    const tipos = expediente.lineaTiempo.map((evento) => evento.tipo);
+    expect(tipos).toEqual(expect.arrayContaining([
+      'COORDINACION',
+      'REPORTE',
+      'TRASLADO',
+      'ESTADO'
+    ]));
+    expect(expediente.cierre.registro.casoDestinoCreado).toBe(false);
+    expect(expediente.fechaCierre).toBe('2026-11-16');
+    expect(expediente.reportes.registros[0].conservacion).toBe('METADATOS');
+    expect(expediente.pendientes).not.toContain(
+      'Traslados y reportes internos no forman parte de este incremento.'
+    );
+  });
 });
