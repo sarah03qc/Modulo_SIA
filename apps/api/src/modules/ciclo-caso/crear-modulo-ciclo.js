@@ -1,6 +1,7 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-16.
+ * Modificación: 2026-11-16. La aplicación entrega el adaptador como adapter.
  * HU-027, HU-028, HU-030 y HU-031.
  */
 'use strict';
@@ -18,7 +19,7 @@ function CrearModuloCiclo(dependencias) {
   const repositorio = dependencias.repositorio
     || CrearRepositorioCiclo(dependencias.sia);
   return CrearServicioCiclo({
-    adaptador: dependencias.adaptador,
+    adaptador: dependencias.adapter || dependencias.adaptador,
     repositorio,
     proceso: dependencias.proceso
   });

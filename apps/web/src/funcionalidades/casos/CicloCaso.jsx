@@ -1,6 +1,7 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-16.
+ * Modificación: 2026-11-16. La vista provisional no se conserva al cambiar de caso.
  * HU-025, HU-027, HU-028, HU-030 y HU-031.
  * Las reglas de cierre, traslado y reporte viven en la API.
  */
@@ -65,6 +66,12 @@ export default function CicloCaso({
     destinoEstablecimientoId: '',
     destinoNombre: ''
   });
+
+  useEffect(() => {
+    establecerVista(null);
+    establecerMensaje('');
+    establecerError('');
+  }, [detalle.casoId]);
 
   useEffect(() => {
     if (!puedeCoordinar && !puedeReportar && !puedeCerrar) {

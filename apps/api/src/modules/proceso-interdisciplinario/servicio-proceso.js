@@ -2,6 +2,7 @@
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-14.
  * Modificación: 2026-11-16. Expediente con coordinaciones, reportes, cierre y traslado.
+ * La línea de tiempo asigna una clave distinta a cada evento.
  * HU-001, HU-002 y HU-018 a HU-025, HU-048. El equipo decide; RN-009 calcula la prioridad.
  */
 'use strict';
@@ -199,7 +200,10 @@ function ConstruirLineaTiempo(partes) {
     const porFecha = izquierda.fecha.localeCompare(derecha.fecha);
     return porFecha === 0 ? izquierda.tipo.localeCompare(derecha.tipo) : porFecha;
   });
-  return eventos;
+  return eventos.map((evento, indice) => ({
+    ...evento,
+    clave: `${evento.tipo}-${indice}`
+  }));
 }
 
 function PresentarConteo(resultado, vacio, bloqueo) {

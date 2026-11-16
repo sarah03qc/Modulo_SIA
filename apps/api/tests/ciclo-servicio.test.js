@@ -2,6 +2,7 @@
 
 const { CrearContextoUsuario } = require('../src/infrastructure/auth/user-context');
 const { CrearServicioCiclo } = require('../src/modules/ciclo-caso/servicio-ciclo');
+const { CrearModuloCiclo } = require('../src/modules/ciclo-caso/crear-modulo-ciclo');
 const { LeerCoordinacion, LeerCierre } = require('../src/modules/ciclo-caso/validacion-ciclo');
 
 function AccesoOficina() {
@@ -422,6 +423,51 @@ describe('servicio del ciclo del caso', () => {
     });
     expect(resultado.repetida).toBe(true);
     expect(resultado.efecto).toBe('CIERRE');
+  });
+
+  test('el módulo conserva el adaptador que arma la aplicación', async () => {
+    const adaptador = {
+      BuscarEstablecimiento: jest.fn(async () => ({
+        establishmentId: 1190108,
+        localOfficeId: 501,
+        regionId: 5
+      }))
+    };
+    const repositorio = {
+      ListarCatalogo: jest.fn(async () => FilasCatalogo()),
+      CerrarCaso: jest.fn(async () => ({
+        repetida: false,
+        cierre: {
+          motivoCodigo: 'TRASLADO',
+          motivoEtiqueta: 'Traslado',
+          destinoEstablecimientoId: 1190108,
+          destinoOficinaLocalId: 501,
+          destinoRegionId: 5,
+          casoDestinoCreado: false
+        }
+      }))
+    };
+    const servicio = CrearModuloCiclo({
+      adapter: adaptador,
+      repositorio,
+      proceso: { ObtenerCaso: jest.fn(async () => Expediente()) }
+    });
+    const resultado = await servicio.CerrarCaso(AccesoOficina(), {
+      casoId: 40,
+      motivoItemId: 2,
+      explicacion: null,
+      fechaCierre: '2026-11-16',
+      destinoEstablecimientoId: 1190108,
+      destinoNombre: 'Destino sintético',
+      claveOperacion: 'clave-traslado-mod'
+    });
+    expect(adaptador.BuscarEstablecimiento).toHaveBeenCalledWith(1190108);
+    expect(repositorio.CerrarCaso).toHaveBeenCalledWith(expect.objectContaining({
+      destinoOficinaLocalId: 501,
+      destinoRegionId: 5
+    }));
+    expect(resultado.efecto).toBe('TRASLADO');
+    expect(resultado.casoDestinoCreado).toBe(false);
   });
 
   test('no acepta que el cliente envíe la oficina de destino', () => {

@@ -13,7 +13,7 @@ sintética que el servidor ya asoció a un ámbito. El cliente no elige el rol.
 2. Desde la raíz: `npm ci`. Copiar `apps/api/.env.example` a `apps/api/.env` y completar las contraseñas locales. No versionar ese archivo.
 3. `npm run verify:config` y `npm run dev`. Abrir `http://127.0.0.1:5174`, no `localhost`, para que coincida el origen CORS.
 4. Entrar con **Establecimiento de demostración** o **Oficina Local de demostración**.
-5. Recorrido: Buscar persona → Nueva referencia → validar → confirmar el envío → en Oficina Local abrir Pendientes → Sesiones → asociar la referencia → valorar → decidir → abrir el caso → Casos → expediente → Atenciones → Sin atención. En el expediente, Oficina Local también ve coordinaciones, reportes y cierre. Esas escrituras quedan rechazadas hasta aplicar el script `050`, que no se ejecutó.
+5. Recorrido: Buscar persona → Nueva referencia → validar → confirmar el envío → en Oficina Local abrir Pendientes → Sesiones → asociar la referencia → valorar → decidir → abrir el caso → Casos → expediente → Atenciones → Sin atención. En el expediente, Oficina Local registra coordinaciones, reportes y cierre. El script `050` ya fue aplicado manualmente en este desarrollo local; no volver a ejecutarlo.
 
 Los datos de demostración son los de `database/sia-cencinai/seeds/`. No se ejecutan al arrancar
 y esta entrega no los borra ni los vuelve a cargar. Las referencias nuevas se crean por la aplicación.
@@ -49,7 +49,7 @@ La clasificación entre atención grupal de A.I. y sesiones educativas generales
 | HU | Estado | Evidencia | Dependencia o bloqueo |
 | --- | --- | --- | --- |
 | HU-001 | Implementada | `GET /api/proceso/resumen`. Inicio de Establecimiento muestra referencias y personas con caso del ámbito | Posibles referencias no están en este lote |
-| HU-002 | Parcial | Inicio de Oficina Local, después del script `040`: 13 pendientes, 22 casos activos, 83 atenciones individuales, 6 actividades vencidas y 3 próximas acciones | Posibles referencias siguen `NO_DISPONIBLE`. Las actividades vencidas se consultan, pero resolverlas como realizada, reprogramada o cancelada no está implementado |
+| HU-002 | Parcial | Inicio de Oficina Local, después del script `040`: 13 pendientes, 83 atenciones individuales, 6 actividades vencidas y 3 próximas acciones. Tras esta validación, Inicio mostró 18 casos activos | Posibles referencias siguen `NO_DISPONIBLE`. Las actividades vencidas se consultan, pero resolverlas como realizada, reprogramada o cancelada no está implementado. Los 22 activos de la mañana bajaron a 18 por cuatro cierres sintéticos aislados |
 | HU-005 a HU-009 | Implementada | APIs institucionales ya existentes y pantalla Buscar persona | Réplica `SIDINACC_LOCAL` y periodo configurado |
 | HU-013 a HU-014 | Implementada | `POST /api/references/validation`, `POST /api/references`, borradores y plantilla | Catálogo de motivos ya sembrado |
 | HU-015 a HU-017 | Implementada | Listado, detalle y documento de referencia | El diseño documental de la impresión sigue el pendiente previo |
@@ -60,14 +60,14 @@ La clasificación entre atención grupal de A.I. y sesiones educativas generales
 | HU-022 | Implementada | `POST /api/proceso/casos`, transacción y unicidad del caso activo | Reabrir la referencia 2977 respondió 404 y la persona siguió con un solo caso activo. En toda la base hay 0 personas con dos activos |
 | HU-023 | Implementada | `GET /api/proceso/casos` sin detalle, riesgo, protección ni exportación | Solo Establecimiento. El 2026-11-16 esa ruta respondió 200 con `detallePermitido: false` |
 | HU-024 | Implementada con tope técnico | Filtros combinados, paginación y `GET /api/proceso/casos/exportacion` | La exportación devuelve el corte filtrado completo. Si supera 2000 filas, se rechaza y no se entrega una página parcial. En vivo, la Oficina Local exportó 40 filas mientras la pantalla mostraba 20 de 40 |
-| HU-025 | Parcial | El expediente arma la línea de tiempo con coordinaciones, reportes, cierre y traslado cuando esas lecturas están disponibles. El caso 1092 mostró coordinaciones vacías reales y el bloqueo de reportes y cierre | La consulta de `doc_reporte_caso` y `caso_cierre` sigue sin permiso. El establecimiento no abre el expediente |
+| HU-025 | Implementada en el alcance confirmado | Expediente de Oficina Local con coordinaciones, reportes, cierre y traslado leídos de SQL. Los casos 1434, 1171 y 1120 siguieron consultables después del cierre. Establecimiento ve la lista y no el detalle | El establecimiento no tiene «Ver detalle». `GET` del expediente interno respondió 403. La plantilla oficial del reporte pertenece a HU-030 |
 | HU-036 | Implementada | `POST /api/atenciones/individuales` y pantalla Atenciones | Atención 10172 por API y 10173 desde el navegador. La fecha real quedó distinta de la de registro. El establecimiento recibe 403 |
 | HU-037 | Implementada en el alcance confirmado | Una actividad 10009, dos participantes y asistencia individual. El duplicado respondió 400 | La clasificación frente a sesiones educativas generales sigue `NEEDS_VALIDATION`. No se admite una persona sin caso activo ni hay directorio institucional de profesionales |
-| HU-048 | Implementada | `GET /api/proceso/seguimiento/sin-atencion`. El total de la API coincidió con SQL: 12 y, tras la atención del navegador, 11 en pantalla | No hay umbral de inactividad. La asistencia nula no cuenta. El establecimiento recibe 403 |
-| HU-027 | Parcial | Coordinación sobre caso activo, institución en texto, profesional distinto del digitador, fecha, motivo, estado y clave de reintento. El expediente la lista | No hay catálogo vigente de instituciones ni de estados (`NEEDS_VALIDATION`); se usa el texto. La cuenta no tiene `INSERT`. En navegador el caso 1092 siguió activo y sin coordinaciones |
-| HU-028 | Parcial | El traslado usa el motivo `TRASLADO`, cierra el origen y no crea caso ni ingreso de continuidad. Oficina y región salen de la réplica, no del cliente | La escritura real espera `EXECUTE` de `ops.cerrar_caso`. HU-029 no se implementa |
-| HU-030 | Parcial | La vista se regenera y se marca provisional. El registro conservado solo guarda fecha, tipo, responsable y motivo, y no cambia el estado | La plantilla oficial sigue pendiente. Sin `SELECT`/`INSERT` de `doc_reporte_caso` la vista responde que faltan reportes y cierre |
-| HU-031 | Parcial | Cierre satisfactorio, Otro con explicación y rechazo de explicación en un motivo que no la exige. No exige reporte ni borra historial | El procedimiento no se pudo ejecutar. Un segundo cierre o un caso ajeno quedan cubiertos por la prueba de servicio y por el 404 de otra oficina |
+| HU-048 | Implementada | `GET /api/proceso/seguimiento/sin-atencion`. El total de la API coincidió con SQL: 12 y, tras la atención del navegador, 11 en pantalla. El cierre del caso 1171 dejó ese corte de 2026 en 10 | No hay umbral de inactividad. La asistencia nula no cuenta. El establecimiento recibe 403 |
+| HU-027 | Implementada en el alcance confirmado | Caso 1777: coordinación persistida, consulta posterior, expediente y línea de tiempo. Reintento y ráfaga con la misma clave dejaron una auditoría. Entrada inválida 400, Establecimiento 403 y otra oficina 404. El navegador registró una coordinación y la mostró al recargar | No hay catálogo vigente de instituciones ni de estados (`NEEDS_VALIDATION`); se registra el texto |
+| HU-028 | Implementada en el alcance confirmado | Caso 1120: destino 5010104, oficina 301 y región 3 leídos de la réplica. Origen `CERRADO` por Traslado, con referencia 1516 y el mismo consecutivo. No se creó caso de destino ni ingreso de continuidad. El navegador mostró el destino y el historial | HU-029 sigue retirada y no se implementa. La oficina o región enviadas por el cliente se rechazan |
+| HU-030 | Parcial | Caso 1777: se conservó «Informe de avance» con su propósito y el estado siguió `ACTIVO`. La vista provisional se consultó e imprimió desde el navegador. El reintento no duplicó el metadato | No está satisfecha por completo: no se conserva el documento emitido y la plantilla oficial sigue `NEEDS_VALIDATION`. La vista se regenera con el expediente vigente |
+| HU-031 | Implementada en el alcance confirmado | Caso 1434, cierre satisfactorio sin reporte previo. Caso 1377, dos cierres simultáneos y una sola fila. Caso 1171, Otro con explicación obligatoria. Otro intento con otra clave respondió 409. La atención posterior respondió 404 y no insertó fila. El expediente histórico siguió consultable | No hay regla institucional para reabrir. No se cerraron los casos de demostración 1, 5, 1092, 1304, 1305, 1435, 1775, 1776, 1817 ni 10089 |
 
 Quedan fuera, sin cifras ficticias: HU-003, HU-004, reportería regional y nacional,
 asistente conversacional, posibles referencias automáticas y la resolución de la programación.
@@ -98,11 +98,71 @@ Establecimiento no ve Sesiones, Atenciones, Sin atención ni el expediente.
 - Clasificación de actividades educativas generales: `NEEDS_VALIDATION`.
 - Directorio de profesionales distintos de la sesión actual: `NEEDS_VALIDATION`.
 - Programación operativa para resolver una actividad vencida.
-- Aplicar, con un principal administrativo, `database/sia-cencinai/security/050_grant_case_lifecycle_to_app.sql`. No se ejecutó. Sin ese script no se conservan coordinaciones, reportes ni cierres.
-- Catálogos vigentes de institución y estado de coordinación, y plantilla oficial del reporte: `NEEDS_VALIDATION`.
+- El script `050` ya está aplicado en este desarrollo local. No volver a ejecutarlo. No concede `DELETE` sobre casos ni `INSERT` directo sobre `caso_cierre`; el cierre entra por `ops.cerrar_caso`.
+- Catálogos vigentes de institución y estado de coordinación, y plantilla oficial del reporte: `NEEDS_VALIDATION`. Por eso HU-030 no queda completa.
+- No se preparó un índice único de `aud_evento.codigo_cambio`. La concurrencia observada dejó una sola auditoría. Un plan que no tome el bloqueo de rango no se observó.
 - Zona horaria institucional de las fechas de resumen.
 
-## Ciclo del expediente, 2026-11-16
+## Validación posterior al script 050, 2026-11-16
+
+Los scripts `030`, `040` y `050` no se volvieron a ejecutar. No se reinició la base ni se
+borraron registros anteriores. Los casos de demostración 1, 5, 1092, 1304, 1305, 1435,
+1775, 1776, 1817 y 10089 siguieron `ACTIVO`. El caso 1166 también quedó `ACTIVO`: un
+traslado anterior falló antes de corregir el adaptador y no se usó para otro cierre.
+
+La cuenta `sia_cencinai_app` pudo ejecutar `ops.cerrar_caso`, leer `caso_cierre` e insertar
+coordinaciones, eventos y reportes. No pudo borrar casos. No es `sysadmin`, `db_owner`,
+`db_datawriter` ni `db_datareader`. El cierre escribe por el procedimiento y el encadenamiento
+de propiedad, no por `UPDATE` o `INSERT` directo de la cuenta sobre `caso_ai` o `caso_cierre`.
+
+Casos sintéticos aislados de la Oficina Local 101:
+
+- 1777, activo. Coordinación 2, reintento con la misma clave, ráfaga de seis solicitudes
+  con una auditoría, coordinación paralela y rechazo de la misma clave en otro caso.
+  Reporte «Informe de avance»; el estado siguió `ACTIVO`. El navegador registró otra
+  coordinación y mostró la vista provisional, con la nota de que el reporte conservado
+  no guarda el texto de la vista.
+- 1434, cierre satisfactorio el 2026-11-16, sin reporte previo. La misma clave repitió
+  el cierre; otra clave respondió 409. Una atención posterior respondió 404 y no agregó
+  fila. Referencia y consecutivo no cambiaron. El navegador mostró el motivo, el historial
+  y que el caso no admite nuevas escrituras.
+- 1377, dos cierres simultáneos con la misma clave: respuestas 200 y 201, una fila de
+  cierre y una auditoría.
+- 1171, Otro. Sin explicación y con explicación en un motivo que no la exige respondieron
+  400. Con explicación se cerró. Este caso estaba en el corte de 2026 sin atención
+  individual, así que ese seguimiento pasó de 11 a 10. No se reabrió.
+- 1120, traslado al establecimiento 5010104. La réplica devolvió oficina 301 y región 3.
+  El origen quedó `CERRADO` por Traslado, con referencia 1516 y consecutivo
+  `DNCC-DRCS-OL101-1100401-REF-001-2026`. La persona conservó un caso y una referencia.
+  `casoDestinoCreado` fue falso. El navegador mostró el destino y que no se creó un caso.
+
+Entradas inválidas respondieron 400. Establecimiento recibió 403 en el expediente y en
+las escrituras. Otra Oficina Local recibió 404. Una transacción de auditoría interrumpida
+no dejó la marca `INTERRUPCION-CICLO-VAL-20261116`. `UX_caso_activo` siguió sin personas
+con dos casos activos.
+
+Dos defectos quedaron corregidos. El módulo de ciclo no tomaba el adaptador que arma la
+aplicación, así que un traslado con establecimiento respondía 503 aunque la réplica
+estuviera disponible. Al cambiar de caso, la vista provisional anterior seguía visible y
+la línea de tiempo reutilizaba claves iguales, por lo que mostraba coordinaciones de otro
+caso. La vista se limpia al cambiar de caso y cada evento recibe una clave distinta.
+Ambos comportamientos se revisaron de nuevo en el navegador.
+
+Con Establecimiento de demostración, la lista mostró 6 casos del establecimiento 1100102
+y no ofreció «Ver detalle», coordinaciones, línea de tiempo, reporte ni cierre.
+
+HU-027, HU-028 y HU-031 quedan verificadas en el alcance confirmado. HU-030 permanece
+parcial. HU-029 no se implementa. La sesión productiva de SIDINACC sigue
+`NEEDS_VALIDATION`.
+
+Al cierre, `npm run verify:config`, `npm run lint`, `npm test`, `npm run build` y
+`npm run health` terminaron bien. La API sumó 153 pruebas aprobadas y 7 omitidas; la web,
+11. Salud y preparación respondieron 200, con `SIDINACC_LOCAL` en solo lectura.
+
+## Ciclo del expediente antes de confirmar el script 050, 2026-11-16
+
+Esta sección conserva la evidencia anterior. En ese momento las escrituras del ciclo
+seguían bloqueadas. La validación de arriba es la vigente.
 
 No se ejecutaron de nuevo los scripts `030` ni `040`. No se creó un caso de destino
 ni un ingreso de continuidad. HU-029 permanece fuera de alcance.

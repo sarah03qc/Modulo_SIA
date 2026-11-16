@@ -407,6 +407,14 @@ describe('servicio del proceso interdisciplinario', () => {
           motivo: 'Seguimiento',
           fecha_coordinacion: '2026-11-01',
           estado_texto: 'Realizada'
+        }, {
+          coordinacion_id: 8,
+          institucion_texto: 'Centro de salud',
+          profesional_responsable: 'Profesional declarado',
+          digitador_usuario: 'dev-oficina-hatillo',
+          motivo: 'Otro seguimiento',
+          fecha_coordinacion: '2026-11-01',
+          estado_texto: 'Realizada'
         }]),
         ListarReportesCaso: jest.fn(async () => [{
           reporte_id: 3,
@@ -431,6 +439,8 @@ describe('servicio del proceso interdisciplinario', () => {
     });
     const expediente = await servicio.ObtenerCaso(AccesoOficina(), 50);
     const tipos = expediente.lineaTiempo.map((evento) => evento.tipo);
+    const claves = expediente.lineaTiempo.map((evento) => evento.clave);
+    expect(new Set(claves).size).toBe(claves.length);
     expect(tipos).toEqual(expect.arrayContaining([
       'COORDINACION',
       'REPORTE',

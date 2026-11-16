@@ -2,7 +2,7 @@
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-14.
  * Modificación: 2026-11-16. Paginación, exportación, línea de tiempo,
- * ciclo del caso y apertura directa desde el seguimiento.
+ * ciclo del caso, apertura directa y clave única en la línea de tiempo.
  * HU-023, HU-024 y HU-025. El establecimiento no recibe el detalle interno.
  */
 import { useEffect, useState } from 'react';
@@ -287,7 +287,7 @@ export default function CasosPagina({
           {detalle.lineaTiempo && detalle.lineaTiempo.length > 0 ? (
             <ol>
               {detalle.lineaTiempo.map((evento) => (
-                <li key={`${evento.tipo}-${evento.fecha}-${evento.texto}`}>
+                <li key={evento.clave}>
                   {evento.fecha} — {evento.texto}
                   {evento.responsable ? ` — ${evento.responsable}` : ''}
                 </li>
