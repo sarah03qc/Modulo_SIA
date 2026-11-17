@@ -218,6 +218,152 @@ th, td {
   }
 }
 
+.reporteria h1 {
+  font-size: 1.75rem;
+}
+
+.encabezado-reporteria,
+.acciones-reporteria,
+.filtros-reporteria,
+.cifras,
+.rejilla-reporteria {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.filtros-reporteria,
+.cifras,
+.rejilla-reporteria {
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+}
+
+.acciones-reporteria {
+  align-content: start;
+}
+
+.filtros-activos ol,
+.barras,
+.leyenda {
+  margin: 0.5rem 0 0;
+  padding-left: 1.2rem;
+}
+
+.barras {
+  list-style: none;
+  padding-left: 0;
+}
+
+.barras li {
+  display: grid;
+  grid-template-columns: minmax(6rem, 1fr) minmax(5rem, 2fr) auto;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.4rem;
+}
+
+.barra-pista {
+  display: block;
+  height: 0.75rem;
+  background: #e4e4e7;
+}
+
+.barra-valor {
+  display: block;
+  height: 100%;
+  background: var(--acento);
+}
+
+.nube {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 0.9rem;
+  align-items: baseline;
+}
+
+.circular-bloque {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.circular {
+  width: 8rem;
+  height: 8rem;
+  border-radius: 50%;
+}
+
+.muestra-color {
+  display: inline-block;
+  width: 0.8rem;
+  height: 0.8rem;
+  margin-right: 0.35rem;
+  vertical-align: middle;
+}
+
+.kpi-cifra {
+  margin: 0;
+  padding: 1rem;
+  color: #ffffff;
+  background: var(--acento);
+  border-radius: 0.5rem;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.kpi-cantidad {
+  background: #1d4e89;
+}
+
+.kpi-detalle {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+.cifras div {
+  margin: 0;
+}
+
+.cifras dd {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.aviso-info {
+  color: var(--texto);
+  background: #ffffff;
+  border: 1px solid var(--borde);
+  padding: 0.75rem;
+}
+
+.dialogo-fondo {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 26, 26, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.dialogo {
+  max-width: 36rem;
+  background: #ffffff;
+  padding: 1.25rem;
+  border-top: 4px solid var(--borde);
+}
+
+.solo-lectura {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
 @media (max-width: 40rem) {
   .bienvenida, .aplicacion {
     padding: 1.25rem 1rem 2rem;

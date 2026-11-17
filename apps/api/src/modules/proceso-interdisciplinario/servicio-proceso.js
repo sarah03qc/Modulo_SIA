@@ -1,7 +1,7 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-14.
- * Modificación: 2026-11-16. Expediente, línea de tiempo y acceso a programación.
+ * Modificación: 2026-11-16. Expediente, programación y acceso a reportería.
  * HU-001, HU-002 y HU-018 a HU-025, HU-048. El equipo decide; RN-009 calcula la prioridad.
  */
 'use strict';
@@ -632,6 +632,10 @@ function CrearServicioProceso(dependencias) {
         puedeConsultarProgramacion: TieneCapacidad(acceso, CAPABILITY.SCHEDULING_READ)
           && nivel === ACCESS_LEVEL.LOCAL_OFFICE,
         puedeGestionarProgramacion: TieneCapacidad(acceso, CAPABILITY.SCHEDULING_MANAGE)
+          && nivel === ACCESS_LEVEL.LOCAL_OFFICE,
+        puedeConsultarReporteria: TieneCapacidad(acceso, CAPABILITY.REPORTING_READ)
+          && nivel === ACCESS_LEVEL.LOCAL_OFFICE,
+        puedeDescargarConsolidacion: TieneCapacidad(acceso, CAPABILITY.REPORTING_EXPORT)
           && nivel === ACCESS_LEVEL.LOCAL_OFFICE
       };
     },

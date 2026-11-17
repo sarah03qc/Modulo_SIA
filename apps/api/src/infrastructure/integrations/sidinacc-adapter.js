@@ -34,7 +34,8 @@ function CrearAdaptadorSidinacc(client) {
     BuscarRegion: (regionId) => persons.BuscarRegion(regionId),
     ListarRegiones: (scope) => persons.ListarRegiones(scope),
     ListarOficinasLocales: (scope) => persons.ListarOficinasLocales(scope),
-    ListarEstablecimientos: (scope) => persons.ListarEstablecimientos(scope)
+    ListarEstablecimientos: (scope) => persons.ListarEstablecimientos(scope),
+    LeerSexoYNacimiento: (identificadores) => persons.LeerSexoYNacimiento(identificadores)
   };
 }
 

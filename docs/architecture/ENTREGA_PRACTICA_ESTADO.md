@@ -14,6 +14,7 @@ sintética que el servidor ya asoció a un ámbito. El cliente no elige el rol.
 3. `npm run verify:config` y `npm run dev`. Abrir `http://127.0.0.1:5174`, no `localhost`, para que coincida el origen CORS.
 4. Entrar con **Establecimiento de demostración** o **Oficina Local de demostración**.
 5. Recorrido: Buscar persona → Nueva referencia → validar → confirmar el envío → en Oficina Local abrir Pendientes → Sesiones → asociar la referencia → valorar → decidir → abrir el caso → Casos → expediente → Atenciones → Sin atención. En el expediente, Oficina Local registra coordinaciones, reportes y cierre. El script `050` ya fue aplicado manualmente en este desarrollo local; no volver a ejecutarlo.
+6. Reportería, solo con Oficina Local de demostración: abrir Reportería, revisar las doce visualizaciones, cambiar año, estado o establecimiento y descargar la consolidación. Generar reporte informa que el asistente de HU-050 sigue pendiente y no descarga el archivo.
 
 Los datos de demostración son los de `database/sia-cencinai/seeds/`. No se ejecutan al arrancar
 y esta entrega no los borra ni los vuelve a cargar. Las referencias nuevas se crean por la aplicación.
@@ -69,8 +70,10 @@ La clasificación entre atención grupal de A.I. y sesiones educativas generales
 | HU-028 | Implementada en el alcance confirmado | Caso 1120: destino 5010104, oficina 301 y región 3 leídos de la réplica. Origen `CERRADO` por Traslado, con referencia 1516 y el mismo consecutivo. No se creó caso de destino ni ingreso de continuidad. El navegador mostró el destino y el historial | HU-029 sigue retirada y no se implementa. La oficina o región enviadas por el cliente se rechazan |
 | HU-030 | Parcial | Caso 1777: se conservó «Informe de avance» con su propósito y el estado siguió `ACTIVO`. La vista provisional se consultó e imprimió desde el navegador. El reintento no duplicó el metadato | No está satisfecha por completo: no se conserva el documento emitido y la plantilla oficial sigue `NEEDS_VALIDATION`. La vista se regenera con el expediente vigente |
 | HU-031 | Implementada en el alcance confirmado | Caso 1434, cierre satisfactorio sin reporte previo. Caso 1377, dos cierres simultáneos y una sola fila. Caso 1171, Otro con explicación obligatoria. Otro intento con otra clave respondió 409. La atención posterior respondió 404 y no insertó fila. El expediente histórico siguió consultable | No hay regla institucional para reabrir. No se cerraron los casos de demostración 1, 5, 1092, 1304, 1305, 1435, 1775, 1776, 1817 ni 10089 |
+| HU-038 | Parcial | Las doce visualizaciones de 15.3, filtros, cobertura y ámbito en API, SQL, libro y navegador. Oficina 101, año 2026: 15 personas únicas, 17 atenciones y cobertura 8 de 18 (44.4 %) | CA-21: Generar reporte no abre el asistente de HU-050. RN-040 sigue pendiente de ratificación con Alina. La atención individual no tiene `TIPO_ATENCION` |
+| HU-039 | Implementada en el alcance tabular | `GET /api/reporteria/oficina/consolidacion` entrega el corte filtrado en columnas. Con estado Cerrado conservó D 18 y N 8. No descarga una página parcial | El formato del informe analítico pertenece a HU-050 y sigue sin confirmarse |
 
-Quedan fuera de este avance, sin cifras ficticias: HU-003, HU-004, HU-038, HU-039,
+Quedan fuera de este avance, sin cifras ficticias: HU-003, HU-004, HU-040 a HU-043,
 HU-045, HU-046, reportería regional y nacional, el asistente de HU-050 y las posibles
 referencias automáticas.
 
@@ -87,13 +90,14 @@ referencias automáticas.
 - `GET /api/proceso/resumen`, `GET /api/proceso/contexto`
 - `GET /api/programacion/catalogos`, `GET /api/programacion/actividades`
 - `POST /api/programacion/actividades`, `POST /api/programacion/actividades/:actividadId/resoluciones`
+- `GET /api/reporteria/oficina`, `GET /api/reporteria/oficina/consolidacion`
 
 ## Pantallas
 
 Inicio, Buscar persona, Nueva referencia, Referencias, Pendientes, Sesiones, Casos,
-Atenciones, Sin atención y Programación. El expediente de Oficina Local incluye coordinación,
-reporte y cierre. Establecimiento no ve Sesiones, Atenciones, Sin atención, Programación
-ni el expediente.
+Atenciones, Sin atención, Programación y Reportería. El expediente de Oficina Local
+incluye coordinación, reporte y cierre. Establecimiento no ve Sesiones, Atenciones,
+Sin atención, Programación, Reportería ni el expediente.
 
 ## Pendientes
 
@@ -107,7 +111,13 @@ ni el expediente.
 - Las seis actividades vencidas de la semilla, 1, 597, 602, 625, 672 y 677, siguen programadas. No se usaron para demostrar la resolución.
 - Catálogos vigentes de institución y estado de coordinación, y plantilla oficial del reporte: `NEEDS_VALIDATION`. Por eso HU-030 no queda completa.
 - No se preparó un índice único de `aud_evento.codigo_cambio`. La concurrencia observada dejó una sola auditoría. Un plan que no tome el bloqueo de rango no se observó.
-- Zona horaria institucional de las fechas de resumen.
+- Zona horaria institucional de las fechas de resumen. La consulta de reportería usa la fecha UTC del servidor; el 2026-11-16 local la pantalla mostró 2026-11-17.
+- RN-040 y RF-129 siguen `NEEDS_VALIDATION` hasta la ratificación con Alina. La fórmula operativa ya se calcula y se identifica como provisional.
+- El asistente de HU-050 / CU-38 no está implementado. Generar reporte lo dice y no simula la descarga.
+- La atención individual no tiene tipo institucional. La visualización 8 no le asigna uno.
+- `ate_grupal` no tiene región. La grupal se limita por la oficina de la sesión.
+- RF-083 nombra un filtro de tipo de atención. No se agregó como control: solo aplica a la visualización 8 y la atención individual no es clasificable.
+- No se preparó un script de permisos para reportería. La cuenta ya podía leer el corte.
 
 ## Validación de programación posterior al script 060, 2026-11-16
 
@@ -156,7 +166,54 @@ Al cierre, `npm run verify:config`, `npm run lint`, `npm test`, `npm run build` 
 `npm run health` terminaron bien. La API sumó 161 pruebas aprobadas y 7 omitidas;
 la web, 12. Salud y preparación respondieron 200, con `SIDINACC_LOCAL` en solo lectura.
 
-HU-038 y HU-039 no forman parte de este avance.
+HU-038 y HU-039 no forman parte de este avance de programación. La sección
+siguiente, de la misma fecha, documenta la reportería que sí se incorporó después.
+
+## Reportería de Oficina Local, 2026-11-16
+
+No se ejecutaron los scripts `030`, `040`, `050` ni `060`. No se borraron
+registros ni se modificó `SIDINACC_LOCAL`. No hizo falta un permiso nuevo:
+la cuenta de aplicación ya podía leer las tablas del corte.
+
+La actividad 10037 sigue en `REALIZADA` y tiene dos cambios. El primero pasa
+de sin estado a `PROGRAMADA`, con auditoría `CREAR` sobre `prog_actividad` y
+clave `val-prog-e-crear-01`. El segundo pasa de `PROGRAMADA` a `REALIZADA`,
+con auditoría `REALIZADA` sobre `prog_resolucion` y clave `val-prog-e-real-01`.
+No son dos resoluciones. No se cambió Programación. Las actividades 1, 597,
+602, 625, 672 y 677 siguen `PROGRAMADA`. El inicio de Oficina Local seguía
+en 6 vencidas.
+
+El corte de la oficina 101 y la región 1, año 2026, mostró 15 personas únicas
+atendidas y 17 atenciones: 13 individuales y 4 grupales. La cobertura quedó
+en 8 de 18, 44.4 %. Las referencias del año fueron 25 enviadas, 10 analizadas,
+8 admitidas y 2 que no requieren Atención Interdisciplinaria. Diez casos
+activos no tuvieron atención efectiva en el año. Las doce visualizaciones
+respondieron con datos. La 8 muestra el tipo grupal vigente y deja aparte las
+13 individuales. Los cierres del año separan satisfactorio 2, traslado 2 y
+otro 1.
+
+El filtro Cerrado dejó la visualización 5 en 22 casos y la cobertura siguió
+en 8 de 18, tanto en pantalla como en el libro. El año 2000 informó ausencia
+de registros en motivos y atenciones; la cobertura quedó en 0 de 18, con
+numerador cero y denominador conservado. El establecimiento 1011009 mostró
+una sola barra. En este ámbito cada establecimiento listado tiene al menos
+un caso; la prueba automatizada cubre el establecimiento sin casos.
+
+La descarga `consolidacion-oficina-local.xlsx` usa el mismo corte y no entrega
+un archivo parcial. Con estado Cerrado conservó D 18, N 8, 15 personas y 17
+atenciones. Incluye corte, indicadores, las doce visualizaciones y los casos
+sin atención. Establecimiento y Región recibieron 403. Un parámetro de otra
+oficina recibió 400. El menú de Establecimiento no incluye Reportería.
+Generar reporte abre el aviso de HU-050 / CU-38 y no descarga la consolidación
+ni el reporte individual del caso.
+
+HU-038 queda parcial por el asistente de CA-21. HU-039 queda implementada en
+la consolidación tabular. RN-040 sigue `NEEDS_VALIDATION`.
+
+Al cierre, `npm run verify:config`, `npm run lint`, `npm test`, `npm run build`
+y `npm run health` terminaron bien. La API sumó 184 pruebas aprobadas, 7
+omitidas y 2 suites omitidas que ya existían. La web sumó 13. Salud y
+preparación respondieron 200, con `SIDINACC_LOCAL` en solo lectura.
 
 ## Programación operativa, 2026-11-16
 

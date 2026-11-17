@@ -2,7 +2,7 @@
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Primer registro del archivo en Git: 2026-11-06 (5fabddc).
  * Modificación del 2026-11-14: navegación operativa por rol.
- * Modificación del 2026-11-16: atenciones, seguimiento y programación.
+ * Modificación del 2026-11-16: atenciones, seguimiento, programación y reportería.
  */
 import { useState } from 'react';
 import { Aviso } from '../componentes/interfaz';
@@ -10,6 +10,7 @@ import BienvenidaTecnica from '../funcionalidades/bienvenida/BienvenidaTecnica';
 import AtencionesPagina from '../funcionalidades/atenciones/AtencionesPagina';
 import CasosPagina from '../funcionalidades/casos/CasosPagina';
 import ProgramacionPagina from '../funcionalidades/programacion/ProgramacionPagina';
+import ReporteriaPagina from '../funcionalidades/reporteria/ReporteriaPagina';
 import SeguimientoPagina from '../funcionalidades/seguimiento/SeguimientoPagina';
 import InicioOperativo from '../funcionalidades/inicio/InicioOperativo';
 import BusquedaContextual from '../funcionalidades/personas/BusquedaContextual';
@@ -115,6 +116,17 @@ export default function Aplicacion({
         {contexto.puedeConsultarProgramacion
           ? <button type="button" onClick={() => Navegar('programacion')}>Programación</button>
           : null}
+        {contexto.puedeConsultarReporteria
+          ? (
+            <button
+              type="button"
+              aria-current={vista.nombre === 'reporteria' ? 'page' : undefined}
+              onClick={() => Navegar('reporteria')}
+            >
+              Reportería
+            </button>
+          )
+          : null}
         <button type="button" className="secundario" onClick={() => Navegar('tecnico')}>Estado técnico</button>
         <button type="button" className="secundario" onClick={() => { establecerContexto(null); establecerIdentidad(''); }}>Salir</button>
       </nav>
@@ -137,6 +149,7 @@ export default function Aplicacion({
         {vista.nombre === 'atenciones' ? <AtencionesPagina {...propiedades} /> : null}
         {vista.nombre === 'seguimiento' ? <SeguimientoPagina {...propiedades} /> : null}
         {vista.nombre === 'programacion' ? <ProgramacionPagina {...propiedades} /> : null}
+        {vista.nombre === 'reporteria' ? <ReporteriaPagina {...propiedades} /> : null}
         {vista.nombre === 'tecnico' ? (
           <BienvenidaTecnica
             embebida

@@ -474,6 +474,44 @@ function MapearRegion(row) {
 }
 
 /**
+ * Sexo y nacimiento de identificadores ya acotados por SIA.
+ * No devuelve nombre, identificación visible ni ubicación.
+ * La lista va parametrizada. No se concatena el identificador.
+ */
+function ConstruirSqlSexoYNacimiento(identificadores) {
+  if (!Array.isArray(identificadores) || identificadores.length === 0) {
+    throw new ErrorInfraestructura('La lectura demográfica no tiene identificadores.');
+  }
+  const parameters = {};
+  const nombres = identificadores.map((identificador, indice) => {
+    const usable = typeof identificador === 'string'
+      && identificador.length > 0
+      && identificador.length <= 20;
+    if (!usable) {
+      throw new ErrorInfraestructura('Un identificador demográfico no es utilizable.');
+    }
+    const nombre = `persona${indice}`;
+    parameters[nombre] = identificador;
+    return `@${nombre}`;
+  });
+  return {
+    parameters,
+    sql: `
+SELECT
+  person.PER_idPersona AS person_id,
+  sex.SNB_descripcion AS sex_name,
+  CONVERT(char(10), person.PER_fechaNacimiento, 23) AS birth_date
+FROM dbo.CAF_PERSONA AS person
+LEFT JOIN dbo.CAF_CAT_SEXO AS sex
+  ON sex.CAT_idSexo = person.CAT_idSexo
+ AND COALESCE(sex.BIT_eliminado, 0) = 0
+WHERE COALESCE(person.BIT_eliminado, 0) = 0
+  AND person.PER_idPersona IN (${nombres.join(', ')})
+`
+  };
+}
+
+/**
  * Lecturas de personas y territorio sobre SIDINACC_LOCAL.
  * Todas pasan por el cliente de solo lectura y no modifican la réplica.
  */
@@ -575,6 +613,27 @@ function CrearLectorPersonasSidinacc(client) {
     /**
      * Lista los establecimientos activos del ámbito recibido.
      */
+    /**
+     * Lee solo sexo y fecha de nacimiento. La reportería agrega después.
+     * Una lista vacía no consulta. No devuelve el nombre.
+     */
+    async LeerSexoYNacimiento(identificadores) {
+      if (!Array.isArray(identificadores) || identificadores.length === 0) {
+        return [];
+      }
+      const statement = ConstruirSqlSexoYNacimiento(identificadores);
+      const rows = await client.query(statement.sql, statement.parameters);
+      return rows.map((row) => ({
+        personId: row.person_id === null || row.person_id === undefined
+          ? null
+          : String(row.person_id),
+        sexName: row.sex_name === null || row.sex_name === undefined
+          ? null
+          : String(row.sex_name).trim(),
+        birthDate: row.birth_date ? String(row.birth_date).slice(0, 10) : null
+      }));
+    },
+
     async ListarEstablecimientos(scope) {
       const statement = ConstruirSqlListaEstablecimientos(scope);
       const rows = await client.query(statement.sql, statement.parameters);
@@ -622,7 +681,8 @@ function EjemplosSentenciasInstitucionales() {
     ConstruirSqlListaOficinas({ regionId: 1 }).sql,
     ConstruirSqlListaOficinas({ localOfficeId: 101 }).sql,
     ConstruirSqlListaEstablecimientos({ establishmentIds: [1100102, 1010320] }).sql,
-    ConstruirSqlListaEstablecimientos({ localOfficeId: 101 }).sql
+    ConstruirSqlListaEstablecimientos({ localOfficeId: 101 }).sql,
+    ConstruirSqlSexoYNacimiento(['SYN-1100102-01', 'SYN-1100102-02']).sql
   ];
 }
 
