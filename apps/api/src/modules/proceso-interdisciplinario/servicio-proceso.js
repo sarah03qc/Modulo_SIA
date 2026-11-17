@@ -1,7 +1,8 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-14.
- * Modificación: 2026-11-16. Expediente, programación y acceso a reportería.
+ * Modificación: 2026-11-16. Expediente, programación, reportería
+ * y consulta de casos de Región y Nacional.
  * HU-001, HU-002 y HU-018 a HU-025, HU-048. El equipo decide; RN-009 calcula la prioridad.
  */
 'use strict';
@@ -206,6 +207,77 @@ function ConstruirLineaTiempo(partes) {
   }));
 }
 
+/**
+ * Línea de tiempo de consulta superior.
+ * Conserva el tipo y la fecha. Omite narrativa clínica.
+ *
+ * @param {object} partes Eventos ya recortados.
+ * @returns {object[]} Eventos ordenados por fecha.
+ */
+function ConstruirLineaConsulta(partes) {
+  const eventos = [];
+  AgregarEventos(eventos, partes.historial, (fila) => ({
+    tipo: 'ESTADO',
+    fecha: FechaEvento(fila.ocurridoEn),
+    texto: `Estado ${fila.estado}`
+  }));
+  AgregarEventos(eventos, partes.valoraciones, (fila) => ({
+    tipo: 'VALORACION',
+    fecha: FechaEvento(fila.fecha),
+    texto: `Valoración ${fila.numero}. Prioridad ${fila.prioridadEtiqueta}.`
+  }));
+  AgregarEventos(eventos, partes.planes, (fila) => ({
+    tipo: 'PLAN',
+    fecha: FechaEvento(fila.fecha),
+    texto: `Plan versión ${fila.numero}${fila.vigente ? ', vigente' : ''}. `
+      + `Frecuencia ${fila.frecuenciaEtiqueta}.`
+  }));
+  AgregarEventos(eventos, partes.atenciones, (fila) => ({
+    tipo: 'ATENCION_INDIVIDUAL',
+    fecha: FechaEvento(fila.fechaAtencion),
+    texto: 'Atención individual registrada.'
+  }));
+  AgregarEventos(eventos, partes.grupales, (fila) => ({
+    tipo: 'ATENCION_GRUPAL',
+    fecha: FechaEvento(fila.fechaAtencion),
+    texto: fila.asistio
+      ? 'Participación grupal con asistencia.'
+      : 'Participación grupal sin asistencia confirmada.'
+  }));
+  AgregarEventos(eventos, partes.coordinaciones, (fila) => ({
+    tipo: 'COORDINACION',
+    fecha: FechaEvento(fila.fecha),
+    texto: `Coordinación registrada. Estado ${fila.estado}.`
+  }));
+  AgregarEventos(eventos, partes.reportes, (fila) => ({
+    tipo: 'REPORTE',
+    fecha: FechaEvento(fila.fecha),
+    texto: 'Reporte conservado.'
+  }));
+  if (partes.cierre) {
+    const traslado = partes.cierre.motivoCodigo === 'TRASLADO';
+    const destino = partes.cierre.destinoNombre
+      || (partes.cierre.destinoEstablecimientoId
+        ? `establecimiento ${partes.cierre.destinoEstablecimientoId}`
+        : 'sin nombre adicional');
+    eventos.push({
+      tipo: traslado ? 'TRASLADO' : 'CIERRE',
+      fecha: FechaEvento(partes.cierre.fecha),
+      texto: traslado
+        ? `Traslado. Destino ${destino}.`
+        : `Cierre. Motivo ${partes.cierre.motivoEtiqueta}.`
+    });
+  }
+  eventos.sort((izquierda, derecha) => {
+    const porFecha = izquierda.fecha.localeCompare(derecha.fecha);
+    return porFecha === 0 ? izquierda.tipo.localeCompare(derecha.tipo) : porFecha;
+  });
+  return eventos.map((evento, indice) => ({
+    ...evento,
+    clave: `${evento.tipo}-${indice}`
+  }));
+}
+
 function PresentarConteo(resultado, vacio, bloqueo) {
   if (resultado.disponibilidad !== 'DISPONIBLE') {
     return {
@@ -394,7 +466,7 @@ function ValidarCategorias(instrumento, respuestas) {
 }
 
 function PresentarCasoLista(fila, nombre) {
-  return {
+  const item = {
     casoId: Number(fila.caso_id),
     identificacion: fila.per_id_persona,
     nombre: nombre ? nombre.fullName : null,
@@ -406,7 +478,23 @@ function PresentarCasoLista(fila, nombre) {
     fechaApertura: fila.fecha_apertura,
     fechaCierre: fila.fecha_cierre
   };
+  if (fila.oficina_local_id !== undefined && fila.oficina_local_id !== null) {
+    item.oficinaLocalId = Number(fila.oficina_local_id);
+  }
+  if (fila.region_id !== undefined && fila.region_id !== null) {
+    item.regionId = Number(fila.region_id);
+  }
+  return item;
 }
+
+function CeldaCsv(valor) {
+  const texto = String(valor ?? '');
+  const protegido = /^[=+\-@\t\r]/.test(texto) ? `'${texto}` : texto;
+  return `"${protegido.replaceAll('"', '""')}"`;
+}
+
+const RESTRICCION_CLINICA = 'Notas, factores, diagnósticos, riesgo, protección, '
+  + 'contacto y texto clínico no se incluyen. NEEDS_VALIDATION.';
 
 /**
  * Servicio del proceso interdisciplinario.
@@ -427,6 +515,25 @@ function CrearServicioProceso(dependencias) {
       localOfficeId: null,
       establishmentId: establecimientoId ?? null
     }, territorio);
+  }
+
+  async function AmbitoConsulta(acceso, consulta) {
+    const pedido = consulta || {};
+    return ResolverAmbitoTerritorial(acceso, {
+      regionId: pedido.regionId ?? null,
+      localOfficeId: pedido.localOfficeId ?? null,
+      establishmentId: pedido.establecimientoId ?? null
+    }, territorio);
+  }
+
+  function ExigirLecturaCasos(acceso) {
+    ExigirCapacidad(acceso, CAPABILITY.CASE_READ);
+    const nivel = acceso && acceso.accessLevel;
+    if (nivel !== ACCESS_LEVEL.LOCAL_OFFICE
+      && nivel !== ACCESS_LEVEL.REGION
+      && nivel !== ACCESS_LEVEL.NATIONAL) {
+      throw new ErrorProhibido('La operación no está permitida.');
+    }
   }
 
   function ExigirOficina(acceso, capacidad) {
@@ -616,10 +723,18 @@ function CrearServicioProceso(dependencias) {
           && nivel === ACCESS_LEVEL.ESTABLISHMENT,
         puedeVerCasosOficina: TieneCapacidad(acceso, CAPABILITY.CASE_READ)
           && nivel === ACCESS_LEVEL.LOCAL_OFFICE,
+        puedeVerCasosRegion: TieneCapacidad(acceso, CAPABILITY.CASE_READ)
+          && nivel === ACCESS_LEVEL.REGION,
+        puedeVerCasosNacional: TieneCapacidad(acceso, CAPABILITY.CASE_READ)
+          && nivel === ACCESS_LEVEL.NATIONAL,
         puedeVerDetalleCaso: TieneCapacidad(acceso, CAPABILITY.CASE_READ)
           && nivel === ACCESS_LEVEL.LOCAL_OFFICE,
+        puedeVerDetalleConsulta: TieneCapacidad(acceso, CAPABILITY.CASE_READ)
+          && (nivel === ACCESS_LEVEL.REGION || nivel === ACCESS_LEVEL.NATIONAL),
         puedeExportarCasos: TieneCapacidad(acceso, CAPABILITY.CASE_READ)
-          && nivel === ACCESS_LEVEL.LOCAL_OFFICE,
+          && (nivel === ACCESS_LEVEL.LOCAL_OFFICE
+            || nivel === ACCESS_LEVEL.REGION
+            || nivel === ACCESS_LEVEL.NATIONAL),
         puedeRegistrarAtencion: TieneCapacidad(acceso, CAPABILITY.ATTENTION_WRITE)
           && nivel === ACCESS_LEVEL.LOCAL_OFFICE,
         puedeConsultarSeguimiento: TieneCapacidad(acceso, CAPABILITY.ATTENTION_DETAIL_READ)
@@ -657,7 +772,8 @@ function CrearServicioProceso(dependencias) {
               'El seguimiento de atenciones no forma parte de este lote.'
             )
           },
-          mensaje: 'El resumen regional y nacional no forma parte de este lote.'
+          mensaje: 'Los indicadores de inicio regional y nacional no forman parte '
+            + 'de este lote. La consulta de casos está en Casos.'
         };
       }
       const ambito = await Ambito(acceso, null);
@@ -1019,13 +1135,16 @@ function CrearServicioProceso(dependencias) {
 
     async ListarCasos(acceso, consulta) {
       const contexto = this.ObtenerContexto(acceso);
-      if (!contexto.puedeVerListaSimplificada && !contexto.puedeVerCasosOficina) {
+      if (!contexto.puedeVerListaSimplificada
+        && !contexto.puedeVerCasosOficina
+        && !contexto.puedeVerCasosRegion
+        && !contexto.puedeVerCasosNacional) {
         throw new ErrorProhibido('La operación no está permitida.');
       }
       if (consulta.identificacion && consulta.nombre) {
         throw new ErrorValidacion('Use identificación o nombre, no ambos a la vez.');
       }
-      const ambito = await Ambito(acceso, consulta.establecimientoId);
+      const ambito = await AmbitoConsulta(acceso, consulta);
       let personas;
       if (consulta.identificacion) {
         personas = [consulta.identificacion];
@@ -1042,17 +1161,20 @@ function CrearServicioProceso(dependencias) {
           prioridad: consulta.prioridad,
           identificacion: consulta.identificacion,
           nombre: consulta.nombre,
-          establecimientoId: consulta.establecimientoId
+          establecimientoId: consulta.establecimientoId,
+          regionId: consulta.regionId || null,
+          localOfficeId: consulta.localOfficeId || null
         },
         total: pagina.total,
         devueltos: pagina.filas.length,
         detallePermitido: contexto.puedeVerDetalleCaso,
+        consultaPermitida: contexto.puedeVerDetalleConsulta,
         items: pagina.filas.map((fila) => PresentarCasoLista(fila, nombres.get(fila.per_id_persona)))
       };
     },
 
     async ExportarCasos(acceso, consulta) {
-      ExigirOficina(acceso, CAPABILITY.CASE_READ);
+      ExigirLecturaCasos(acceso);
       const sonda = await this.ListarCasos(acceso, {
         ...consulta,
         pagina: 1,
@@ -1077,6 +1199,8 @@ function CrearServicioProceso(dependencias) {
           'La exportación no coincide con el total filtrado. No se entregó un archivo parcial.'
         );
       }
+      const superior = acceso.accessLevel === ACCESS_LEVEL.REGION
+        || acceso.accessLevel === ACCESS_LEVEL.NATIONAL;
       const encabezado = [
         'identificacion',
         'nombre',
@@ -1086,15 +1210,27 @@ function CrearServicioProceso(dependencias) {
         'fecha_apertura',
         'fecha_cierre'
       ];
-      const lineas = listado.items.map((item) => [
-        item.identificacion,
-        item.nombre || '',
-        String(item.establecimientoId),
-        item.estado,
-        item.prioridadEtiqueta,
-        item.fechaApertura || '',
-        item.fechaCierre || ''
-      ].map((valor) => `"${String(valor).replaceAll('"', '""')}"`).join(','));
+      if (superior) {
+        encabezado.push('oficina_local', 'region');
+      }
+      const lineas = listado.items.map((item) => {
+        const celdas = [
+          item.identificacion,
+          item.nombre || '',
+          String(item.establecimientoId),
+          item.estado,
+          item.prioridadEtiqueta,
+          item.fechaApertura || '',
+          item.fechaCierre || ''
+        ];
+        if (superior) {
+          celdas.push(
+            item.oficinaLocalId === undefined ? '' : String(item.oficinaLocalId),
+            item.regionId === undefined ? '' : String(item.regionId)
+          );
+        }
+        return celdas.map(CeldaCsv).join(',');
+      });
       return {
         contenido: [encabezado.join(','), ...lineas].join('\n'),
         total: listado.total
@@ -1365,6 +1501,163 @@ function CrearServicioProceso(dependencias) {
             ? null
             : 'La consulta del cierre no está disponible para la cuenta técnica actual.'
         ].filter(Boolean)
+      };
+    },
+
+    async ObtenerConsultaCaso(acceso, casoId) {
+      ExigirLecturaCasos(acceso);
+      if (acceso.accessLevel !== ACCESS_LEVEL.REGION
+        && acceso.accessLevel !== ACCESS_LEVEL.NATIONAL) {
+        throw new ErrorProhibido('La operación no está permitida.');
+      }
+      const ambito = await AmbitoConsulta(acceso, {});
+      let cabecera;
+      try {
+        cabecera = await repositorio.ObtenerCabeceraConsulta(casoId, ambito);
+      } catch (error) {
+        TraducirPersistencia(error, {});
+      }
+      if (!cabecera) {
+        throw new ErrorNoEncontrado(NO_ENCONTRADO);
+      }
+      const nombres = await Nombres(ambito, [cabecera.per_id_persona]);
+      const nombre = nombres.get(cabecera.per_id_persona);
+      const historial = await LeerOpcional(() => repositorio.ListarHistorialConsulta(casoId));
+      const valoraciones = await LeerOpcional(
+        () => repositorio.ListarValoracionesConsulta(casoId)
+      );
+      const planes = await LeerOpcional(() => repositorio.ListarPlanesConsulta(casoId));
+      const plan = await LeerOpcional(() => repositorio.ObtenerPlanVigenteConsulta(casoId));
+      const atenciones = await LeerOpcional(() => repositorio.ListarAtencionesConsulta(casoId));
+      const grupales = await LeerOpcional(() => repositorio.ListarGrupalesConsulta(casoId));
+      const coordinaciones = await LeerOpcional(
+        () => repositorio.ListarCoordinacionesConsulta(casoId)
+      );
+      const reportes = await LeerOpcional(() => repositorio.ListarReportesConsulta(casoId));
+      const cierre = await LeerOpcional(() => repositorio.ObtenerCierreConsulta(casoId));
+      let ultimaAtencion = {
+        disponibilidad: 'DISPONIBLE',
+        fecha: null,
+        mensaje: 'Sin atención registrada.'
+      };
+      try {
+        const fecha = await repositorio.ObtenerUltimaAtencion(casoId);
+        if (fecha) {
+          ultimaAtencion = { disponibilidad: 'DISPONIBLE', fecha, mensaje: null };
+        }
+      } catch (error) {
+        if (error && error.code === 'PERMISO') {
+          ultimaAtencion = {
+            disponibilidad: 'BLOQUEADO',
+            fecha: null,
+            mensaje: 'La fecha de última atención no está disponible para la cuenta técnica actual.'
+          };
+        } else {
+          TraducirPersistencia(error, {});
+        }
+      }
+      const eventosHistorial = historial.disponibilidad === 'DISPONIBLE'
+        ? historial.datos.map((fila) => ({
+          estado: fila.estado,
+          ocurridoEn: fila.ocurrido_en
+        }))
+        : [];
+      const eventosValoracion = valoraciones.disponibilidad === 'DISPONIBLE'
+        ? valoraciones.datos.map((fila) => ({
+          numero: Number(fila.numero),
+          fecha: fila.fecha_valoracion,
+          prioridadEtiqueta: ETIQUETA_PRIORIDAD[fila.prioridad_codigo]
+            || fila.prioridad_codigo,
+          responsable: fila.responsable_usuario
+        }))
+        : [];
+      const eventosPlan = planes.disponibilidad === 'DISPONIBLE'
+        ? planes.datos.map((fila) => ({
+          numero: Number(fila.numero_version),
+          vigente: fila.es_vigente === true || fila.es_vigente === 1,
+          fecha: fila.fecha_plan,
+          frecuenciaEtiqueta: fila.frecuencia_etiqueta,
+          responsable: fila.responsable_usuario
+        }))
+        : [];
+      const eventosAtencion = atenciones.disponibilidad === 'DISPONIBLE'
+        ? atenciones.datos.map((fila) => ({ fechaAtencion: fila.fecha_atencion }))
+        : [];
+      const eventosGrupales = grupales.disponibilidad === 'DISPONIBLE'
+        ? grupales.datos.map((fila) => ({
+          fechaAtencion: fila.fecha_atencion,
+          asistio: fila.asistio === true || fila.asistio === 1
+        }))
+        : [];
+      const eventosCoordinacion = coordinaciones.disponibilidad === 'DISPONIBLE'
+        ? coordinaciones.datos.map((fila) => ({
+          fecha: fila.fecha_coordinacion,
+          estado: fila.estado_texto
+        }))
+        : [];
+      const eventosReporte = reportes.disponibilidad === 'DISPONIBLE'
+        ? reportes.datos.map((fila) => ({ fecha: fila.fecha_reporte }))
+        : [];
+      const registroCierre = cierre.disponibilidad === 'DISPONIBLE' && cierre.datos
+        ? {
+          motivoCodigo: cierre.datos.motivo_codigo,
+          motivoEtiqueta: cierre.datos.motivo_etiqueta,
+          fecha: cierre.datos.fecha_cierre,
+          destinoNombre: cierre.datos.destino_nombre,
+          destinoEstablecimientoId: IdentificadorOpcional(
+            cierre.datos.destino_establecimiento_id
+          )
+        }
+        : null;
+      const lineaTiempo = ConstruirLineaConsulta({
+        historial: eventosHistorial,
+        valoraciones: eventosValoracion,
+        planes: eventosPlan,
+        atenciones: eventosAtencion,
+        grupales: eventosGrupales,
+        coordinaciones: eventosCoordinacion,
+        reportes: eventosReporte,
+        cierre: registroCierre
+      });
+      const planVigente = plan.disponibilidad === 'DISPONIBLE' && plan.datos
+        ? {
+          frecuenciaEtiqueta: plan.datos.frecuenciaEtiqueta,
+          estrategias: plan.datos.estrategias.map((fila) => fila.etiqueta),
+          disciplinas: plan.datos.disciplinas.map((fila) => fila.etiqueta)
+        }
+        : null;
+      return {
+        modo: 'CONSULTA',
+        soloLectura: true,
+        casoId: Number(cabecera.caso_id),
+        identificacion: cabecera.per_id_persona,
+        nombre: nombre ? nombre.fullName : null,
+        establecimientoId: Number(cabecera.establecimiento_id),
+        establecimientoNombre: cabecera.establecimiento_nombre,
+        oficinaLocalId: Number(cabecera.oficina_local_id),
+        regionId: Number(cabecera.region_id),
+        consecutivo: cabecera.consecutivo_origen,
+        estado: cabecera.estado,
+        fechaApertura: cabecera.fecha_apertura,
+        fechaCierre: cabecera.fecha_cierre,
+        prioridadCodigo: cabecera.prioridad_codigo,
+        prioridadEtiqueta: cabecera.prioridad_codigo
+          ? (ETIQUETA_PRIORIDAD[cabecera.prioridad_codigo] || cabecera.prioridad_codigo)
+          : null,
+        resumen: {
+          estado: cabecera.estado,
+          prioridadEtiqueta: cabecera.prioridad_codigo
+            ? (ETIQUETA_PRIORIDAD[cabecera.prioridad_codigo] || cabecera.prioridad_codigo)
+            : null,
+          fechaApertura: cabecera.fecha_apertura,
+          fechaCierre: cabecera.fecha_cierre,
+          establecimientoNombre: cabecera.establecimiento_nombre,
+          frecuenciaEtiqueta: planVigente ? planVigente.frecuenciaEtiqueta : null,
+          ultimaAtencion
+        },
+        plan: planVigente,
+        lineaTiempo,
+        restricciones: [RESTRICCION_CLINICA]
       };
     },
 

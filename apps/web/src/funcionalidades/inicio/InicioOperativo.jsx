@@ -1,7 +1,8 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-14.
- * Modificación: 2026-11-16. Alerta de actividades vencidas y acceso a programación.
+ * Modificación: 2026-11-16. Alerta de actividades vencidas, programación
+ * y acceso a casos de Región y Nacional.
  * HU-001 y HU-002. Un indicador ausente no se muestra como cero.
  */
 import { useEffect, useState } from 'react';
@@ -54,7 +55,16 @@ export default function InicioOperativo({ direccionApi, identidad, contexto, nav
     return <Cargando texto="Cargando el resumen." />;
   }
   if (resumen.mensaje) {
-    return <Aviso tipo="pendiente">{resumen.mensaje}</Aviso>;
+    const puedeCasos = contexto.puedeVerCasosRegion || contexto.puedeVerCasosNacional;
+    return (
+      <>
+        <h1>Inicio</h1>
+        <Aviso tipo="pendiente">{resumen.mensaje}</Aviso>
+        {puedeCasos ? (
+          <button type="button" onClick={() => navegar('casos')}>Consultar casos</button>
+        ) : null}
+      </>
+    );
   }
   const esOficina = contexto.nivel === 'OFICINA_LOCAL';
   return (

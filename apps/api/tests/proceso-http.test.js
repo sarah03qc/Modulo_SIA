@@ -75,4 +75,53 @@ describe('HTTP del proceso interdisciplinario', () => {
     expect(exportacion.status).toBe(403);
     expect(proceso.ExportarCasos).not.toHaveBeenCalled();
   });
+
+  test('Regional consulta y exporta sin heredar un rol enviado por el cliente', async () => {
+    const proceso = {
+      ListarCasos: jest.fn(async () => ({ total: 0, devueltos: 0, items: [] })),
+      ExportarCasos: jest.fn(async () => ({ contenido: 'identificacion\n', total: 0 })),
+      ObtenerConsultaCaso: jest.fn(async () => ({ modo: 'CONSULTA', soloLectura: true })),
+      ObtenerCaso: jest.fn(),
+      AbrirCaso: jest.fn()
+    };
+    const app = Aplicacion(proceso);
+    const lista = await request(app)
+      .get('/api/proceso/casos')
+      .set('Authorization', 'Bearer dev-region-central-sur')
+      .set('X-Rol', 'NACIONAL');
+    expect(lista.status).toBe(200);
+    expect(proceso.ListarCasos.mock.calls[0][0].accessLevel).toBe('REGION');
+    expect(proceso.ListarCasos.mock.calls[0][0].regionId).toBe(1);
+    const exportacion = await request(app)
+      .get('/api/proceso/casos/exportacion?regionId=5')
+      .set('Authorization', 'Bearer dev-region-brunca');
+    expect(exportacion.status).toBe(200);
+    expect(proceso.ExportarCasos.mock.calls[0][0].accessLevel).toBe('REGION');
+    expect(proceso.ExportarCasos.mock.calls[0][0].regionId).toBe(5);
+    expect(proceso.ExportarCasos.mock.calls[0][1].regionId).toBe(5);
+    const detalle = await request(app)
+      .get('/api/proceso/casos/4')
+      .set('Authorization', 'Bearer dev-nacional');
+    expect(detalle.status).toBe(200);
+    expect(proceso.ObtenerConsultaCaso).toHaveBeenCalled();
+    expect(proceso.ObtenerCaso).not.toHaveBeenCalled();
+    const apertura = await request(app)
+      .post('/api/proceso/casos')
+      .set('Authorization', 'Bearer dev-nacional')
+      .send({ referenciaId: 1 });
+    expect(apertura.status).toBe(403);
+    expect(proceso.AbrirCaso).not.toHaveBeenCalled();
+    const atencion = await request(app)
+      .post('/api/atenciones/individuales')
+      .set('Authorization', 'Bearer dev-region-central-sur')
+      .send({});
+    expect(atencion.status).toBe(403);
+    const cierre = await request(app)
+      .post('/api/ciclo/cierres')
+      .set('Authorization', 'Bearer dev-nacional')
+      .send({});
+    expect(cierre.status).toBe(403);
+    const directo = await request(app).get('/api/proceso/casos');
+    expect(directo.status).toBe(401);
+  });
 });

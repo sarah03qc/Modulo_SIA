@@ -393,7 +393,12 @@ function LeerConsultaCasos(consulta) {
     prioridad,
     identificacion,
     nombre: LeerTextoOpcional(consulta && consulta.nombre, 'nombre', 80),
-    establecimientoId: LeerEnteroOpcional(consulta && consulta.establecimientoId, 'establecimiento')
+    establecimientoId: LeerEnteroOpcional(
+      consulta && consulta.establecimientoId,
+      'establecimiento'
+    ),
+    regionId: LeerEnteroOpcional(consulta && consulta.regionId, 'región'),
+    localOfficeId: LeerEnteroOpcional(consulta && consulta.localOfficeId, 'oficina local')
   };
 }
 

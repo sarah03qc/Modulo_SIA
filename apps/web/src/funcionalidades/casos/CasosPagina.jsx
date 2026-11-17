@@ -2,12 +2,14 @@
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-14.
  * Modificación: 2026-11-16. Paginación, exportación, línea de tiempo,
- * ciclo del caso, apertura directa y clave única en la línea de tiempo.
- * HU-023, HU-024 y HU-025. El establecimiento no recibe el detalle interno.
+ * ciclo del caso, apertura directa, clave única y consulta Regional y Nacional.
+ * HU-023, HU-024, HU-025 y HU-032 a HU-035.
+ * El establecimiento no recibe el detalle interno.
  */
 import { useEffect, useState } from 'react';
 import { Aviso, Cargando, Campo, ClasePrioridad, Vacio } from '../../componentes/interfaz';
 import CicloCaso from './CicloCaso';
+import ExpedienteConsulta from './ExpedienteConsulta';
 import { DescargarArchivo, SolicitarApi } from '../../servicios/cliente-api';
 
 const CONSULTA_VACIA = {
@@ -15,8 +17,56 @@ const CONSULTA_VACIA = {
   nombre: '',
   estado: '',
   prioridad: '',
-  establecimientoId: ''
+  establecimientoId: '',
+  regionId: '',
+  localOfficeId: ''
 };
+
+function EsConsultaSuperior(contexto) {
+  return Boolean(contexto && (contexto.puedeVerCasosRegion || contexto.puedeVerCasosNacional));
+}
+
+function TituloCasos(contexto) {
+  if (contexto.puedeVerCasosRegion) {
+    return 'Casos de la Región';
+  }
+  if (contexto.puedeVerCasosNacional) {
+    return 'Casos nacionales';
+  }
+  if (contexto.puedeVerCasosOficina) {
+    return 'Casos de la Oficina Local';
+  }
+  return 'Lista de Atención Interdisciplinaria';
+}
+
+function ParametrosConsulta(aplicada, numeroPagina) {
+  const parametros = new URLSearchParams();
+  if (aplicada.identificacion) {
+    parametros.set('identificacion', aplicada.identificacion);
+  }
+  if (aplicada.nombre) {
+    parametros.set('nombre', aplicada.nombre);
+  }
+  if (aplicada.estado) {
+    parametros.set('estado', aplicada.estado);
+  }
+  if (aplicada.prioridad) {
+    parametros.set('prioridad', aplicada.prioridad);
+  }
+  if (aplicada.establecimientoId) {
+    parametros.set('establecimientoId', aplicada.establecimientoId);
+  }
+  if (aplicada.regionId) {
+    parametros.set('regionId', aplicada.regionId);
+  }
+  if (aplicada.localOfficeId) {
+    parametros.set('localOfficeId', aplicada.localOfficeId);
+  }
+  if (numeroPagina) {
+    parametros.set('pagina', String(numeroPagina));
+  }
+  return parametros;
+}
 
 function ConsultaInicial(parametros) {
   const identificacion = parametros && typeof parametros.identificacion === 'string'
@@ -38,28 +88,49 @@ export default function CasosPagina({
   const [pagina, establecerPagina] = useState(null);
   const [numeroPagina, establecerNumeroPagina] = useState(1);
   const [detalle, establecerDetalle] = useState(null);
+  const [opciones, establecerOpciones] = useState(null);
   const [error, establecerError] = useState('');
   const [cargando, establecerCargando] = useState(true);
+  const superior = EsConsultaSuperior(contexto);
+  const puedeDetalle = Boolean(
+    contexto && (contexto.puedeVerDetalleCaso || contexto.puedeVerDetalleConsulta)
+  );
+
+  useEffect(() => {
+    if (!superior) {
+      return undefined;
+    }
+    let vigente = true;
+    const filtros = new URLSearchParams();
+    if (consulta.regionId) {
+      filtros.set('regionId', consulta.regionId);
+    }
+    if (consulta.localOfficeId) {
+      filtros.set('localOfficeId', consulta.localOfficeId);
+    }
+    solicitarApi(
+      direccionApi,
+      `/api/institutional/territory/options?${filtros.toString()}`,
+      { identidad }
+    )
+      .then((datos) => {
+        if (vigente) {
+          establecerOpciones(datos);
+        }
+      })
+      .catch((fallo) => {
+        if (vigente) {
+          establecerError(fallo.message);
+        }
+      });
+    return () => {
+      vigente = false;
+    };
+  }, [consulta.localOfficeId, consulta.regionId, direccionApi, identidad, solicitarApi, superior]);
 
   useEffect(() => {
     let vigente = true;
-    const parametros = new URLSearchParams();
-    if (aplicada.identificacion) {
-      parametros.set('identificacion', aplicada.identificacion);
-    }
-    if (aplicada.nombre) {
-      parametros.set('nombre', aplicada.nombre);
-    }
-    if (aplicada.estado) {
-      parametros.set('estado', aplicada.estado);
-    }
-    if (aplicada.prioridad) {
-      parametros.set('prioridad', aplicada.prioridad);
-    }
-    if (aplicada.establecimientoId) {
-      parametros.set('establecimientoId', aplicada.establecimientoId);
-    }
-    parametros.set('pagina', String(numeroPagina));
+    const parametros = ParametrosConsulta(aplicada, numeroPagina);
     solicitarApi(direccionApi, `/api/proceso/casos?${parametros.toString()}`, { identidad })
       .then((datos) => {
         if (vigente) {
@@ -80,7 +151,7 @@ export default function CasosPagina({
 
   useEffect(() => {
     const casoId = Number(parametros.casoId);
-    if (!Number.isInteger(casoId) || casoId <= 0 || !contexto || !contexto.puedeVerDetalleCaso) {
+    if (!Number.isInteger(casoId) || casoId <= 0 || !puedeDetalle) {
       return undefined;
     }
     let vigente = true;
@@ -98,7 +169,7 @@ export default function CasosPagina({
     return () => {
       vigente = false;
     };
-  }, [contexto, direccionApi, identidad, parametros.casoId, solicitarApi]);
+  }, [direccionApi, identidad, parametros.casoId, puedeDetalle, solicitarApi]);
 
   async function VerDetalle(casoId) {
     establecerError('');
@@ -109,24 +180,18 @@ export default function CasosPagina({
     }
   }
 
+  function Restablecer() {
+    establecerError('');
+    establecerDetalle(null);
+    establecerConsulta(CONSULTA_VACIA);
+    establecerCargando(true);
+    establecerNumeroPagina(1);
+    establecerAplicada(CONSULTA_VACIA);
+  }
+
   async function Exportar() {
     establecerError('');
-    const parametros = new URLSearchParams();
-    if (aplicada.estado) {
-      parametros.set('estado', aplicada.estado);
-    }
-    if (aplicada.prioridad) {
-      parametros.set('prioridad', aplicada.prioridad);
-    }
-    if (aplicada.identificacion) {
-      parametros.set('identificacion', aplicada.identificacion);
-    }
-    if (aplicada.nombre) {
-      parametros.set('nombre', aplicada.nombre);
-    }
-    if (aplicada.establecimientoId) {
-      parametros.set('establecimientoId', aplicada.establecimientoId);
-    }
+    const parametros = ParametrosConsulta(aplicada);
     try {
       const archivo = await solicitarApi(
         direccionApi,
@@ -141,7 +206,8 @@ export default function CasosPagina({
 
   return (
     <>
-      <h1>{contexto.puedeVerCasosOficina ? 'Casos de la Oficina Local' : 'Lista de Atención Interdisciplinaria'}</h1>
+      <h1>{TituloCasos(contexto)}</h1>
+      {superior ? <p>La consulta no modifica casos ni habilita la gestión de Oficina Local.</p> : null}
       <form onSubmit={(evento) => {
         evento.preventDefault();
         establecerCargando(true);
@@ -169,14 +235,97 @@ export default function CasosPagina({
             <option value="BAJO">Bajo</option>
           </select>
         </Campo>
-        <Campo id="caso-establecimiento" etiqueta="Establecimiento, si corresponde filtrarlo">
-          <input id="caso-establecimiento" value={consulta.establecimientoId} onChange={(evento) => establecerConsulta({ ...consulta, establecimientoId: evento.target.value })} />
-        </Campo>
+        {superior && contexto.puedeVerCasosNacional ? (
+          <Campo id="caso-region" etiqueta="Región">
+            <select
+              id="caso-region"
+              value={consulta.regionId}
+              onChange={(evento) => establecerConsulta({
+                ...consulta,
+                regionId: evento.target.value,
+                localOfficeId: '',
+                establecimientoId: ''
+              })}
+            >
+              <option value="">Todas</option>
+              {(opciones && opciones.filters.region.options || []).map((item) => (
+                <option key={item.id} value={item.id}>{item.name}</option>
+              ))}
+            </select>
+          </Campo>
+        ) : null}
+        {superior && contexto.puedeVerCasosRegion && opciones ? (
+          <p>
+            Región:{' '}
+            {(opciones.filters.region.options[0] && opciones.filters.region.options[0].name)
+              || 'la región de la sesión'}
+          </p>
+        ) : null}
+        {superior ? (
+          <Campo id="caso-oficina" etiqueta="Oficina Local">
+            <select
+              id="caso-oficina"
+              value={consulta.localOfficeId}
+              disabled={Boolean(opciones && opciones.filters.localOffice.requiresParent)}
+              onChange={(evento) => establecerConsulta({
+                ...consulta,
+                localOfficeId: evento.target.value,
+                establecimientoId: ''
+              })}
+            >
+              <option value="">
+                {opciones && opciones.filters.localOffice.requiresParent
+                  ? 'Seleccione primero una región'
+                  : 'Todas'}
+              </option>
+              {(opciones && opciones.filters.localOffice.options || []).map((item) => (
+                <option key={item.id} value={item.id}>{item.name}</option>
+              ))}
+            </select>
+          </Campo>
+        ) : null}
+        {superior ? (
+          <Campo id="caso-establecimiento" etiqueta="Establecimiento">
+            <select
+              id="caso-establecimiento"
+              value={consulta.establecimientoId}
+              disabled={Boolean(opciones && opciones.filters.establishment.requiresParent)}
+              onChange={(evento) => establecerConsulta({
+                ...consulta,
+                establecimientoId: evento.target.value
+              })}
+            >
+              <option value="">
+                {opciones && opciones.filters.establishment.requiresParent
+                  ? 'Seleccione primero una Oficina Local'
+                  : 'Todos'}
+              </option>
+              {(opciones && opciones.filters.establishment.options || []).map((item) => (
+                <option key={item.id} value={item.id}>{item.name}</option>
+              ))}
+            </select>
+          </Campo>
+        ) : (
+          <Campo id="caso-establecimiento" etiqueta="Establecimiento, si corresponde filtrarlo">
+            <input
+              id="caso-establecimiento"
+              value={consulta.establecimientoId}
+              onChange={(evento) => establecerConsulta({
+                ...consulta,
+                establecimientoId: evento.target.value
+              })}
+            />
+          </Campo>
+        )}
         <button type="submit">Aplicar filtros</button>
+        <button type="button" className="secundario" onClick={Restablecer}>Restablecer filtros</button>
       </form>
       {error ? <Aviso>{error}</Aviso> : null}
       {cargando ? <Cargando /> : null}
-      {pagina ? <p>{pagina.devueltos} de {pagina.total}</p> : null}
+      {pagina && superior ? (
+        <p>Total del ámbito filtrado: {pagina.total}. En esta página: {pagina.devueltos}.</p>
+      ) : null}
+      {pagina && !superior ? <p>{pagina.devueltos} de {pagina.total}</p> : null}
       {pagina && pagina.items.length === 0 ? <Vacio texto="No hay casos que coincidan con el criterio." /> : null}
       {pagina && pagina.items.length > 0 ? (
         <div className="tabla-contenedor">
@@ -191,7 +340,9 @@ export default function CasosPagina({
                 <th>Prioridad</th>
                 <th>Apertura</th>
                 <th>Cierre</th>
-                {contexto.puedeVerDetalleCaso ? <th>Acción</th> : null}
+                {superior ? <th>Oficina Local</th> : null}
+                {superior ? <th>Región</th> : null}
+                {puedeDetalle ? <th>Acción</th> : null}
               </tr>
             </thead>
             <tbody>
@@ -204,8 +355,14 @@ export default function CasosPagina({
                   <td className={ClasePrioridad(item.prioridadCodigo)}>{item.prioridadEtiqueta}</td>
                   <td>{item.fechaApertura}</td>
                   <td>{item.fechaCierre || ''}</td>
-                  {contexto.puedeVerDetalleCaso ? (
-                    <td><button type="button" className="secundario" onClick={() => VerDetalle(item.casoId)}>Ver detalle</button></td>
+                  {superior ? <td>{item.oficinaLocalId}</td> : null}
+                  {superior ? <td>{item.regionId}</td> : null}
+                  {puedeDetalle ? (
+                    <td>
+                      <button type="button" className="secundario" onClick={() => VerDetalle(item.casoId)}>
+                        Ver expediente
+                      </button>
+                    </td>
                   ) : null}
                 </tr>
               ))}
@@ -245,6 +402,9 @@ export default function CasosPagina({
             Exportar el corte filtrado completo
           </button>
         </div>
+      ) : null}
+      {detalle && contexto.puedeVerDetalleConsulta && !contexto.puedeVerDetalleCaso ? (
+        <ExpedienteConsulta detalle={detalle} />
       ) : null}
       {detalle && contexto.puedeVerDetalleCaso ? (
         <section className="panel" aria-labelledby="titulo-caso">

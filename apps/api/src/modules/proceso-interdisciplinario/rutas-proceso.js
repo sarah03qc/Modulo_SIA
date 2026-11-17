@@ -1,7 +1,7 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-14.
- * Modificación: 2026-11-16. Seguimiento de casos activos sin atención.
+ * Modificación: 2026-11-16. Seguimiento y consulta Regional y Nacional.
  * Rutas del proceso interdisciplinario. La capacidad se exige otra vez en el servicio.
  */
 'use strict';
@@ -39,6 +39,19 @@ function ExigirAlguna(capacidades) {
       DescartarCuerpoNoProcesado(req, () => next(error));
     }
   };
+}
+
+function ExigirLecturaCasosEnRuta(req, res, next) {
+  try {
+    ExigirCapacidad(req.acceso, CAPABILITY.CASE_READ);
+    const nivel = req.acceso && req.acceso.accessLevel;
+    if (nivel !== 'OFICINA_LOCAL' && nivel !== 'REGION' && nivel !== 'NACIONAL') {
+      throw new ErrorProhibido('La operación no está permitida.');
+    }
+    next();
+  } catch (error) {
+    DescartarCuerpoNoProcesado(req, () => next(error));
+  }
 }
 
 function ExigirOficinaEnRuta(capacidad) {
@@ -183,7 +196,7 @@ function CrearEnrutadorProceso(servicio) {
 
   router.get(
     '/casos/exportacion',
-    ExigirOficinaEnRuta(CAPABILITY.CASE_READ),
+    ExigirLecturaCasosEnRuta,
     EnvolverAsincrono(async (req, res) => {
       const archivo = await servicio.ExportarCasos(req.acceso, LeerConsultaCasos(req.query));
       res.setHeader('Content-Type', 'text/csv; charset=utf-8');
@@ -202,10 +215,14 @@ function CrearEnrutadorProceso(servicio) {
 
   router.get(
     '/casos/:casoId',
-    ExigirOficinaEnRuta(CAPABILITY.CASE_READ),
+    ExigirLecturaCasosEnRuta,
     EnvolverAsincrono(async (req, res) => {
       const casoId = LeerEntero(req.params.casoId, 'caso');
-      res.status(200).json(await servicio.ObtenerCaso(req.acceso, casoId));
+      const nivel = req.acceso && req.acceso.accessLevel;
+      const detalle = nivel === 'REGION' || nivel === 'NACIONAL'
+        ? await servicio.ObtenerConsultaCaso(req.acceso, casoId)
+        : await servicio.ObtenerCaso(req.acceso, casoId);
+      res.status(200).json(detalle);
     })
   );
 

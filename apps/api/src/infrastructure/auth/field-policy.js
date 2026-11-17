@@ -8,8 +8,9 @@ const { TieneCapacidad } = require('./authorization-policy');
   Los campos restringidos salen de la sección 5.1: valoración, factores, riesgo,
   protección, plan, estrategias, atenciones, documentos, coordinaciones, traslados,
   frecuencia, línea de tiempo, cierre operativo, disciplinas internas y reportes internos.
-  Regional y Nacional no los reciben: la especificación no los concede y queda
-  NEEDS_VALIDATION si una consulta de solo lectura debiera incluirlos.
+  Regional y Nacional no los reciben por esta política.
+  HU-033 y HU-035 usan una proyección propia de consulta, sin conceder estas
+  capacidades ni reabrir la ficha de persona. El texto clínico sigue restringido.
   RNF-002.
 */
 

@@ -2,6 +2,8 @@
 
 Fecha de esta actualización: 2026-11-16. Responsable: Sarah Priscilla Quesada Chaves.
 La verificación del 2026-11-14 queda conservada al final. No se reescribe como si no hubiera ocurrido.
+El incremento de consulta Regional y Nacional está en la sección siguiente. Las verificaciones
+anteriores de Oficina Local y Establecimiento se conservan.
 
 Esta entrega no es la versión institucional definitiva ni está autorizada para producción.
 La sesión productiva de SIDINACC sigue `NEEDS_VALIDATION`. En local se usa una identidad
@@ -12,9 +14,11 @@ sintética que el servidor ya asoció a un ámbito. El cliente no elige el rol.
 1. Tener Node.js 22 o superior y las bases locales ya migradas. No ejecutar migraciones desde la API.
 2. Desde la raíz: `npm ci`. Copiar `apps/api/.env.example` a `apps/api/.env` y completar las contraseñas locales. No versionar ese archivo.
 3. `npm run verify:config` y `npm run dev`. Abrir `http://127.0.0.1:5174`, no `localhost`, para que coincida el origen CORS.
-4. Entrar con **Establecimiento de demostración** o **Oficina Local de demostración**.
+4. Entrar con **Establecimiento de demostración**, **Oficina Local de demostración**, **Nivel regional, Región Central Sur**, **Nivel regional, Región Brunca** o **Nivel nacional**. Regional y Nacional solo consultan casos. No registran atenciones ni cierran casos.
 5. Recorrido: Buscar persona → Nueva referencia → validar → confirmar el envío → en Oficina Local abrir Pendientes → Sesiones → asociar la referencia → valorar → decidir → abrir el caso → Casos → expediente → Atenciones → Sin atención. En el expediente, Oficina Local registra coordinaciones, reportes y cierre. El script `050` ya fue aplicado manualmente en este desarrollo local; no volver a ejecutarlo.
 6. Reportería, solo con Oficina Local de demostración: abrir Reportería, revisar las doce visualizaciones, cambiar año, estado o establecimiento y descargar la consolidación. Generar reporte abre el asistente de HU-050. Exige al menos cinco visualizaciones, un análisis redactado y un título, muestra la revisión y descarga `informe-analitico-oficina-local.html`. No descarga la consolidación ni el reporte individual.
+7. Consulta Regional: entrar como Región Central Sur, abrir Casos, filtrar por Oficina Local Hatillo y abrir un expediente. La vista dice que es de solo lectura. Región Brunca sirve para comprobar que un caso de Central Sur no se abre.
+8. Consulta Nacional: entrar como Nivel nacional, abrir Casos, filtrar Región y luego Oficina Local. Al cambiar la Región, la Oficina Local y el establecimiento se restablecen.
 
 Los datos de demostración son los de `database/sia-cencinai/seeds/`. No se ejecutan al arrancar
 y esta entrega no los borra ni los vuelve a cargar. Las referencias nuevas se crean por la aplicación.
@@ -44,6 +48,54 @@ El permiso es de columna. Una actualización de prueba se revirtió dentro de un
 Si el instrumento, las disciplinas o las estrategias no están en el catálogo vigente, la pantalla
 lo dice y no inventa factores ni opciones. La semilla sintética trae valores marcados como sintéticos.
 La clasificación entre atención grupal de A.I. y sesiones educativas generales sigue `NEEDS_VALIDATION`.
+
+## Consulta Regional y Nacional, HU-032 a HU-035, 2026-11-16
+
+No hubo migración ni script de permisos. La sesión productiva de SIDINACC sigue `NEEDS_VALIDATION`.
+Las identidades `dev-region-central-sur` (región 1), `dev-region-brunca` (región 5) y `dev-nacional`
+ya existían en el registro de desarrollo. Este incremento habilita su consulta de casos.
+No se añadieron credenciales reales.
+
+| Historia | Estado | Evidencia | Pendiente |
+| --- | --- | --- | --- |
+| HU-032 | PASS | API, SQL y navegador | Ninguno funcional de este alcance |
+| HU-033 | PARTIAL | API, SQL de ámbito y navegador | Texto clínico y permisos sensibles, `NEEDS_VALIDATION` |
+| HU-034 | PASS | API, SQL y navegador | Ninguno funcional de este alcance |
+| HU-035 | PARTIAL | API y navegador | El mismo recorte de HU-033 |
+
+Contraste de solo lectura contra `dbo.caso_lista_establecimiento`, 2026-11-16:
+
+| Corte | SQL | API |
+| --- | ---: | ---: |
+| Región 1, Central Sur | 259 | 259 |
+| Región 5, Brunca | 220 | 220 |
+| Nacional | 1793 | 1793 |
+| Región 1, activo y prioridad Alto | 39 | 39, y la exportación tuvo 39 filas |
+| Oficina Local 101, Hatillo, dentro de la región 1 | 40 | 40 |
+
+El filtro regional por el establecimiento 1100102 y la lista del perfil Establecimiento
+devolvieron 6 casos cada una. Ese corte no se contrastó con una consulta SQL aparte.
+
+La exportación regional rechazó `regionId=5` con 403 y no entregó archivo.
+La paginación con tamaño 1 devolvió el total completo, no el tamaño de la página.
+Una combinación Región 1 con Oficina Local 501 respondió 400.
+El expediente de otra región respondió 404. Nacional y Regional recibieron `modo: CONSULTA`.
+Abrir caso, registrar atención y cerrar caso respondieron 403 en el servidor.
+Oficina Local de Hatillo siguió en 40 casos. Establecimiento no pudo exportar.
+
+El expediente superior muestra identificador, consecutivo, establecimiento, oficina, región,
+apertura, estado, prioridad, frecuencia, estrategias y disciplinas de catálogo, y la línea de
+tiempo por tipo de evento y fecha. No muestra factores, riesgo, protección, contacto, notas,
+acciones, recomendaciones ni propósitos en texto libre. Esos campos siguen `NEEDS_VALIDATION`.
+
+No se modificó RN-040, la zona `America/Costa_Rica`, las semillas de demostración ni los
+flujos ya verificados de referencia, sesión, atención, cierre, programación o reportería.
+
+El 2026-11-16, después del cambio, `npm run verify:config`, `npm run lint`, `npm test`,
+`npm run build` y `npm run health` terminaron sin error. La API reportó 202 pruebas aprobadas
+y 7 omitidas en 2 suites. La web reportó 14 pruebas aprobadas. `/ready` quedó en `ready`,
+con `SIDINACC_LOCAL` en solo lectura. El límite de exportación sigue en 2000 filas: si el
+corte lo supera, la API rechaza la salida y no entrega una página parcial.
 
 ## Historias de este lote
 

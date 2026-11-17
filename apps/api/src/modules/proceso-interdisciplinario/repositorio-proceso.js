@@ -1,7 +1,8 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-14.
- * Modificación: 2026-11-16. Versión de plan, expediente, seguimiento y ciclo.
+ * Modificación: 2026-11-16. Versión de plan, expediente, seguimiento, ciclo
+ * y consulta territorial de Región y Nacional.
  * Persistencia de sesión, valoración, resolución y caso. HU-019 a HU-025 y HU-048.
  */
 'use strict';
@@ -64,6 +65,36 @@ function AgregarAmbito(alias, ambito, parametros, clausulas) {
         return `@${nombre}`;
       });
       clausulas.push(`${alias}.establecimiento_id IN (${nombres.join(', ')})`);
+    }
+    return;
+  }
+  if (ambito.accessLevel === ACCESS_LEVEL.REGION
+    || ambito.accessLevel === ACCESS_LEVEL.NATIONAL) {
+    if (ambito.accessLevel === ACCESS_LEVEL.REGION && !Number.isInteger(ambito.regionId)) {
+      throw new ErrorInfraestructura('El ámbito regional no es utilizable.');
+    }
+    let aplicado = false;
+    if (Number.isInteger(ambito.regionId)) {
+      parametros.ambitoRegion = Parametro(sql.Int, ambito.regionId);
+      clausulas.push(`${alias}.region_id = @ambitoRegion`);
+      aplicado = true;
+    }
+    if (Number.isInteger(ambito.localOfficeId)) {
+      parametros.ambitoOficina = Parametro(sql.Int, ambito.localOfficeId);
+      clausulas.push(`${alias}.oficina_local_id = @ambitoOficina`);
+      aplicado = true;
+    }
+    if (Array.isArray(ambito.establishmentIds) && ambito.establishmentIds.length > 0) {
+      const nombres = ambito.establishmentIds.map((id, indice) => {
+        const nombre = `ambitoEstablecimiento${indice}`;
+        parametros[nombre] = Parametro(sql.Int, id);
+        return `@${nombre}`;
+      });
+      clausulas.push(`${alias}.establecimiento_id IN (${nombres.join(', ')})`);
+      aplicado = true;
+    }
+    if (!aplicado) {
+      clausulas.push('1 = 1');
     }
     return;
   }
@@ -885,6 +916,8 @@ SELECT
   caso.caso_id,
   caso.per_id_persona,
   caso.establecimiento_id,
+  caso.oficina_local_id,
+  caso.region_id,
   caso.estado,
   caso.prioridad_codigo,
   CONVERT(char(10), caso.fecha_apertura, 23) AS fecha_apertura,
@@ -1303,6 +1336,192 @@ SELECT
   cierre.destino_establecimiento_id,
   cierre.destino_oficina_local_id,
   cierre.destino_region_id,
+  cierre.destino_nombre
+FROM dbo.caso_cierre AS cierre
+INNER JOIN dbo.cat_item AS item
+  ON item.cat_item_id = cierre.motivo_item_id
+WHERE cierre.caso_id = @casoId
+`, { casoId: Parametro(sql.BigInt, casoId) });
+      return filas[0] || null;
+    },
+
+    /**
+     * Cabecera autorizada para Región y Nacional.
+     * No selecciona contacto, factores, riesgo ni protección.
+     *
+     * @param {number} casoId Caso solicitado.
+     * @param {object} ambito Ámbito ya resuelto.
+     * @returns {Promise<object|null>} Fila o null si está fuera del ámbito.
+     */
+    async ObtenerCabeceraConsulta(casoId, ambito) {
+      const parametros = { casoId: Parametro(sql.BigInt, casoId) };
+      const clausulas = ['caso.caso_id = @casoId'];
+      AgregarAmbito('caso', ambito, parametros, clausulas);
+      const filas = await Consultar(`
+SELECT
+  caso.caso_id,
+  caso.per_id_persona,
+  caso.establecimiento_id,
+  caso.oficina_local_id,
+  caso.region_id,
+  caso.estado,
+  caso.consecutivo_origen,
+  CONVERT(char(10), caso.fecha_apertura, 23) AS fecha_apertura,
+  ctx.establecimiento_nombre,
+  v.prioridad_codigo,
+  CONVERT(char(10), cierre.fecha_cierre, 23) AS fecha_cierre
+FROM dbo.caso_ai AS caso
+LEFT JOIN dbo.ref_contexto AS ctx
+  ON ctx.referencia_id = caso.referencia_id
+LEFT JOIN dbo.ses_valoracion AS v
+  ON v.valoracion_id = caso.valoracion_vigente_id
+LEFT JOIN dbo.caso_cierre AS cierre
+  ON cierre.caso_id = caso.caso_id
+WHERE ${clausulas.join(' AND ')}
+`, parametros);
+      return filas[0] || null;
+    },
+
+    async ListarHistorialConsulta(casoId) {
+      return Consultar(`
+SELECT
+  estado,
+  CONVERT(char(19), ocurrido_en, 120) AS ocurrido_en
+FROM dbo.caso_estado_historial
+WHERE caso_id = @casoId
+ORDER BY ocurrido_en, historial_id
+`, { casoId: Parametro(sql.BigInt, casoId) });
+    },
+
+    async ListarValoracionesConsulta(casoId) {
+      return Consultar(`
+SELECT
+  v.valoracion_id,
+  v.numero,
+  v.es_vigente,
+  v.prioridad_codigo,
+  v.responsable_usuario,
+  CONVERT(char(10), v.fecha_valoracion, 23) AS fecha_valoracion
+FROM dbo.ses_valoracion AS v
+WHERE v.caso_id = @casoId
+ORDER BY v.numero, v.valoracion_id
+`, { casoId: Parametro(sql.BigInt, casoId) });
+    },
+
+    async ListarPlanesConsulta(casoId) {
+      return Consultar(`
+SELECT
+  p.plan_id,
+  p.numero_version,
+  p.es_vigente,
+  CONVERT(char(10), p.fecha_plan, 23) AS fecha_plan,
+  p.responsable_usuario,
+  i.etiqueta AS frecuencia_etiqueta
+FROM dbo.caso_plan AS p
+INNER JOIN dbo.cat_item AS i
+  ON i.cat_item_id = p.frecuencia_item_id
+ AND i.codigo_catalogo = p.frecuencia_catalogo
+WHERE p.caso_id = @casoId
+ORDER BY p.numero_version, p.plan_id
+`, { casoId: Parametro(sql.BigInt, casoId) });
+    },
+
+    async ObtenerPlanVigenteConsulta(casoId) {
+      const planes = await Consultar(`
+SELECT p.plan_id, i.etiqueta AS frecuencia_etiqueta
+FROM dbo.caso_plan AS p
+INNER JOIN dbo.cat_item AS i
+  ON i.cat_item_id = p.frecuencia_item_id
+ AND i.codigo_catalogo = p.frecuencia_catalogo
+WHERE p.caso_id = @casoId
+  AND p.es_vigente = 1
+`, { casoId: Parametro(sql.BigInt, casoId) });
+      if (planes.length !== 1) {
+        return null;
+      }
+      const planId = planes[0].plan_id;
+      const [estrategias, disciplinas] = await Promise.all([
+        Consultar(`
+SELECT i.etiqueta
+FROM dbo.caso_plan_estrategia AS e
+INNER JOIN dbo.cat_item AS i
+  ON i.cat_item_id = e.estrategia_item_id
+ AND i.codigo_catalogo = e.estrategia_catalogo
+WHERE e.plan_id = @planId
+ORDER BY i.orden, i.etiqueta
+`, { planId: Parametro(sql.BigInt, planId) }),
+        Consultar(`
+SELECT i.etiqueta
+FROM dbo.caso_plan_disciplina AS d
+INNER JOIN dbo.cat_item AS i
+  ON i.cat_item_id = d.disciplina_item_id
+ AND i.codigo_catalogo = d.disciplina_catalogo
+WHERE d.plan_id = @planId
+ORDER BY i.orden, i.etiqueta
+`, { planId: Parametro(sql.BigInt, planId) })
+      ]);
+      return {
+        frecuenciaEtiqueta: planes[0].frecuencia_etiqueta,
+        estrategias,
+        disciplinas
+      };
+    },
+
+    async ListarAtencionesConsulta(casoId) {
+      return Consultar(`
+SELECT
+  atencion_individual_id,
+  CONVERT(char(10), fecha_atencion, 23) AS fecha_atencion
+FROM dbo.ate_individual
+WHERE caso_id = @casoId
+ORDER BY fecha_atencion, atencion_individual_id
+`, { casoId: Parametro(sql.BigInt, casoId) });
+    },
+
+    async ListarGrupalesConsulta(casoId) {
+      return Consultar(`
+SELECT
+  g.atencion_grupal_id,
+  CONVERT(char(10), g.fecha_atencion, 23) AS fecha_atencion,
+  p.asistio
+FROM dbo.ate_grupal_participante AS p
+INNER JOIN dbo.ate_grupal AS g
+  ON g.atencion_grupal_id = p.atencion_grupal_id
+WHERE p.caso_id = @casoId
+ORDER BY g.fecha_atencion, g.atencion_grupal_id
+`, { casoId: Parametro(sql.BigInt, casoId) });
+    },
+
+    async ListarCoordinacionesConsulta(casoId) {
+      return Consultar(`
+SELECT
+  coordinacion_id,
+  CONVERT(char(10), fecha_coordinacion, 23) AS fecha_coordinacion,
+  estado_texto
+FROM dbo.doc_coordinacion
+WHERE caso_id = @casoId
+ORDER BY fecha_coordinacion, coordinacion_id
+`, { casoId: Parametro(sql.BigInt, casoId) });
+    },
+
+    async ListarReportesConsulta(casoId) {
+      return Consultar(`
+SELECT
+  reporte_id,
+  CONVERT(char(10), fecha_reporte, 23) AS fecha_reporte
+FROM dbo.doc_reporte_caso
+WHERE caso_id = @casoId
+ORDER BY fecha_reporte, reporte_id
+`, { casoId: Parametro(sql.BigInt, casoId) });
+    },
+
+    async ObtenerCierreConsulta(casoId) {
+      const filas = await Consultar(`
+SELECT
+  cierre.motivo_codigo,
+  item.etiqueta AS motivo_etiqueta,
+  CONVERT(char(10), cierre.fecha_cierre, 23) AS fecha_cierre,
+  cierre.destino_establecimiento_id,
   cierre.destino_nombre
 FROM dbo.caso_cierre AS cierre
 INNER JOIN dbo.cat_item AS item

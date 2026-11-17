@@ -2,7 +2,8 @@
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Primer registro del archivo en Git: 2026-11-06 (5fabddc).
  * Modificación del 2026-11-14: navegación operativa por rol.
- * Modificación del 2026-11-16: atenciones, seguimiento, programación y reportería.
+ * Modificación del 2026-11-16: atenciones, seguimiento, programación,
+ * reportería y consulta Regional y Nacional.
  */
 import { useState } from 'react';
 import { Aviso } from '../componentes/interfaz';
@@ -105,7 +106,16 @@ export default function Aplicacion({
         {contexto.puedeGestionarSesiones ? <button type="button" onClick={() => Navegar('bandeja')}>Pendientes</button> : null}
         {contexto.puedeGestionarSesiones ? <button type="button" onClick={() => Navegar('sesiones')}>Sesiones</button> : null}
         {contexto.puedeVerListaSimplificada || contexto.puedeVerCasosOficina
-          ? <button type="button" onClick={() => Navegar('casos')}>Casos</button>
+          || contexto.puedeVerCasosRegion || contexto.puedeVerCasosNacional
+          ? (
+            <button
+              type="button"
+              aria-current={vista.nombre === 'casos' ? 'page' : undefined}
+              onClick={() => Navegar('casos')}
+            >
+              Casos
+            </button>
+          )
           : null}
         {contexto.puedeRegistrarAtencion
           ? <button type="button" onClick={() => Navegar('atenciones')}>Atenciones</button>
