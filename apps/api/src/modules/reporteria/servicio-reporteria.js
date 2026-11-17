@@ -1,8 +1,8 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
- * Creación: 2026-11-16.
- * HU-038 y HU-039. CU-29 y CU-32. RF-083, RF-087 a RF-092, RF-125, RF-128, RF-129.
- * RN-040 permanece provisional. El ámbito sale solo de la sesión.
+ * Creación: 2026-11-16. Modificación: 2026-11-16.
+ * HU-038, HU-039 y HU-040 a HU-043. CU-29, CU-30, CU-31 y CU-32.
+ * RN-040 permanece provisional. El ámbito sale de la sesión y solo se estrecha.
  */
 'use strict';
 
@@ -16,6 +16,7 @@ const {
 const { CAPABILITY } = require('../../infrastructure/auth/capabilities');
 const { ExigirCapacidad } = require('../../infrastructure/auth/authorization-policy');
 const { ACCESS_LEVEL } = require('../../infrastructure/auth/institutional-roles');
+const { ResolverAmbitoTerritorial } = require('../institutional/territorial-scope');
 const {
   ESTADO_ZONA_HORARIA,
   FechaCalendarioLocal,
@@ -36,6 +37,9 @@ const {
 const MENSAJE_INFORME = 'El asistente genera el informe analítico de HU-050 y CU-38. '
   + 'No descarga la consolidación tabular de Oficina Local ni el reporte individual del caso. '
   + 'El formato institucional definitivo sigue pendiente de confirmación.';
+
+const MENSAJE_INFORME_SUPERIOR = 'El asistente HU-050 permanece en Oficina Local. '
+  + 'Regional y Nacional consultan y descargan el mismo corte, sin otra conservación histórica.';
 
 function FechaHoy() {
   return FechaCalendarioLocal();
@@ -60,7 +64,9 @@ function RangoAnio(anio) {
   };
 }
 
-function ParaCliente(corte, acceso) {
+function ParaCliente(corte, acceso, opciones) {
+  const unidad = opciones && opciones.unidad ? opciones.unidad : 'Oficina Local';
+  const informeOficina = !opciones || opciones.informeDisponible !== false;
   return {
     fechaConsulta: corte.fechaConsulta,
     anio: corte.anio,
@@ -111,13 +117,13 @@ function ParaCliente(corte, acceso) {
     identificacion: acceso ? {
       responsable: acceso.principalId,
       rol: acceso.accessLevel,
-      unidad: 'Oficina Local',
-      oficinaLocalId: acceso.localOfficeId,
-      regionId: acceso.regionId,
+      unidad,
+      oficinaLocalId: corte.oficinaLocalId,
+      regionId: corte.regionId,
       zonaHoraria: ZONA_HORARIA_OPERATIVA,
       estadoZona: ESTADO_ZONA_HORARIA
     } : null,
-    informeAnalitico: {
+    informeAnalitico: informeOficina ? {
       disponible: true,
       estado: 'DISPONIBLE',
       formatoProvisional: 'HTML',
@@ -126,12 +132,19 @@ function ParaCliente(corte, acceso) {
         + 'siguientes para incluir en su reporte',
       instruccionAnalisis: 'Por favor, redacte su análisis asociado a la '
         + 'visualización mostrada'
+    } : {
+      disponible: false,
+      estado: 'PENDIENTE',
+      formatoProvisional: null,
+      mensaje: MENSAJE_INFORME_SUPERIOR,
+      instruccionSeleccion: null,
+      instruccionAnalisis: null
     }
   };
 }
 
-function RespuestaCliente(corte, acceso) {
-  const respuesta = ParaCliente(corte, acceso);
+function RespuestaCliente(corte, acceso, opciones) {
+  const respuesta = ParaCliente(corte, acceso, opciones);
   respuesta.huellaCorte = HuellaCorte(respuesta);
   return respuesta;
 }
@@ -237,6 +250,27 @@ function CrearServicioReporteria(dependencias) {
     }
   }
 
+  function PuertoTerritorial() {
+    return {
+      BuscarEstablecimiento: (id) => adaptador.BuscarEstablecimiento(id),
+      BuscarOficinaLocal: (id) => adaptador.BuscarOficinaLocal(id),
+      BuscarRegion: (id) => adaptador.BuscarRegion(id)
+    };
+  }
+
+  function ExigirConsulta(acceso, capacidad) {
+    ExigirCapacidad(acceso, capacidad);
+    const nivel = acceso && acceso.accessLevel;
+    if (nivel !== ACCESS_LEVEL.REGION && nivel !== ACCESS_LEVEL.NATIONAL) {
+      throw new ErrorProhibido(
+        'La reportería de este ámbito no está permitida para la sesión.'
+      );
+    }
+    if (!acceso.scopeConfirmed) {
+      throw new ErrorProhibido('El ámbito autorizado no está disponible.');
+    }
+  }
+
   async function Nombres(acceso) {
     try {
       const filas = await adaptador.ListarEstablecimientos({
@@ -283,15 +317,68 @@ function CrearServicioReporteria(dependencias) {
     }
   }
 
-  async function Preparar(acceso, filtros) {
-    await ConfirmarEstablecimiento(acceso, filtros.establecimientoId);
+  function IdentificadoresEstablecimiento(hechos) {
+    const ids = new Set();
+    const listas = [hechos.casos, hechos.referencias, hechos.individuales, hechos.grupales];
+    for (const lista of listas) {
+      for (const fila of lista || []) {
+        if (fila.establecimientoId) {
+          ids.add(fila.establecimientoId);
+        }
+      }
+    }
+    return [...ids];
+  }
+
+  async function NombresAmbito(ambito, hechos) {
+    try {
+      let filas = [];
+      if (ambito.localOfficeId) {
+        filas = await adaptador.ListarEstablecimientos({
+          localOfficeId: ambito.localOfficeId
+        });
+      } else {
+        const ids = IdentificadoresEstablecimiento(hechos);
+        if (ids.length === 0) {
+          return new Map();
+        }
+        filas = await adaptador.ListarEstablecimientos({ establishmentIds: ids });
+      }
+      const mapa = new Map();
+      for (const fila of filas) {
+        if (ambito.regionId && fila.regionId !== ambito.regionId) {
+          continue;
+        }
+        mapa.set(fila.establishmentId, fila.name);
+      }
+      return mapa;
+    } catch {
+      return new Map();
+    }
+  }
+
+  async function EtiquetaUnidad(trabajo, respaldo) {
+    try {
+      const fila = await trabajo();
+      return fila && fila.name ? fila.name : respaldo;
+    } catch {
+      return respaldo;
+    }
+  }
+
+  async function Preparar(acceso, filtros, ambito) {
+    const oficinaLocalId = ambito ? ambito.localOfficeId : acceso.localOfficeId;
+    const regionId = ambito ? ambito.regionId : acceso.regionId;
+    if (!ambito) {
+      await ConfirmarEstablecimiento(acceso, filtros.establecimientoId);
+    }
     const fechaConsulta = FechaHoy();
     const rango = RangoAnio(filtros.anio);
     let hechos;
     try {
       hechos = await repositorio.ConsultarHechos({
-        oficinaLocalId: acceso.localOfficeId,
-        regionId: acceso.regionId,
+        oficinaLocalId,
+        regionId,
         establecimientoId: filtros.establecimientoId,
         inicio: rango.inicio,
         fin: rango.fin
@@ -316,12 +403,17 @@ function CrearServicioReporteria(dependencias) {
         'No fue posible aplicar sexo o edad porque la réplica institucional no está disponible.'
       );
     }
-    const nombres = await Nombres(acceso);
+    const nombres = ambito
+      ? await NombresAmbito(ambito, hechos)
+      : await Nombres(acceso);
     const corte = EnsamblarCorte(hechos, {
       ...filtros,
       fechaConsulta,
-      oficinaLocalId: acceso.localOfficeId,
-      regionId: acceso.regionId,
+      oficinaLocalId,
+      regionId,
+      etiquetaAmbito: ambito ? ambito.etiquetaAmbito : undefined,
+      etiquetaOficina: ambito ? ambito.etiquetaOficina : undefined,
+      etiquetaRegion: ambito ? ambito.etiquetaRegion : undefined,
       catalogoDisciplinas: hechos.catalogoDisciplinas
     }, demografia, nombres);
     if (filtros.profesional) {
@@ -333,6 +425,44 @@ function CrearServicioReporteria(dependencias) {
       }
     }
     return corte;
+  }
+
+  async function ResolverCorte(acceso, filtros) {
+    const resuelto = await ResolverAmbitoTerritorial(acceso, {
+      regionId: filtros.regionId ?? null,
+      localOfficeId: filtros.localOfficeId ?? null,
+      establishmentId: filtros.establecimientoId ?? null
+    }, PuertoTerritorial());
+    const regional = acceso.accessLevel === ACCESS_LEVEL.REGION;
+    const etiquetaOficina = filtros.localOfficeId
+      ? `Oficina Local ${await EtiquetaUnidad(
+        () => adaptador.BuscarOficinaLocal(filtros.localOfficeId),
+        String(filtros.localOfficeId)
+      )}`
+      : null;
+    const etiquetaRegion = filtros.regionId
+      ? `Región ${await EtiquetaUnidad(
+        () => adaptador.BuscarRegion(filtros.regionId),
+        String(filtros.regionId)
+      )}`
+      : null;
+    return {
+      localOfficeId: resuelto.localOfficeId,
+      regionId: resuelto.regionId,
+      etiquetaAmbito: regional ? 'Región' : 'Nacional',
+      etiquetaOficina,
+      etiquetaRegion
+    };
+  }
+
+  function OpcionesCliente(acceso) {
+    if (acceso.accessLevel === ACCESS_LEVEL.REGION) {
+      return { unidad: 'Región', informeDisponible: false };
+    }
+    if (acceso.accessLevel === ACCESS_LEVEL.NATIONAL) {
+      return { unidad: 'Nacional', informeDisponible: false };
+    }
+    return null;
   }
 
   return {
@@ -373,6 +503,20 @@ function CrearServicioReporteria(dependencias) {
     async DescargarConsolidacion(acceso, filtros) {
       ExigirOficina(acceso, CAPABILITY.REPORTING_EXPORT);
       const corte = await Preparar(acceso, filtros);
+      return CrearLibroConsolidacion(corte);
+    },
+
+    async ConsultarAmbito(acceso, filtros) {
+      ExigirConsulta(acceso, CAPABILITY.REPORTING_READ);
+      const ambito = await ResolverCorte(acceso, filtros);
+      const corte = await Preparar(acceso, filtros, ambito);
+      return RespuestaCliente(corte, acceso, OpcionesCliente(acceso));
+    },
+
+    async DescargarConsolidacionAmbito(acceso, filtros) {
+      ExigirConsulta(acceso, CAPABILITY.REPORTING_EXPORT);
+      const ambito = await ResolverCorte(acceso, filtros);
+      const corte = await Preparar(acceso, filtros, ambito);
       return CrearLibroConsolidacion(corte);
     },
 

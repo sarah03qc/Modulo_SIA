@@ -146,4 +146,36 @@ describe('pantalla de reportería', () => {
     expect(pantalla.getByLabelText('Análisis').value).toBe('Lectura del profesional.');
     expect(solicitarApi).toHaveBeenCalledTimes(1);
   });
+
+  test('Regional consulta el ámbito de la sesión y no abre el asistente', async () => {
+    const solicitarApi = jest.fn(async (direccion, ruta) => {
+      if (String(ruta).includes('territory/options')) {
+        return {
+          filters: {
+            region: { options: [{ id: 1, name: 'Central Sur' }] },
+            localOffice: { options: [{ id: 101, name: 'Hatillo' }], requiresParent: false },
+            establishment: { options: [], requiresParent: true }
+          }
+        };
+      }
+      return Respuesta();
+    });
+    render(
+      <ReporteriaPagina
+        direccionApi="http://127.0.0.1:3001"
+        identidad="dev-region-central-sur"
+        contexto={{ nivel: 'REGION', puedeDescargarConsolidacion: true }}
+        solicitarApi={solicitarApi}
+      />
+    );
+    expect(await pantalla.findByRole('heading', { name: 'Reportería regional' })).toBeTruthy();
+    expect(pantalla.queryByRole('button', { name: 'Generar reporte' })).toBeNull();
+    expect(pantalla.getByText(/asistente HU-050 sigue en Oficina Local/)).toBeTruthy();
+    expect(solicitarApi.mock.calls.some((llamada) => (
+      String(llamada[1]).startsWith('/api/reporteria/consulta?')
+    ))).toBe(true);
+    expect(solicitarApi.mock.calls.some((llamada) => (
+      String(llamada[1]).includes('/api/reporteria/oficina')
+    ))).toBe(false);
+  });
 });

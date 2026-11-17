@@ -1,7 +1,7 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
- * Creación: 2026-11-16.
- * HU-039. La descarga usa el mismo corte que la consulta.
+ * Creación: 2026-11-16. Modificación: 2026-11-16.
+ * HU-039, HU-041 y HU-043. La descarga usa el mismo corte que la consulta.
  * Un texto que Excel trataría como fórmula se guarda como texto.
  */
 'use strict';
@@ -66,7 +66,7 @@ async function CrearLibroConsolidacion(corte) {
   AgregarFila(corteHoja, ['Atributo', 'Valor']);
   Encabezado(corteHoja);
   const atributos = [
-    ['Ámbito', 'Oficina Local'],
+    ['Ámbito', corte.etiquetaAmbito || 'Oficina Local'],
     ['Oficina local', corte.oficinaLocalId],
     ['Región', corte.regionId],
     ['Año', corte.anio],

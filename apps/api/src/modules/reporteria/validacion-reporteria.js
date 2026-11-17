@@ -1,7 +1,8 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
- * Creación: 2026-11-16.
- * HU-038. El ámbito territorial no se acepta en la consulta.
+ * Creación: 2026-11-16. Modificación: 2026-11-16.
+ * HU-038. Oficina Local no acepta ámbito en la consulta.
+ * HU-040 y HU-042 aceptan solo el estrechamiento de su nivel.
  */
 'use strict';
 
@@ -24,14 +25,20 @@ function Texto(valor) {
   return String(valor).trim();
 }
 
-function RechazarAmbito(consulta) {
-  for (const clave of CLAVES_PROHIBIDAS) {
+function RechazarClaves(consulta, claves, mensaje) {
+  for (const clave of claves) {
     if (Object.prototype.hasOwnProperty.call(consulta, clave)) {
-      throw new ErrorValidacion(
-        'La Oficina Local y la región salen de la sesión. No se aceptan en la consulta.'
-      );
+      throw new ErrorValidacion(mensaje);
     }
   }
+}
+
+function RechazarAmbito(consulta) {
+  RechazarClaves(
+    consulta,
+    CLAVES_PROHIBIDAS,
+    'La Oficina Local y la región salen de la sesión. No se aceptan en la consulta.'
+  );
 }
 
 function EnteroOpcional(valor, nombre, minimo, maximo) {
@@ -54,11 +61,31 @@ function EnteroOpcional(valor, nombre, minimo, maximo) {
  *
  * @param {object} consulta Parámetros de la solicitud.
  * @param {number} anioPredeterminado Año de la fecha del servidor.
+ * @param {string} [nivel] REGION o NACIONAL. Sin nivel, el ámbito se rechaza.
  * @returns {object} Filtros normalizados.
  */
-function LeerFiltrosReporteria(consulta, anioPredeterminado) {
+function LeerFiltrosReporteria(consulta, anioPredeterminado, nivel) {
   const origen = consulta && typeof consulta === 'object' ? consulta : {};
-  RechazarAmbito(origen);
+  let regionId = null;
+  let localOfficeId = null;
+  if (nivel === 'NACIONAL') {
+    RechazarClaves(
+      origen,
+      ['oficina', 'region', 'ambito', 'oficinaLocalId'],
+      'Use región, Oficina Local y establecimiento del catálogo autorizado.'
+    );
+    regionId = EnteroOpcional(origen.regionId, 'región', 1, 2147483647);
+    localOfficeId = EnteroOpcional(origen.localOfficeId, 'Oficina Local', 1, 2147483647);
+  } else if (nivel === 'REGION') {
+    RechazarClaves(
+      origen,
+      ['regionId', 'region', 'oficina', 'ambito', 'oficinaLocalId'],
+      'La región sale de la sesión. No se acepta otra región en la consulta.'
+    );
+    localOfficeId = EnteroOpcional(origen.localOfficeId, 'Oficina Local', 1, 2147483647);
+  } else {
+    RechazarAmbito(origen);
+  }
   const anioTexto = Texto(origen.anio);
   const anio = anioTexto.length === 0
     ? anioPredeterminado
@@ -83,7 +110,7 @@ function LeerFiltrosReporteria(consulta, anioPredeterminado) {
   if (sexo.length > 80) {
     throw new ErrorValidacion('El sexo indicado no es válido.');
   }
-  return {
+  const filtros = {
     anio,
     establecimientoId: EnteroOpcional(origen.establecimientoId, 'establecimiento', 1, 2147483647),
     estado,
@@ -93,6 +120,11 @@ function LeerFiltrosReporteria(consulta, anioPredeterminado) {
     sexo: sexo.length === 0 ? null : sexo,
     edad: EnteroOpcional(origen.edad, 'edad', 0, 120)
   };
+  if (nivel === 'REGION' || nivel === 'NACIONAL') {
+    filtros.regionId = regionId;
+    filtros.localOfficeId = localOfficeId;
+  }
+  return filtros;
 }
 
 module.exports = { LeerFiltrosReporteria };

@@ -484,6 +484,12 @@ function PersonasUnicas(individuales, participantes, filtros, demografia) {
 
 function FiltrosActivos(filtros, nombres) {
   const activos = [{ codigo: 'anio', etiqueta: `Año ${filtros.anio}` }];
+  if (filtros.etiquetaRegion) {
+    activos.push({ codigo: 'region', etiqueta: filtros.etiquetaRegion });
+  }
+  if (filtros.etiquetaOficina) {
+    activos.push({ codigo: 'oficina', etiqueta: filtros.etiquetaOficina });
+  }
   if (filtros.establecimientoId) {
     activos.push({
       codigo: 'establecimiento',
@@ -707,6 +713,7 @@ function EnsamblarCorte(hechos, filtros, demografia, nombres) {
   return {
     fechaConsulta: filtros.fechaConsulta,
     anio: filtros.anio,
+    etiquetaAmbito: filtros.etiquetaAmbito || 'Oficina Local',
     oficinaLocalId: filtros.oficinaLocalId,
     regionId: filtros.regionId,
     filtrosActivos: FiltrosActivos(filtros, nombres),

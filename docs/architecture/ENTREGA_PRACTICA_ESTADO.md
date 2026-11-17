@@ -2,8 +2,8 @@
 
 Fecha de esta actualización: 2026-11-16. Responsable: Sarah Priscilla Quesada Chaves.
 La verificación del 2026-11-14 queda conservada al final. No se reescribe como si no hubiera ocurrido.
-El incremento de consulta Regional y Nacional está en la sección siguiente. Las verificaciones
-anteriores de Oficina Local y Establecimiento se conservan.
+La reportería Regional y Nacional está en la sección siguiente a la consulta de casos.
+Las verificaciones anteriores de Oficina Local y Establecimiento se conservan.
 
 Esta entrega no es la versión institucional definitiva ni está autorizada para producción.
 La sesión productiva de SIDINACC sigue `NEEDS_VALIDATION`. En local se usa una identidad
@@ -14,11 +14,13 @@ sintética que el servidor ya asoció a un ámbito. El cliente no elige el rol.
 1. Tener Node.js 22 o superior y las bases locales ya migradas. No ejecutar migraciones desde la API.
 2. Desde la raíz: `npm ci`. Copiar `apps/api/.env.example` a `apps/api/.env` y completar las contraseñas locales. No versionar ese archivo.
 3. `npm run verify:config` y `npm run dev`. Abrir `http://127.0.0.1:5174`, no `localhost`, para que coincida el origen CORS.
-4. Entrar con **Establecimiento de demostración**, **Oficina Local de demostración**, **Nivel regional, Región Central Sur**, **Nivel regional, Región Brunca** o **Nivel nacional**. Regional y Nacional solo consultan casos. No registran atenciones ni cierran casos.
+4. Entrar con **Establecimiento de demostración**, **Oficina Local de demostración**, **Nivel regional, Región Central Sur**, **Nivel regional, Región Brunca** o **Nivel nacional**. Regional y Nacional consultan casos y reportería. No registran atenciones, no cierran casos y no generan el informe HU-050.
 5. Recorrido: Buscar persona → Nueva referencia → validar → confirmar el envío → en Oficina Local abrir Pendientes → Sesiones → asociar la referencia → valorar → decidir → abrir el caso → Casos → expediente → Atenciones → Sin atención. En el expediente, Oficina Local registra coordinaciones, reportes y cierre. El script `050` ya fue aplicado manualmente en este desarrollo local; no volver a ejecutarlo.
 6. Reportería, solo con Oficina Local de demostración: abrir Reportería, revisar las doce visualizaciones, cambiar año, estado o establecimiento y descargar la consolidación. Generar reporte abre el asistente de HU-050. Exige al menos cinco visualizaciones, un análisis redactado y un título, muestra la revisión y descarga `informe-analitico-oficina-local.html`. No descarga la consolidación ni el reporte individual.
 7. Consulta Regional: entrar como Región Central Sur, abrir Casos, filtrar por Oficina Local Hatillo y abrir un expediente. La vista dice que es de solo lectura. Región Brunca sirve para comprobar que un caso de Central Sur no se abre.
 8. Consulta Nacional: entrar como Nivel nacional, abrir Casos, filtrar Región y luego Oficina Local. Al cambiar la Región, la Oficina Local y el establecimiento se restablecen.
+9. Reportería regional: con Región Central Sur, abrir Reportería. Deben verse las doce visualizaciones y la región de la sesión, sin selector de otra región. Filtrar Oficina Local Hatillo. La cobertura de 2026 queda en 8 de 18, igual que la Oficina Local. Descargar la consolidación `consolidacion-region.xlsx`. No aparece Generar reporte.
+10. Reportería nacional: con Nivel nacional, abrir Reportería, dejar el ámbito nacional y luego elegir Región Central Sur. Ese corte coincide con el regional: cobertura 45 de 135. Al cambiar la región, la oficina y el establecimiento se limpian. Descargar `consolidacion-nacional.xlsx`.
 
 Los datos de demostración son los de `database/sia-cencinai/seeds/`. No se ejecutan al arrancar
 y esta entrega no los borra ni los vuelve a cargar. Las referencias nuevas se crean por la aplicación.
@@ -48,6 +50,56 @@ El permiso es de columna. Una actualización de prueba se revirtió dentro de un
 Si el instrumento, las disciplinas o las estrategias no están en el catálogo vigente, la pantalla
 lo dice y no inventa factores ni opciones. La semilla sintética trae valores marcados como sintéticos.
 La clasificación entre atención grupal de A.I. y sesiones educativas generales sigue `NEEDS_VALIDATION`.
+
+## Reportería Regional y Nacional, HU-040 a HU-043, 2026-11-16
+
+No hubo migración, script de permisos ni otro motor estadístico. Se reutilizan las doce
+visualizaciones, RN-040, RF-129 y el corte de HU-038. La región de una sesión regional sale
+del servidor. Nacional puede estrechar Región, Oficina Local y establecimiento, y al cambiar
+un nivel superior se limpian los inferiores. La cobertura usa el numerador y el denominador
+del universo consultado. No suma porcentajes regionales.
+
+HU-050 no se extendió. Su conservación histórica sigue anclada a Oficina Local. Duplicarla
+para Regional o Nacional exigía otro esquema. Queda pendiente.
+
+| Historia | Estado | Evidencia | Pendiente |
+| --- | --- | --- | --- |
+| HU-040 | PASS en el alcance confirmado | Doce visualizaciones, filtros y aislamiento. Año 2026 | HU-050 en este nivel |
+| HU-041 | PASS en el alcance tabular | `consolidacion-region.xlsx`, 22844 bytes, mismo corte | Informe analítico distinto |
+| HU-042 | PASS en el alcance confirmado | Universo nacional y desagregación jerárquica. Año 2026 | Sexo y edad si las personas superan 2000 |
+| HU-043 | PASS en el alcance tabular | `consolidacion-nacional.xlsx`, 46218 bytes | El mismo límite de 2000 filas de casos sin atención |
+
+Contraste del 2026-11-16, año 2026. La prueba SQL comprobó el denominador de casos activos
+distintos. La API de Regional filtrada a Hatillo coincidió con Oficina Local.
+
+| Corte | D | N | Personas únicas | Atenciones | Individuales | Grupales | Referencias |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Región 1, Central Sur | 135 | 45 | 61 | 89 | 81 | 8 | 150 |
+| Región 5, Brunca | 130 | 46 | 64 | 87 | 78 | 9 | 156 |
+| Nacional | 1009 | 333 | 407 | 655 | 620 | 35 | 1158 |
+| Nacional filtrado a región 1 | 135 | 45 | 61 | 89 | | | |
+| Región 1 filtrada a oficina 101 | 18 | 8 | 15 | 17 | 13 | 4 | 25 |
+| Oficina Local 101, ruta propia | 18 | 8 | 15 | 17 | 13 | 4 | 25 |
+
+Una región no puede enviar `regionId`. Esa consulta respondió 400 y no leyó el corte.
+Región en `/api/reporteria/oficina` respondió 403. Nacional con región 1 y oficina 501
+respondió 400. Establecimiento en `/api/reporteria/consulta` respondió 403.
+No hay ruta de escritura en la consulta superior: un POST respondió 404.
+El asistente quedó `disponible: false` en Regional y Nacional, y `true` en Oficina Local.
+
+Filtros de Regional: año, Oficina Local, establecimiento, estado, prioridad, disciplina,
+profesional, sexo y edad. La región se muestra y no se elige.
+Filtros de Nacional: los mismos, más la región. Oficina y establecimiento esperan el nivel anterior.
+
+No se modificó RN-040, la zona `America/Costa_Rica`, `SIDINACC_LOCAL`, las semillas ni las
+rutas operativas de Oficina Local.
+
+El mismo día, `npm run verify:config`, `npm run lint`, `npm test`, `npm run build` y
+`npm run health` terminaron sin error. La API reportó 206 pruebas aprobadas y 7 omitidas.
+La web reportó 15 pruebas aprobadas. `/ready` quedó en `ready`, con `SIDINACC_LOCAL` en
+solo lectura. En el navegador, Región Central Sur mostró 45 de 135 y, al filtrar Hatillo,
+8 de 18. Nacional mostró 333 de 1009; al elegir Central Sur coincidió con la región, y al
+pasar a Brunca la oficina quedó vacía y la cobertura pasó a 46 de 130.
 
 ## Consulta Regional y Nacional, HU-032 a HU-035, 2026-11-16
 
@@ -128,7 +180,8 @@ corte lo supera, la API rechaza la salida y no entrega una página parcial.
 
 Quedan fuera de este avance, sin cifras ficticias: HU-003, HU-004, HU-040 a HU-043,
 HU-045, HU-046, reportería regional y nacional y las posibles
-referencias automáticas.
+referencias automáticas. El incremento posterior del 2026-11-16 cubre
+HU-040 a HU-043; esa sección no reescribe este lote.
 
 ## Endpoints de este incremento
 

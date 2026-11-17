@@ -149,3 +149,70 @@ describe('servicio de reportería de Oficina Local', () => {
     )).rejects.toMatchObject({ status: 503 });
   });
 });
+
+function AccesoNacional() {
+  return CrearContextoUsuario({
+    source: 'SYNTHETIC_DEVELOPMENT',
+    principalId: 'dev-nacional',
+    grants: [{ role: 'NACIONAL' }]
+  });
+}
+
+describe('reportería Regional y Nacional', () => {
+  test('la región usa su sesión y rechaza otra oficina', async () => {
+    const { servicio, consultar } = Servicio(HechosVacios(), {
+      BuscarOficinaLocal: jest.fn(async (id) => ({
+        localOfficeId: id,
+        regionId: id === 101 ? 1 : 5,
+        name: id === 101 ? 'Hatillo' : 'Ajena'
+      })),
+      BuscarRegion: jest.fn(async () => ({ regionId: 1, name: 'Central Sur' }))
+    });
+    const respuesta = await servicio.ConsultarAmbito(AccesoRegion(), Filtros());
+    expect(consultar).toHaveBeenCalledWith(expect.objectContaining({
+      oficinaLocalId: null,
+      regionId: 1,
+      establecimientoId: null
+    }));
+    expect(respuesta.visualizaciones).toHaveLength(12);
+    expect(respuesta.informeAnalitico.disponible).toBe(false);
+    expect(respuesta.identificacion.unidad).toBe('Región');
+    consultar.mockClear();
+    await expect(servicio.ConsultarAmbito(
+      AccesoRegion(),
+      Filtros({ localOfficeId: 501 })
+    )).rejects.toMatchObject({ status: 403 });
+    expect(consultar).not.toHaveBeenCalled();
+  });
+
+  test('el nacional calcula el universo y rechaza una combinación incompatible', async () => {
+    const { servicio, consultar } = Servicio(HechosVacios(), {
+      BuscarRegion: jest.fn(async (id) => ({ regionId: id, name: 'Región' })),
+      BuscarOficinaLocal: jest.fn(async (id) => ({
+        localOfficeId: id,
+        regionId: 5,
+        name: 'Ajena'
+      }))
+    });
+    const respuesta = await servicio.ConsultarAmbito(AccesoNacional(), Filtros());
+    expect(consultar).toHaveBeenCalledWith(expect.objectContaining({
+      oficinaLocalId: null,
+      regionId: null
+    }));
+    expect(respuesta.identificacion.unidad).toBe('Nacional');
+    expect(respuesta.visualizaciones).toHaveLength(12);
+    const archivo = await servicio.DescargarConsolidacionAmbito(
+      AccesoNacional(),
+      Filtros()
+    );
+    expect(Buffer.isBuffer(archivo)).toBe(true);
+    await expect(servicio.ConsultarAmbito(
+      AccesoNacional(),
+      Filtros({ regionId: 1, localOfficeId: 501 })
+    )).rejects.toMatchObject({ status: 400 });
+    await expect(servicio.ConsultarAmbito(AccesoEstablecimiento(), Filtros()))
+      .rejects.toMatchObject({ status: 403 });
+    await expect(servicio.ConsultarAmbito(AccesoOficina(), Filtros()))
+      .rejects.toMatchObject({ status: 403 });
+  });
+});

@@ -162,4 +162,57 @@ WHERE oficina_local_id <> 101
       })).rejects.toMatchObject({ status: expect.any(Number) });
     }
   }, 40000);
+
+  test('Regional y Nacional calculan cobertura sobre su universo, no sumando porcentajes', async () => {
+    if (!bases) {
+      return;
+    }
+    const regional = await servicio.ConsultarAmbito(CrearContextoUsuario({
+      source: 'SYNTHETIC_DEVELOPMENT',
+      principalId: 'dev-region-central-sur',
+      grants: [{ role: 'REGION', regionId: 1 }]
+    }), FILTROS);
+    const nacional = await servicio.ConsultarAmbito(CrearContextoUsuario({
+      source: 'SYNTHETIC_DEVELOPMENT',
+      principalId: 'dev-nacional',
+      grants: [{ role: 'NACIONAL' }]
+    }), FILTROS);
+    const otra = await servicio.ConsultarAmbito(CrearContextoUsuario({
+      source: 'SYNTHETIC_DEVELOPMENT',
+      principalId: 'dev-region-brunca',
+      grants: [{ role: 'REGION', regionId: 5 }]
+    }), FILTROS);
+    const sql = await bases.sia.query(`
+SELECT
+  (
+    SELECT COUNT(DISTINCT caso.per_id_persona)
+    FROM dbo.caso_ai AS caso
+    WHERE caso.region_id = 1 AND caso.estado = N'ACTIVO'
+  ) AS denominadorRegion,
+  (
+    SELECT COUNT(DISTINCT caso.per_id_persona)
+    FROM dbo.caso_ai AS caso
+    WHERE caso.region_id = 5 AND caso.estado = N'ACTIVO'
+  ) AS denominadorOtra,
+  (
+    SELECT COUNT(DISTINCT caso.per_id_persona)
+    FROM dbo.caso_ai AS caso
+    WHERE caso.estado = N'ACTIVO'
+  ) AS denominadorNacional
+`);
+    const fila = sql[0];
+    expect(regional.visualizaciones).toHaveLength(12);
+    expect(regional.cobertura.denominador).toBe(Number(fila.denominadorRegion));
+    expect(otra.cobertura.denominador).toBe(Number(fila.denominadorOtra));
+    expect(nacional.cobertura.denominador).toBe(Number(fila.denominadorNacional));
+    expect(nacional.cobertura.denominador).toBeGreaterThan(regional.cobertura.denominador);
+    expect(regional.informeAnalitico.disponible).toBe(false);
+    const libro = await servicio.DescargarConsolidacionAmbito(CrearContextoUsuario({
+      source: 'SYNTHETIC_DEVELOPMENT',
+      principalId: 'dev-region-central-sur',
+      grants: [{ role: 'REGION', regionId: 1 }]
+    }), FILTROS);
+    expect(Buffer.isBuffer(libro)).toBe(true);
+    expect(libro.length).toBeGreaterThan(100);
+  }, 60000);
 });

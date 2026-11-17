@@ -1,8 +1,9 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
- * Creación: 2026-11-16.
- * HU-038 y HU-039. Lecturas parametrizadas del ámbito de la sesión.
+ * Creación: 2026-11-16. Modificación: 2026-11-16.
+ * HU-038, HU-039 y HU-040 a HU-043. Lecturas parametrizadas del ámbito resuelto.
  * La fecha real de atención no se sustituye por la fecha de digitación.
+ * Oficina Local sigue enviando oficina y región; un nulo no estrecha el corte.
  */
 'use strict';
 
@@ -208,6 +209,48 @@ function CrearRepositorioReporteria(cliente) {
     };
   }
 
+  /**
+   * Igualdades solo de los niveles que el ámbito ya resolvió.
+   * Con oficina y región informadas coincide con el predicado de Oficina Local.
+   *
+   * @param {string} alias Tabla del hecho.
+   * @param {object} registro Ámbito efectivo.
+   * @param {boolean} incluyeRegion La tabla tiene region_id.
+   * @returns {string} Predicado sin ampliar el universo.
+   */
+  function ClausulaIgualdad(alias, registro, incluyeRegion) {
+    const partes = [];
+    if (registro.oficinaLocalId != null) {
+      partes.push(`${alias}.oficina_local_id = @oficina`);
+    }
+    if (incluyeRegion && registro.regionId != null) {
+      partes.push(`${alias}.region_id = @region`);
+    }
+    return partes.length === 0 ? '1 = 1' : partes.join('\n  AND ');
+  }
+
+  /**
+   * La grupal no tiene region_id. Con oficina, el predicado queda igual que antes.
+   * Sin oficina y con región, la oficina se comprueba por un caso de esa región.
+   *
+   * @param {object} registro Ámbito efectivo.
+   * @returns {string} Predicado de la actividad grupal.
+   */
+  function ClausulaGrupal(registro) {
+    if (registro.oficinaLocalId != null) {
+      return 'grupal.oficina_local_id = @oficina';
+    }
+    if (registro.regionId != null) {
+      return `EXISTS (
+    SELECT 1
+    FROM dbo.caso_ai AS casoRegion
+    WHERE casoRegion.oficina_local_id = grupal.oficina_local_id
+      AND casoRegion.region_id = @region
+  )`;
+    }
+    return '1 = 1';
+  }
+
   return {
     /**
      * Lee los hechos del ámbito. El establecimiento nulo no filtra.
@@ -219,9 +262,11 @@ function CrearRepositorioReporteria(cliente) {
     async ConsultarHechos(registro) {
       const parametros = Parametros(registro);
       const filtroCaso = `
-  AND caso.oficina_local_id = @oficina
-  AND caso.region_id = @region
+  AND ${ClausulaIgualdad('caso', registro, true)}
   AND (@establecimiento IS NULL OR caso.establecimiento_id = @establecimiento)`;
+      const filtroReferencia = ClausulaIgualdad('referencia', registro, true);
+      const filtroActividad = ClausulaIgualdad('actividad', registro, true);
+      const filtroGrupal = ClausulaGrupal(registro);
       const casos = await Consultar(`
 SELECT
   caso.caso_id,
@@ -242,8 +287,7 @@ SELECT
   referencia.establecimiento_id,
   referencia.estado
 FROM dbo.ref_referencia AS referencia
-WHERE referencia.oficina_local_id = @oficina
-  AND referencia.region_id = @region
+WHERE ${filtroReferencia}
   AND referencia.fecha_referencia >= @inicio
   AND referencia.fecha_referencia < @fin
   AND (
@@ -261,8 +305,7 @@ INNER JOIN dbo.ref_referencia AS referencia
 INNER JOIN dbo.cat_item AS item
   ON item.cat_item_id = motivo.cat_item_id
  AND item.codigo_catalogo = motivo.motivo_catalogo
-WHERE referencia.oficina_local_id = @oficina
-  AND referencia.region_id = @region
+WHERE ${filtroReferencia}
   AND referencia.fecha_referencia >= @inicio
   AND referencia.fecha_referencia < @fin
   AND (
@@ -296,7 +339,7 @@ FROM dbo.ate_grupal AS grupal
 LEFT JOIN dbo.cat_item AS item
   ON item.cat_item_id = grupal.tipo_item_id
  AND item.codigo_catalogo = grupal.tipo_catalogo
-WHERE grupal.oficina_local_id = @oficina
+WHERE ${filtroGrupal}
   AND grupal.fecha_atencion >= @inicio
   AND grupal.fecha_atencion < @fin
   AND (
@@ -311,7 +354,7 @@ SELECT
 FROM dbo.ate_grupal_disciplina AS disciplina
 INNER JOIN dbo.ate_grupal AS grupal
   ON grupal.atencion_grupal_id = disciplina.atencion_grupal_id
-WHERE grupal.oficina_local_id = @oficina
+WHERE ${filtroGrupal}
   AND grupal.fecha_atencion >= @inicio
   AND grupal.fecha_atencion < @fin
   AND (
@@ -326,7 +369,7 @@ SELECT
 FROM dbo.ate_grupal_profesional AS profesional
 INNER JOIN dbo.ate_grupal AS grupal
   ON grupal.atencion_grupal_id = profesional.atencion_grupal_id
-WHERE grupal.oficina_local_id = @oficina
+WHERE ${filtroGrupal}
   AND grupal.fecha_atencion >= @inicio
   AND grupal.fecha_atencion < @fin
   AND (
@@ -343,7 +386,7 @@ SELECT
 FROM dbo.ate_grupal_participante AS participante
 INNER JOIN dbo.ate_grupal AS grupal
   ON grupal.atencion_grupal_id = participante.atencion_grupal_id
-WHERE grupal.oficina_local_id = @oficina
+WHERE ${filtroGrupal}
   AND grupal.fecha_atencion >= @inicio
   AND grupal.fecha_atencion < @fin
   AND (
@@ -360,8 +403,7 @@ FROM dbo.prog_actividad AS actividad
 INNER JOIN dbo.prog_cambio AS cambio
   ON cambio.actividad_id = actividad.actividad_id
  AND cambio.estado_nuevo = N'CANCELADA'
-WHERE actividad.oficina_local_id = @oficina
-  AND actividad.region_id = @region
+WHERE ${filtroActividad}
   AND actividad.estado = N'CANCELADA'
   AND cambio.ocurrido_en >= @inicio
   AND cambio.ocurrido_en < @fin

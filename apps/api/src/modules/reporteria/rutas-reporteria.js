@@ -1,7 +1,8 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
- * Creación: 2026-11-16.
- * HU-038, HU-039 y HU-050. La capacidad se vuelve a exigir en el servicio.
+ * Creación: 2026-11-16. Modificación: 2026-11-16.
+ * HU-038, HU-039, HU-040 a HU-043 y HU-050.
+ * La capacidad se vuelve a exigir en el servicio.
  * El informe acepta un cuerpo JSON acotado al máximo validado.
  */
 'use strict';
@@ -51,6 +52,34 @@ function ExigirOficina(capacidad) {
 function Filtros(req) {
   const anio = AnioCalendarioLocal();
   return LeerFiltrosReporteria(req.query, anio);
+}
+
+function FiltrosAmbito(req) {
+  return LeerFiltrosReporteria(req.query, AnioCalendarioLocal(), req.acceso.accessLevel);
+}
+
+function ExigirConsulta(capacidad) {
+  return function Exigir(req, res, next) {
+    try {
+      ExigirCapacidad(req.acceso, capacidad);
+      const nivel = req.acceso && req.acceso.accessLevel;
+      if (nivel !== ACCESS_LEVEL.REGION && nivel !== ACCESS_LEVEL.NATIONAL) {
+        throw new ErrorProhibido(
+          'La reportería de este ámbito no está permitida para la sesión.'
+        );
+      }
+      next();
+    } catch (error) {
+      DescartarCuerpoNoProcesado(req, () => next(error));
+    }
+  };
+}
+
+function NombreConsolidacion(nivel) {
+  if (nivel === ACCESS_LEVEL.NATIONAL) {
+    return 'consolidacion-nacional.xlsx';
+  }
+  return 'consolidacion-region.xlsx';
 }
 
 /**
@@ -105,6 +134,34 @@ function CrearEnrutadorReporteria(servicio) {
       res.setHeader(
         'Content-Disposition',
         'attachment; filename="consolidacion-oficina-local.xlsx"'
+      );
+      res.status(200).send(archivo);
+    })
+  );
+
+  router.get(
+    '/consulta',
+    ExigirConsulta(CAPABILITY.REPORTING_READ),
+    EnvolverAsincrono(async (req, res) => {
+      res.status(200).json(await servicio.ConsultarAmbito(req.acceso, FiltrosAmbito(req)));
+    })
+  );
+
+  router.get(
+    '/consulta/consolidacion',
+    ExigirConsulta(CAPABILITY.REPORTING_EXPORT),
+    EnvolverAsincrono(async (req, res) => {
+      const archivo = await servicio.DescargarConsolidacionAmbito(
+        req.acceso,
+        FiltrosAmbito(req)
+      );
+      res.setHeader(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      );
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${NombreConsolidacion(req.acceso.accessLevel)}"`
       );
       res.status(200).send(archivo);
     })

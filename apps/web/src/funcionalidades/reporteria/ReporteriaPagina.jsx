@@ -1,7 +1,8 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
- * Creación: 2026-11-16.
- * HU-038 y HU-039. La pantalla no recalcula indicadores ni elige la oficina.
+ * Creación: 2026-11-16. Modificación: 2026-11-16.
+ * HU-038, HU-039 y HU-040 a HU-043.
+ * La pantalla no recalcula indicadores ni elige el ámbito de la sesión.
  */
 import { useEffect, useState } from 'react';
 import { Aviso, Cargando, Campo, Vacio } from '../../componentes/interfaz';
@@ -13,6 +14,8 @@ const ANIO_ACTUAL = String(new Date().getFullYear());
 
 const FILTROS_INICIALES = {
   anio: ANIO_ACTUAL,
+  regionId: '',
+  localOfficeId: '',
   establecimientoId: '',
   estado: 'TODOS',
   prioridad: '',
@@ -22,9 +25,20 @@ const FILTROS_INICIALES = {
   edad: ''
 };
 
-function Consulta(filtros) {
+function EsSuperior(contexto) {
+  const nivel = contexto && contexto.nivel;
+  return nivel === 'REGION' || nivel === 'NACIONAL';
+}
+
+function Consulta(filtros, nivel) {
   const parametros = new URLSearchParams();
   parametros.set('anio', filtros.anio);
+  if (nivel === 'NACIONAL' && filtros.regionId) {
+    parametros.set('regionId', filtros.regionId);
+  }
+  if ((nivel === 'NACIONAL' || nivel === 'REGION') && filtros.localOfficeId) {
+    parametros.set('localOfficeId', filtros.localOfficeId);
+  }
   if (filtros.establecimientoId) {
     parametros.set('establecimientoId', filtros.establecimientoId);
   }
@@ -55,20 +69,62 @@ export default function ReporteriaPagina({
   contexto,
   solicitarApi = SolicitarApi
 }) {
+  const superior = EsSuperior(contexto);
+  const nivel = contexto && contexto.nivel;
+  const rutaBase = superior ? '/api/reporteria/consulta' : '/api/reporteria/oficina';
   const [filtros, establecerFiltros] = useState(FILTROS_INICIALES);
+  const [territorio, establecerTerritorio] = useState(null);
   const [resultado, establecerResultado] = useState(null);
   const [error, establecerError] = useState('');
   const [cargando, establecerCargando] = useState(false);
   const [descargando, establecerDescargando] = useState(false);
   const [informeAbierto, establecerInformeAbierto] = useState(false);
   const [consultaResultado, establecerConsultaResultado] = useState('');
-  const consulta = Consulta(filtros);
+  const consulta = Consulta(filtros, nivel);
+
+  useEffect(() => {
+    if (!superior) {
+      establecerTerritorio(null);
+      return undefined;
+    }
+    let vigente = true;
+    const parametros = new URLSearchParams();
+    if (filtros.regionId) {
+      parametros.set('regionId', filtros.regionId);
+    }
+    if (filtros.localOfficeId) {
+      parametros.set('localOfficeId', filtros.localOfficeId);
+    }
+    solicitarApi(
+      direccionApi,
+      `/api/institutional/territory/options?${parametros.toString()}`,
+      { identidad }
+    ).then((datos) => {
+      if (vigente) {
+        establecerTerritorio(datos);
+      }
+    }).catch(() => {
+      if (vigente) {
+        establecerTerritorio(null);
+      }
+    });
+    return () => {
+      vigente = false;
+    };
+  }, [
+    direccionApi,
+    filtros.localOfficeId,
+    filtros.regionId,
+    identidad,
+    solicitarApi,
+    superior
+  ]);
 
   useEffect(() => {
     let vigente = true;
     establecerCargando(true);
     establecerError('');
-    solicitarApi(direccionApi, `/api/reporteria/oficina?${consulta}`, { identidad })
+    solicitarApi(direccionApi, `${rutaBase}?${consulta}`, { identidad })
       .then((datos) => {
         if (vigente) {
           establecerResultado(datos);
@@ -90,13 +146,21 @@ export default function ReporteriaPagina({
     return () => {
       vigente = false;
     };
-  }, [consulta, direccionApi, identidad, solicitarApi]);
+  }, [consulta, direccionApi, identidad, rutaBase, solicitarApi]);
 
   function Cambiar(campo, valor) {
     establecerFiltros((actual) => {
       const siguiente = { ...actual, [campo]: valor };
-      if (campo === 'establecimientoId') {
+      if (campo === 'regionId') {
+        siguiente.localOfficeId = '';
+        siguiente.establecimientoId = '';
         siguiente.profesional = '';
+      }
+      if (campo === 'localOfficeId' || campo === 'establecimientoId') {
+        siguiente.profesional = '';
+      }
+      if (campo === 'localOfficeId') {
+        siguiente.establecimientoId = '';
       }
       return siguiente;
     });
@@ -108,7 +172,7 @@ export default function ReporteriaPagina({
     try {
       const archivo = await solicitarApi(
         direccionApi,
-        `/api/reporteria/oficina/consolidacion?${consulta}`,
+        `${rutaBase}/consolidacion?${consulta}`,
         { identidad, archivo: true }
       );
       DescargarArchivo(archivo.blob, archivo.nombre);
@@ -125,24 +189,54 @@ export default function ReporteriaPagina({
     sexos: [],
     edades: []
   };
+  const titulo = nivel === 'NACIONAL'
+    ? 'Reportería nacional'
+    : nivel === 'REGION'
+      ? 'Reportería regional'
+      : 'Reportería de Oficina Local';
+  const oficinas = territorio && territorio.filters
+    ? territorio.filters.localOffice.options
+    : [];
+  const regiones = territorio && territorio.filters
+    ? territorio.filters.region.options
+    : [];
+  const establecimientos = superior
+    ? ((territorio && territorio.filters && territorio.filters.establishment.options) || [])
+      .map((item) => ({ id: item.id, nombre: item.name }))
+    : (resultado && resultado.establecimientos ? resultado.establecimientos : []);
+  const oficinaBloqueada = Boolean(
+    territorio && territorio.filters && territorio.filters.localOffice.requiresParent
+  );
+  const establecimientoBloqueado = superior && (
+    !filtros.localOfficeId
+    || Boolean(territorio && territorio.filters
+      && territorio.filters.establishment.requiresParent)
+  );
   return (
     <section className="reporteria">
       <div className="encabezado-reporteria">
         <div>
-          <h1>Reportería de Oficina Local</h1>
+          <h1>{titulo}</h1>
           <p>
             El ámbito es el de la sesión. Estas doce visualizaciones no sustituyen
             el juicio profesional.
           </p>
+          {superior ? (
+            <p>
+              La consulta es de solo lectura. El asistente HU-050 sigue en Oficina Local.
+            </p>
+          ) : null}
         </div>
         <div className="acciones-reporteria">
-          <button
-            type="button"
-            onClick={() => establecerInformeAbierto(true)}
-            disabled={!resultado}
-          >
-            Generar reporte
-          </button>
+          {superior ? null : (
+            <button
+              type="button"
+              onClick={() => establecerInformeAbierto(true)}
+              disabled={!resultado}
+            >
+              Generar reporte
+            </button>
+          )}
           {contexto && contexto.puedeDescargarConsolidacion ? (
             <button
               type="button"
@@ -165,17 +259,57 @@ export default function ReporteriaPagina({
             onChange={(evento) => Cambiar('anio', evento.target.value)}
           />
         </Campo>
+        {nivel === 'NACIONAL' ? (
+          <Campo id="region-reporteria" etiqueta="Región">
+            <select
+              id="region-reporteria"
+              value={filtros.regionId}
+              onChange={(evento) => Cambiar('regionId', evento.target.value)}
+            >
+              <option value="">Todas</option>
+              {regiones.map((item) => (
+                <option key={item.id} value={item.id}>{item.name}</option>
+              ))}
+            </select>
+          </Campo>
+        ) : null}
+        {nivel === 'REGION' && regiones[0] ? (
+          <p>Región: {regiones[0].name}</p>
+        ) : null}
+        {superior ? (
+          <Campo id="oficina-reporteria" etiqueta="Oficina Local">
+            <select
+              id="oficina-reporteria"
+              value={filtros.localOfficeId}
+              disabled={oficinaBloqueada}
+              onChange={(evento) => Cambiar('localOfficeId', evento.target.value)}
+            >
+              <option value="">
+                {oficinaBloqueada ? 'Seleccione primero una región' : 'Todas'}
+              </option>
+              {oficinas.map((item) => (
+                <option key={item.id} value={item.id}>{item.name}</option>
+              ))}
+            </select>
+          </Campo>
+        ) : null}
         <Campo id="establecimiento-reporteria" etiqueta="Establecimiento">
           <select
             id="establecimiento-reporteria"
             value={filtros.establecimientoId}
+            disabled={establecimientoBloqueado}
             onChange={(evento) => Cambiar('establecimientoId', evento.target.value)}
           >
-            <option value="">Toda la Oficina Local</option>
-            {(resultado && resultado.establecimientos ? resultado.establecimientos : [])
-              .map((item) => (
-                <option key={item.id} value={item.id}>{item.nombre}</option>
-              ))}
+            <option value="">
+              {superior
+                ? (filtros.localOfficeId
+                  ? 'Toda la oficina seleccionada'
+                  : 'Seleccione primero una Oficina Local')
+                : 'Toda la Oficina Local'}
+            </option>
+            {establecimientos.map((item) => (
+              <option key={item.id} value={item.id}>{item.nombre}</option>
+            ))}
           </select>
         </Campo>
         <Campo id="estado-reporteria" etiqueta="Estado del caso">

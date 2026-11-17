@@ -77,6 +77,46 @@ describe('HTTP de reportería', () => {
     expect(reporteria.DescargarConsolidacion).toHaveBeenCalled();
   });
 
+  test('Regional y Nacional consultan sin elegir otra región ni el rol', async () => {
+    const reporteria = {
+      ConsultarAmbito: jest.fn(async () => ({ visualizaciones: [] })),
+      DescargarConsolidacionAmbito: jest.fn(async () => Buffer.from('libro'))
+    };
+    const app = Aplicacion(reporteria);
+    expect((await request(app).get('/api/reporteria/consulta')).status).toBe(401);
+    const establecimiento = await request(app)
+      .get('/api/reporteria/consulta?anio=2026')
+      .set('Authorization', 'Bearer dev-establecimiento-unico');
+    expect(establecimiento.status).toBe(403);
+    const oficina = await request(app)
+      .get('/api/reporteria/consulta?anio=2026')
+      .set('Authorization', 'Bearer dev-oficina-hatillo');
+    expect(oficina.status).toBe(403);
+    const regionAjena = await request(app)
+      .get('/api/reporteria/consulta?anio=2026&regionId=5')
+      .set('Authorization', 'Bearer dev-region-central-sur');
+    expect(regionAjena.status).toBe(400);
+    expect(reporteria.ConsultarAmbito).not.toHaveBeenCalled();
+    const region = await request(app)
+      .get('/api/reporteria/consulta?anio=2026&localOfficeId=101')
+      .set('Authorization', 'Bearer dev-region-central-sur')
+      .set('X-Rol', 'NACIONAL');
+    expect(region.status).toBe(200);
+    expect(reporteria.ConsultarAmbito).toHaveBeenCalledWith(
+      expect.objectContaining({ accessLevel: 'REGION', regionId: 1 }),
+      expect.objectContaining({ localOfficeId: 101, regionId: null, anio: 2026 })
+    );
+    const nacional = await request(app)
+      .get('/api/reporteria/consulta/consolidacion?anio=2026&regionId=1')
+      .set('Authorization', 'Bearer dev-nacional');
+    expect(nacional.status).toBe(200);
+    expect(nacional.headers['content-disposition']).toMatch(/consolidacion-nacional.xlsx/);
+    expect(reporteria.DescargarConsolidacionAmbito).toHaveBeenCalledWith(
+      expect.objectContaining({ accessLevel: 'NACIONAL' }),
+      expect.objectContaining({ regionId: 1, localOfficeId: null })
+    );
+  });
+
   test('el informe analítico no sustituye la consolidación y niega el establecimiento', async () => {
     const reporteria = {
       GenerarInforme: jest.fn(async () => ({
