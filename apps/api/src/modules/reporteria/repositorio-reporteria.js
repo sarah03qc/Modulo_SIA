@@ -507,6 +507,7 @@ WHERE item.activo = 1
     },
 
     BuscarInformePorClave,
+    BuscarInformePorId,
     GuardarInforme
   };
 
@@ -534,13 +535,8 @@ WHERE item.activo = 1
     return ErrorInforme('INFRAESTRUCTURA');
   }
 
-  async function BuscarInformePorClave(oficinaLocalId, claveOperacion) {
-    if (!cliente || typeof cliente.query !== 'function') {
-      throw ErrorInforme('AUSENTE');
-    }
-    try {
-      const informes = await cliente.query(`
-SELECT TOP (1)
+  function ColumnasInforme() {
+    return `
   informe.informe_id,
   informe.titulo,
   informe.responsable_usuario,
@@ -549,21 +545,11 @@ SELECT TOP (1)
   informe.region_id,
   informe.oficina_local_id,
   informe.periodo_anio,
-  informe.filtros_resumen
-FROM dbo.inf_informe AS informe
-WHERE informe.clave_archivo = @clave
-  AND informe.oficina_local_id = @oficina
-  AND informe.ambito_nivel = N'OFICINA_LOCAL'
-ORDER BY informe.informe_id
-`, {
-        clave: Parametro(sql.NVarChar(80), claveOperacion),
-        oficina: Parametro(sql.Int, oficinaLocalId)
-      });
-      if (!informes || informes.length === 0) {
-        return null;
-      }
-      const informe = informes[0];
-      const vistas = await cliente.query(`
+  informe.filtros_resumen`;
+  }
+
+  async function CargarDetalle(informe) {
+    const vistas = await cliente.query(`
 SELECT
   visualizacion.visualizacion_id,
   visualizacion.codigo_visualizacion,
@@ -575,9 +561,9 @@ FROM dbo.inf_visualizacion AS visualizacion
 WHERE visualizacion.informe_id = @informe
 ORDER BY visualizacion.orden
 `, {
-        informe: Parametro(sql.BigInt, informe.informe_id)
-      });
-      const agregados = await cliente.query(`
+      informe: Parametro(sql.BigInt, informe.informe_id)
+    });
+    const agregados = await cliente.query(`
 SELECT
   agregado.visualizacion_id,
   agregado.orden,
@@ -590,9 +576,57 @@ INNER JOIN dbo.inf_visualizacion AS visualizacion
 WHERE visualizacion.informe_id = @informe
 ORDER BY visualizacion.orden, agregado.orden
 `, {
-        informe: Parametro(sql.BigInt, informe.informe_id)
+      informe: Parametro(sql.BigInt, informe.informe_id)
+    });
+    return ReconstruirInforme(informe, vistas, agregados);
+  }
+
+  async function BuscarInformePorClave(oficinaLocalId, claveOperacion) {
+    if (!cliente || typeof cliente.query !== 'function') {
+      throw ErrorInforme('AUSENTE');
+    }
+    try {
+      const informes = await cliente.query(`
+SELECT TOP (1)
+${ColumnasInforme()}
+FROM dbo.inf_informe AS informe
+WHERE informe.clave_archivo = @clave
+  AND informe.oficina_local_id = @oficina
+  AND informe.ambito_nivel = N'OFICINA_LOCAL'
+ORDER BY informe.informe_id
+`, {
+        clave: Parametro(sql.NVarChar(80), claveOperacion),
+        oficina: Parametro(sql.Int, oficinaLocalId)
       });
-      return ReconstruirInforme(informe, vistas, agregados);
+      if (!informes || informes.length === 0) {
+        return null;
+      }
+      return CargarDetalle(informes[0]);
+    } catch (error) {
+      throw TraducirInforme(error);
+    }
+  }
+
+  async function BuscarInformePorId(oficinaLocalId, informeId) {
+    if (!cliente || typeof cliente.query !== 'function') {
+      throw ErrorInforme('AUSENTE');
+    }
+    try {
+      const informes = await cliente.query(`
+SELECT TOP (1)
+${ColumnasInforme()}
+FROM dbo.inf_informe AS informe
+WHERE informe.informe_id = @informe
+  AND informe.oficina_local_id = @oficina
+  AND informe.ambito_nivel = N'OFICINA_LOCAL'
+`, {
+        informe: Parametro(sql.BigInt, informeId),
+        oficina: Parametro(sql.Int, oficinaLocalId)
+      });
+      if (!informes || informes.length === 0) {
+        return null;
+      }
+      return CargarDetalle(informes[0]);
     } catch (error) {
       throw TraducirInforme(error);
     }

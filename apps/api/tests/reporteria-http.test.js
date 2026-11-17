@@ -1,6 +1,7 @@
 'use strict';
 
 const request = require('supertest');
+const { ErrorNoEncontrado } = require('../src/common/errors');
 const { CrearAplicacion } = require('../src/app');
 const { CargarConfiguracion } = require('../src/config/load-config');
 const { EntornoValido } = require('./env-fixture');
@@ -82,7 +83,18 @@ describe('HTTP de reportería', () => {
         contenido: Buffer.from('<html>informe</html>'),
         persistencia: 'REGISTRADO',
         informeId: 7
-      }))
+      })),
+      ConsultarInformeHistorico: jest.fn(async (acceso) => {
+        if (acceso.localOfficeId !== 101) {
+          throw new ErrorNoEncontrado('El informe no está disponible en este ámbito.');
+        }
+        return {
+          contenido: Buffer.from('<html>instantanea</html>'),
+          persistencia: 'REGISTRADO',
+          informeId: 10005,
+          historico: true
+        };
+      })
     };
     const app = Aplicacion(reporteria);
     const negado = await request(app)
@@ -106,6 +118,20 @@ describe('HTTP de reportería', () => {
     expect(archivo.headers['x-persistencia-informe']).toBe('REGISTRADO');
     expect(archivo.text).toContain('informe');
     expect(archivo.headers['content-disposition']).not.toMatch(/consolidacion/);
+    const historico = await request(app)
+      .get('/api/reporteria/oficina/informe/10005')
+      .set('Authorization', 'Bearer dev-oficina-hatillo');
+    expect(historico.status).toBe(200);
+    expect(historico.headers['x-origen-informe']).toBe('INSTANTANEA');
+    expect(historico.headers['x-persistencia-informe']).toBe('REGISTRADO');
+    const ajeno = await request(app)
+      .get('/api/reporteria/oficina/informe/10005')
+      .set('Authorization', 'Bearer dev-oficina-perez-zeledon');
+    expect(ajeno.status).toBe(404);
+    const negadoHistorico = await request(app)
+      .get('/api/reporteria/oficina/informe/10005')
+      .set('Authorization', 'Bearer dev-establecimiento-unico');
+    expect(negadoHistorico.status).toBe(403);
     expect(reporteria.GenerarInforme).toHaveBeenCalledWith(
       expect.objectContaining({ localOfficeId: 101 }),
       expect.objectContaining({ anio: 2026 }),

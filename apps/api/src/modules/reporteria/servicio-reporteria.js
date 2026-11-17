@@ -9,6 +9,7 @@
 const {
   ErrorConflicto,
   ErrorInfraestructura,
+  ErrorNoEncontrado,
   ErrorProhibido,
   ErrorValidacion
 } = require('../../common/errors');
@@ -26,7 +27,11 @@ const { EnsamblarCorte, EnsamblarDemografia } = require('./ensamblar-corte');
 const { CrearDocumentoInforme } = require('./documento-informe');
 const { CrearLibroConsolidacion } = require('./exportacion-consolidacion');
 const { HuellaCorte } = require('./huella-corte');
-const { AfirmarClaveInforme, LeerPedidoInforme } = require('./validacion-informe');
+const {
+  AfirmarClaveInforme,
+  LeerIdentificadorInforme,
+  LeerPedidoInforme
+} = require('./validacion-informe');
 
 const MENSAJE_INFORME = 'El asistente genera el informe analítico de HU-050 y CU-38. '
   + 'No descarga la consolidación tabular de Oficina Local ni el reporte individual del caso. '
@@ -193,7 +198,8 @@ function Archivo(modelo, opciones) {
     contenido: Buffer.from(CrearDocumentoInforme(modelo, opciones), 'utf8'),
     persistencia: opciones.persistido ? 'REGISTRADO' : opciones.persistencia,
     informeId: opciones.informeId || null,
-    reintento: Boolean(opciones.reintento)
+    reintento: Boolean(opciones.reintento),
+    historico: Boolean(opciones.historico)
   };
 }
 
@@ -333,6 +339,35 @@ function CrearServicioReporteria(dependencias) {
     async ConsultarOficina(acceso, filtros) {
       ExigirOficina(acceso, CAPABILITY.REPORTING_READ);
       return RespuestaCliente(await Preparar(acceso, filtros), acceso);
+    },
+
+    async ConsultarInformeHistorico(acceso, informeId) {
+      ExigirOficina(acceso, CAPABILITY.REPORTING_READ);
+      const identificador = LeerIdentificadorInforme(informeId);
+      let modelo = null;
+      if (typeof repositorio.BuscarInformePorId === 'function') {
+        try {
+          modelo = await repositorio.BuscarInformePorId(
+            acceso.localOfficeId,
+            identificador
+          );
+        } catch (error) {
+          if (!PersistenciaPendiente(error)) {
+            throw new ErrorInfraestructura('No fue posible leer el informe histórico.');
+          }
+          throw new ErrorInfraestructura(
+            'El informe histórico no está disponible para la cuenta técnica actual.'
+          );
+        }
+      }
+      if (!modelo) {
+        throw new ErrorNoEncontrado('El informe no está disponible en este ámbito.');
+      }
+      return Archivo(modelo, {
+        persistido: true,
+        informeId: modelo.informeId,
+        historico: true
+      });
     },
 
     async DescargarConsolidacion(acceso, filtros) {

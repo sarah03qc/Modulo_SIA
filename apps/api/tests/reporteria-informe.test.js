@@ -216,6 +216,72 @@ describe('informe analítico HU-050', () => {
     expect(segundo.contenido.toString('utf8')).not.toContain('Texto distinto');
   });
 
+  test('la consulta histórica usa la instantánea y no el corte vigente', async () => {
+    const hechos = jest.fn(async () => Hechos());
+    const buscar = jest.fn(async (oficina) => (oficina === 101
+      ? {
+        informeId: 10005,
+        titulo: 'Validacion historica',
+        responsable: 'dev-oficina-hatillo',
+        rol: 'OFICINA_LOCAL',
+        unidad: 'Oficina Local',
+        ambito: 'OFICINA_LOCAL',
+        regionId: 1,
+        oficinaLocalId: 101,
+        anio: 2026,
+        fechaHoraLocal: '2026-11-16T19:05:22',
+        fechaCalendario: '2026-11-16',
+        zonaHoraria: 'America/Costa_Rica',
+        estadoZona: 'NEEDS_VALIDATION',
+        filtrosResumen: 'Año 2026',
+        personasUnicas: 15,
+        totalAtenciones: 17,
+        visualizaciones: [{
+          numero: 1,
+          titulo: 'Casos por establecimiento',
+          formato: 'BARRAS',
+          fechaAplicada: 'corte',
+          estado: 'CON_DATOS',
+          filtrosTexto: 'Año 2026',
+          analisis: 'Lectura de establecimientos del corte de validacion.',
+          serie: [{
+            clave: '1011008',
+            etiqueta: 'COLONIA 15 DE SETIEMBRE S.J.',
+            cantidad: 8
+          }]
+        }]
+      }
+      : null));
+    const servicio = CrearServicioReporteria({
+      repositorio: { ConsultarHechos: hechos, BuscarInformePorId: buscar },
+      adaptador: {
+        BuscarEstablecimiento: jest.fn(),
+        ListarEstablecimientos: jest.fn(async () => []),
+        LeerSexoYNacimiento: jest.fn(async () => [])
+      }
+    });
+    const archivo = await servicio.ConsultarInformeHistorico(
+      Acceso('OFICINA_LOCAL'),
+      '10005'
+    );
+    expect(hechos).not.toHaveBeenCalled();
+    expect(buscar).toHaveBeenCalledWith(101, 10005);
+    expect(archivo.historico).toBe(true);
+    expect(archivo.persistencia).toBe('REGISTRADO');
+    const html = archivo.contenido.toString('utf8');
+    expect(html).toContain('instantánea conservada');
+    expect(html).toContain('COLONIA 15 DE SETIEMBRE S.J.');
+    expect(html).toContain('8');
+    await expect(servicio.ConsultarInformeHistorico(
+      Acceso('OFICINA_LOCAL', { localOfficeId: 501, regionId: 5 }),
+      '10005'
+    )).rejects.toMatchObject({ status: 404 });
+    await expect(servicio.ConsultarInformeHistorico(
+      Acceso('ESTABLECIMIENTO', { establishmentIds: [1100102], localOfficeId: undefined }),
+      '10005'
+    )).rejects.toMatchObject({ status: 403 });
+  });
+
   test('sin permiso entrega el archivo y no lo declara registrado', async () => {
     const guardar = jest.fn(async () => {
       const error = new Error('permiso');

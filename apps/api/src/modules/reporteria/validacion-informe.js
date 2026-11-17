@@ -41,6 +41,14 @@ function RechazarCampos(origen, permitidas, mensaje) {
  * @param {object[]} visualizaciones Catálogo devuelto por la consulta.
  * @returns {object} Pedido listo para armar el documento.
  */
+function LeerIdentificadorInforme(valor) {
+  const texto = String(valor == null ? '' : valor);
+  if (!/^[1-9]\d{0,17}$/.test(texto)) {
+    throw new ErrorValidacion('El identificador del informe no es válido.');
+  }
+  return Number(texto);
+}
+
 function AfirmarClaveInforme(cuerpo) {
   RechazarCampos(cuerpo, CLAVES_CUERPO, 'El informe no es válido.');
   const claveOperacion = Texto(cuerpo.claveOperacion);
@@ -119,5 +127,6 @@ function LeerPedidoInforme(cuerpo, visualizaciones) {
 module.exports = {
   MINIMO_VISUALIZACIONES,
   AfirmarClaveInforme,
+  LeerIdentificadorInforme,
   LeerPedidoInforme
 };

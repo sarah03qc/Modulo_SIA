@@ -16,6 +16,22 @@ const { ACCESS_LEVEL } = require('../../infrastructure/auth/institutional-roles'
 const { AnioCalendarioLocal } = require('../../common/fecha-local');
 const { LeerFiltrosReporteria } = require('./validacion-reporteria');
 
+function EnviarInforme(res, archivo) {
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.setHeader(
+    'Content-Disposition',
+    'attachment; filename="informe-analitico-oficina-local.html"'
+  );
+  res.setHeader('X-Persistencia-Informe', archivo.persistencia);
+  if (archivo.informeId) {
+    res.setHeader('X-Informe-Id', String(archivo.informeId));
+  }
+  if (archivo.reintento || archivo.historico) {
+    res.setHeader('X-Origen-Informe', 'INSTANTANEA');
+  }
+  res.status(200).send(archivo.contenido);
+}
+
 function ExigirOficina(capacidad) {
   return function Exigir(req, res, next) {
     try {
@@ -61,16 +77,19 @@ function CrearEnrutadorReporteria(servicio) {
     json,
     EnvolverAsincrono(async (req, res) => {
       const archivo = await servicio.GenerarInforme(req.acceso, Filtros(req), req.body);
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.setHeader(
-        'Content-Disposition',
-        'attachment; filename="informe-analitico-oficina-local.html"'
+      EnviarInforme(res, archivo);
+    })
+  );
+
+  router.get(
+    '/oficina/informe/:informeId',
+    ExigirOficina(CAPABILITY.REPORTING_READ),
+    EnvolverAsincrono(async (req, res) => {
+      const archivo = await servicio.ConsultarInformeHistorico(
+        req.acceso,
+        req.params.informeId
       );
-      res.setHeader('X-Persistencia-Informe', archivo.persistencia);
-      if (archivo.informeId) {
-        res.setHeader('X-Informe-Id', String(archivo.informeId));
-      }
-      res.status(200).send(archivo.contenido);
+      EnviarInforme(res, archivo);
     })
   );
 

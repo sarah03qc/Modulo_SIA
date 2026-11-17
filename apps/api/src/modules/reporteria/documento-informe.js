@@ -64,6 +64,11 @@ function Indicador(visualizacion) {
 }
 
 function Persistencia(opciones) {
+  if (opciones.historico) {
+    return `<p>Registro histórico: ${Escapar(opciones.informeId)}. `
+      + 'Este archivo se reconstruyó desde la instantánea conservada. '
+      + 'No vuelve a consultar el corte vigente.</p>';
+  }
   if (opciones.persistido) {
     const reintento = opciones.reintento
       ? ' Este archivo se regeneró desde la instantánea ya registrada.'

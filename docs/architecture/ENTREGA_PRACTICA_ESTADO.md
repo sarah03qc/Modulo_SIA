@@ -72,7 +72,7 @@ La clasificación entre atención grupal de A.I. y sesiones educativas generales
 | HU-031 | Implementada en el alcance confirmado | Caso 1434, cierre satisfactorio sin reporte previo. Caso 1377, dos cierres simultáneos y una sola fila. Caso 1171, Otro con explicación obligatoria. Otro intento con otra clave respondió 409. La atención posterior respondió 404 y no insertó fila. El expediente histórico siguió consultable | No hay regla institucional para reabrir. No se cerraron los casos de demostración 1, 5, 1092, 1304, 1305, 1435, 1775, 1776, 1817 ni 10089 |
 | HU-038 | Implementada en el alcance confirmado | Las doce visualizaciones, filtros, cobertura, ámbito y el asistente de CA-21. Oficina 101, año 2026: 15 personas únicas, 17 atenciones y cobertura 8 de 18 (44.4 %). La fecha local de consulta quedó 2026-11-16 | RN-040 sigue pendiente de ratificación con Alina. La atención individual no tiene `TIPO_ATENCION` |
 | HU-039 | Implementada en el alcance tabular | `GET /api/reporteria/oficina/consolidacion` entrega el corte filtrado en columnas. Con estado Cerrado conservó D 18 y N 8. No descarga una página parcial | El informe analítico es otro archivo y otro endpoint |
-| HU-050 | Parcial | Asistente de Oficina Local verificado en navegador y API. HTML provisional con las visualizaciones y el análisis. CA-01 a CA-08 y CA-10 cumplidos en ese alcance | CA-09 no queda completo: la tabla existe, pero la cuenta no puede escribirla. Regional y Nacional no reciben la ruta |
+| HU-050 | Implementada en Oficina Local | CA-01 a CA-10 en ese ámbito. El informe 10005 quedó en SQL y se relee desde su instantánea. El navegador registró el 10008 | El formato definitivo sigue pendiente. Regional y Nacional no reciben la ruta |
 
 Quedan fuera de este avance, sin cifras ficticias: HU-003, HU-004, HU-040 a HU-043,
 HU-045, HU-046, reportería regional y nacional y las posibles
@@ -92,7 +92,7 @@ referencias automáticas.
 - `GET /api/programacion/catalogos`, `GET /api/programacion/actividades`
 - `POST /api/programacion/actividades`, `POST /api/programacion/actividades/:actividadId/resoluciones`
 - `GET /api/reporteria/oficina`, `GET /api/reporteria/oficina/consolidacion`
-- `POST /api/reporteria/oficina/informe`
+- `POST /api/reporteria/oficina/informe`, `GET /api/reporteria/oficina/informe/:informeId`
 
 ## Pantallas
 
@@ -116,7 +116,7 @@ Sin atención, Programación, Reportería ni el expediente.
 - La zona horaria operativa usada para la fecha calendario es `America/Costa_Rica`. La zona institucional definitiva sigue `NEEDS_VALIDATION`. No se reescribieron fechas almacenadas.
 - RN-040 y RF-129 siguen `NEEDS_VALIDATION` hasta la ratificación con Alina. La fórmula operativa ya se calcula y se identifica como provisional.
 - El formato definitivo del informe de HU-050 sigue `NEEDS_VALIDATION`. La salida actual es HTML provisional.
-- La migración `070` ya está aplicada. No se ejecutó `071_informe_clave_unica.sql` ni `security/070_grant_analytical_report_to_app.sql`. Sin ese permiso, el informe se descarga y no queda en `inf_informe`.
+- La migración `071` y el permiso `070` del informe ya fueron aplicados manualmente. No volver a ejecutarlos. La cuenta puede leer e insertar `inf_informe`, `inf_visualizacion` e `inf_agregado`. No puede actualizar ni borrar.
 - La atención individual no tiene tipo institucional. La visualización 8 no le asigna uno.
 - `ate_grupal` no tiene región. La grupal se limita por la oficina de la sesión.
 - RF-083 nombra un filtro de tipo de atención. No se agregó como control: solo aplica a la visualización 8 y la atención individual no es clasificable.
@@ -266,6 +266,48 @@ Al cierre de este incremento, `npm run verify:config`, `npm run lint`,
 sumó 14. Salud y preparación respondieron 200, con `SIDINACC_LOCAL` en solo
 lectura. No se ejecutaron los scripts `030`, `040`, `050` ni `060`, ni se
 modificaron los datos sintéticos de demostración.
+Esa comprobación es anterior al permiso de escritura. La conservación real está
+en «Conservación histórica del informe».
+
+## Conservación histórica del informe, 2026-11-16
+
+La migración `071` y `security/070_grant_analytical_report_to_app.sql` ya
+estaban aplicadas. No se volvieron a ejecutar, ni los scripts `030`, `040`,
+`050` o `060`. `SIA_CENCINAI` respondió. `SIDINACC_LOCAL` rechazó una escritura
+en el filtro de solo lectura, antes de llegar al motor. El índice
+`UQ_inf_informe_clave` está único, activo y filtrado. `INSERT` y `SELECT`
+responden permitido en las tres tablas del informe. `UPDATE` y `DELETE` sobre
+`inf_informe` devolvieron el error 229.
+
+Al empezar había 10 informes. No se modificaron. Esta validación agregó tres.
+
+El informe 10005, título «Validacion historica HU-050 2026-11-16», oficina 101,
+región 1, período 2026, responsable `dev-oficina-hatillo`. El resumen guardó
+la hora local `2026-11-16T19:05:22` y el instante UTC `2026-11-17T01:05:23`.
+Cinco visualizaciones, en el orden 1 a 5, con su análisis. La primera tiene 15
+agregados; la mayor categoría persistida es Colonia 15 de Setiembre con 8, la
+misma cifra del HTML. El reintento con otro título y otro análisis respondió
+200, el mismo identificador, el texto original y una sola fila.
+
+Dos solicitudes simultáneas con la clave `validacion-hu050-20261116-b`
+devolvieron el informe 10006. Quedó una fila. El valor de identidad 10007 no
+existe: lo consumió la transacción revertida por el índice único. No hay
+visualizaciones ni agregados huérfanos.
+
+`GET /api/reporteria/oficina/informe/10005` reconstruye el HTML desde las
+tablas, con `X-Origen-Informe: INSTANTANEA` y sin volver a calcular el corte.
+La oficina 501 recibió 404. Establecimiento recibió 403. Un cuerpo con
+responsable falso recibió 400.
+
+En el navegador, el asistente descargó el informe 10008 y mostró «El informe
+quedó registrado con el identificador 10008». El encabezado fue `REGISTRADO`,
+no `PENDIENTE_PERMISO`. La fecha del corte siguió en 2026-11-16. La
+consolidación de HU-039 respondió 200 con el libro de 19467 bytes.
+
+Al cierre, `npm run verify:config`, `npm run lint`, `npm test`, `npm run build`
+y `npm run health` terminaron bien. La API sumó 196 pruebas aprobadas y 7
+omitidas; las 2 suites omitidas ya existían. La web sumó 14. Salud y
+preparación respondieron 200, con `SIDINACC_LOCAL` en solo lectura.
 
 ## Programación operativa, 2026-11-16
 
