@@ -356,6 +356,47 @@ th, td {
   border-top: 4px solid var(--borde);
 }
 
+.dialogo-asistente {
+  width: min(52rem, calc(100vw - 2rem));
+  max-width: min(52rem, calc(100vw - 2rem));
+  max-height: 90vh;
+  overflow: auto;
+}
+
+.seleccion-visualizaciones {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.seleccion-visualizaciones label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+
+.seleccion-visualizaciones input {
+  width: 1.15rem;
+  height: 1.15rem;
+  flex: 0 0 auto;
+  margin-top: 0.15rem;
+}
+
+.acciones-asistente {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.analisis-previo {
+  white-space: pre-wrap;
+}
+
+.dialogo-asistente textarea {
+  min-height: 8rem;
+}
+
 .solo-lectura {
   position: absolute;
   width: 1px;

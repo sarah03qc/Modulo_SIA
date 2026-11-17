@@ -5,6 +5,7 @@
  */
 'use strict';
 
+const { FechaCalendarioLocal } = require('../../common/fecha-local');
 const { ErrorValidacion } = require('../../common/errors');
 
 const FECHA = /^\d{4}-\d{2}-\d{2}$/;
@@ -123,7 +124,7 @@ function LeerActividad(cuerpo) {
     EntradaInvalida('La actividad nueva inicia programada.');
   }
   const fecha = FechaValida(cuerpo.fecha, 'fecha prevista');
-  const hoy = new Date().toISOString().slice(0, 10);
+  const hoy = FechaCalendarioLocal();
   if (fecha < hoy) {
     EntradaInvalida('La fecha prevista de una actividad nueva no puede ser anterior a hoy.');
   }

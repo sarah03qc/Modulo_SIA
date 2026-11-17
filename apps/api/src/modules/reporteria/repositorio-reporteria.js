@@ -9,6 +9,13 @@
 const sql = require('mssql');
 const { ErrorInfraestructura } = require('../../common/errors');
 const { Parametro } = require('../proceso-interdisciplinario/repositorio-proceso');
+const {
+  CATALOGO_VISUALIZACIONES
+} = require('./definiciones-analiticas');
+const {
+  ESTADO_ZONA_HORARIA,
+  ZONA_HORARIA_OPERATIVA
+} = require('../../common/fecha-local');
 
 function TraducirSql(error) {
   if (error instanceof ErrorInfraestructura) {
@@ -41,6 +48,136 @@ function Texto(valor) {
 
 function Fecha(valor) {
   return valor ? String(valor).slice(0, 10) : null;
+}
+
+function Recortar(valor, maximo) {
+  const texto = valor == null ? '' : String(valor);
+  return texto.length <= maximo ? texto : texto.slice(0, maximo);
+}
+
+function NumeroONull(valor) {
+  if (valor == null || valor === '') {
+    return null;
+  }
+  const numero = Number(valor);
+  return Number.isFinite(numero) ? numero : null;
+}
+
+function FilasAgregadas(vista) {
+  const filas = (vista.serie || []).map((fila) => ({
+    etiqueta: Recortar(fila.etiqueta || 'Sin etiqueta', 300),
+    valorNumerico: Number(fila.cantidad) || 0,
+    valorTexto: fila.clave == null ? null : Recortar(fila.clave, 500)
+  }));
+  filas.push({
+    etiqueta: '[meta] Estado',
+    valorNumerico: null,
+    valorTexto: Recortar(vista.estado || 'SIN_INFORMACION', 500)
+  });
+  if (vista.mensaje) {
+    filas.push({
+      etiqueta: '[meta] Mensaje',
+      valorNumerico: null,
+      valorTexto: Recortar(vista.mensaje, 500)
+    });
+  }
+  if (vista.nota) {
+    filas.push({
+      etiqueta: '[meta] Nota',
+      valorNumerico: null,
+      valorTexto: Recortar(vista.nota, 500)
+    });
+  }
+  if (vista.formato && vista.formato.startsWith('KPI')) {
+    filas.push({
+      etiqueta: '[meta] Numerador',
+      valorNumerico: NumeroONull(vista.numerador),
+      valorTexto: null
+    });
+    filas.push({
+      etiqueta: '[meta] Denominador',
+      valorNumerico: NumeroONull(vista.denominador),
+      valorTexto: null
+    });
+    filas.push({
+      etiqueta: '[meta] Porcentaje',
+      valorNumerico: NumeroONull(vista.porcentaje),
+      valorTexto: vista.porcentaje == null ? 'No aplica' : null
+    });
+  }
+  return filas;
+}
+
+function LeerMeta(filas, nombre) {
+  return filas.find((fila) => fila.etiqueta === `[meta] ${nombre}`) || null;
+}
+
+function ReconstruirInforme(informe, vistas, agregados) {
+  const resumen = String(informe.filtros_resumen || '');
+  const fechaHora = (resumen.match(/fecha_hora_local=([^;]+)/) || [])[1] || null;
+  const fechaCalendario = (resumen.match(/fecha_calendario=([^;]+)/) || [])[1] || null;
+  const filtros = resumen.includes('|')
+    ? resumen.slice(resumen.indexOf('|') + 1).trim()
+    : resumen;
+  const personas = (resumen.match(/personas=(\d+)/) || [])[1];
+  const atenciones = (resumen.match(/atenciones=(\d+)/) || [])[1];
+  return {
+    informeId: Number(informe.informe_id),
+    titulo: informe.titulo,
+    responsable: informe.responsable_usuario,
+    rol: informe.rol_codigo,
+    unidad: 'Oficina Local',
+    ambito: informe.ambito_nivel,
+    regionId: Number(informe.region_id),
+    oficinaLocalId: Number(informe.oficina_local_id),
+    anio: Number(informe.periodo_anio),
+    fechaHoraLocal: fechaHora,
+    fechaCalendario,
+    zonaHoraria: ZONA_HORARIA_OPERATIVA,
+    estadoZona: ESTADO_ZONA_HORARIA,
+    filtrosResumen: filtros,
+    personasUnicas: personas == null ? null : Number(personas),
+    totalAtenciones: atenciones == null ? null : Number(atenciones),
+    visualizaciones: vistas.map((vista) => {
+      const definicion = CATALOGO_VISUALIZACIONES.find((item) => (
+        item.numero === Number(vista.codigo_visualizacion)
+      ));
+      const propias = agregados.filter((fila) => (
+        Number(fila.visualizacion_id) === Number(vista.visualizacion_id)
+      ));
+      const serie = propias
+        .filter((fila) => !String(fila.etiqueta).startsWith('[meta] '))
+        .map((fila) => ({
+          clave: fila.valor_texto,
+          etiqueta: fila.etiqueta,
+          cantidad: Number(fila.valor_numerico)
+        }));
+      const estado = LeerMeta(propias, 'Estado');
+      const mensaje = LeerMeta(propias, 'Mensaje');
+      const nota = LeerMeta(propias, 'Nota');
+      const numerador = LeerMeta(propias, 'Numerador');
+      const denominador = LeerMeta(propias, 'Denominador');
+      const porcentaje = LeerMeta(propias, 'Porcentaje');
+      return {
+        numero: Number(vista.codigo_visualizacion),
+        orden: Number(vista.orden),
+        titulo: vista.titulo,
+        formato: definicion ? definicion.formato : 'TABLA',
+        fechaAplicada: definicion ? definicion.fecha : '',
+        estado: estado ? estado.valor_texto : 'CON_DATOS',
+        mensaje: mensaje ? mensaje.valor_texto : null,
+        nota: nota ? nota.valor_texto : null,
+        filtrosTexto: vista.filtros,
+        analisis: vista.analisis,
+        serie,
+        numerador: numerador ? NumeroONull(numerador.valor_numerico) : null,
+        denominador: denominador ? NumeroONull(denominador.valor_numerico) : null,
+        porcentaje: porcentaje && porcentaje.valor_texto === 'No aplica'
+          ? null
+          : (porcentaje ? NumeroONull(porcentaje.valor_numerico) : null)
+      };
+    })
+  };
 }
 
 /**
@@ -367,8 +504,169 @@ WHERE item.activo = 1
             etiqueta: Texto(fila.etiqueta) || fila.codigo
           }))
       };
-    }
+    },
+
+    BuscarInformePorClave,
+    GuardarInforme
   };
+
+  function ErrorInforme(codigo) {
+    const error = new Error('La persistencia del informe no se completó.');
+    error.domain = true;
+    error.code = codigo;
+    return error;
+  }
+
+  function TraducirInforme(error) {
+    if (error && error.domain === true) {
+      return error;
+    }
+    const numero = error && error.sqlNumber;
+    if (numero === 229 || numero === 230 || (error && error.permissionDenied)) {
+      return ErrorInforme('PERMISO');
+    }
+    if (numero === 208) {
+      return ErrorInforme('AUSENTE');
+    }
+    if (numero === 2601 || numero === 2627) {
+      return ErrorInforme('DUPLICADO');
+    }
+    return ErrorInforme('INFRAESTRUCTURA');
+  }
+
+  async function BuscarInformePorClave(oficinaLocalId, claveOperacion) {
+    if (!cliente || typeof cliente.query !== 'function') {
+      throw ErrorInforme('AUSENTE');
+    }
+    try {
+      const informes = await cliente.query(`
+SELECT TOP (1)
+  informe.informe_id,
+  informe.titulo,
+  informe.responsable_usuario,
+  informe.rol_codigo,
+  informe.ambito_nivel,
+  informe.region_id,
+  informe.oficina_local_id,
+  informe.periodo_anio,
+  informe.filtros_resumen
+FROM dbo.inf_informe AS informe
+WHERE informe.clave_archivo = @clave
+  AND informe.oficina_local_id = @oficina
+  AND informe.ambito_nivel = N'OFICINA_LOCAL'
+ORDER BY informe.informe_id
+`, {
+        clave: Parametro(sql.NVarChar(80), claveOperacion),
+        oficina: Parametro(sql.Int, oficinaLocalId)
+      });
+      if (!informes || informes.length === 0) {
+        return null;
+      }
+      const informe = informes[0];
+      const vistas = await cliente.query(`
+SELECT
+  visualizacion.visualizacion_id,
+  visualizacion.codigo_visualizacion,
+  visualizacion.orden,
+  visualizacion.titulo,
+  visualizacion.filtros,
+  visualizacion.analisis
+FROM dbo.inf_visualizacion AS visualizacion
+WHERE visualizacion.informe_id = @informe
+ORDER BY visualizacion.orden
+`, {
+        informe: Parametro(sql.BigInt, informe.informe_id)
+      });
+      const agregados = await cliente.query(`
+SELECT
+  agregado.visualizacion_id,
+  agregado.orden,
+  agregado.etiqueta,
+  agregado.valor_numerico,
+  agregado.valor_texto
+FROM dbo.inf_agregado AS agregado
+INNER JOIN dbo.inf_visualizacion AS visualizacion
+  ON visualizacion.visualizacion_id = agregado.visualizacion_id
+WHERE visualizacion.informe_id = @informe
+ORDER BY visualizacion.orden, agregado.orden
+`, {
+        informe: Parametro(sql.BigInt, informe.informe_id)
+      });
+      return ReconstruirInforme(informe, vistas, agregados);
+    } catch (error) {
+      throw TraducirInforme(error);
+    }
+  }
+
+  async function GuardarInforme(modelo) {
+    if (!cliente || typeof cliente.EnTransaccion !== 'function') {
+      throw ErrorInforme('AUSENTE');
+    }
+    try {
+      return await cliente.EnTransaccion(async (tx) => {
+        const insertados = await tx.query(`
+INSERT INTO dbo.inf_informe (
+  titulo, responsable_usuario, rol_codigo, ambito_nivel,
+  region_id, oficina_local_id, establecimiento_id,
+  periodo_anio, filtros_resumen, corte_en, generado_en, clave_archivo
+)
+OUTPUT INSERTED.informe_id
+VALUES (
+  @titulo, @responsable, @rol, N'OFICINA_LOCAL',
+  @region, @oficina, @establecimiento,
+  @anio, @filtros, SYSUTCDATETIME(), SYSUTCDATETIME(), @clave
+)
+`, {
+          titulo: Parametro(sql.NVarChar(300), modelo.titulo),
+          responsable: Parametro(sql.NVarChar(128), modelo.responsable),
+          rol: Parametro(sql.NVarChar(40), modelo.rol),
+          region: Parametro(sql.Int, modelo.regionId),
+          oficina: Parametro(sql.Int, modelo.oficinaLocalId),
+          establecimiento: Parametro(sql.Int, modelo.establecimientoId),
+          anio: Parametro(sql.Int, modelo.anio),
+          filtros: Parametro(sql.NVarChar(2000), modelo.filtrosResumen),
+          clave: Parametro(sql.NVarChar(80), modelo.claveOperacion)
+        });
+        const informeId = Number(insertados[0].informe_id);
+        for (const vista of modelo.visualizaciones) {
+          const creadas = await tx.query(`
+INSERT INTO dbo.inf_visualizacion (
+  informe_id, codigo_visualizacion, orden, titulo, filtros, analisis
+)
+OUTPUT INSERTED.visualizacion_id
+VALUES (@informe, @codigo, @orden, @titulo, @filtros, @analisis)
+`, {
+            informe: Parametro(sql.BigInt, informeId),
+            codigo: Parametro(sql.TinyInt, vista.numero),
+            orden: Parametro(sql.Int, vista.orden),
+            titulo: Parametro(sql.NVarChar(400), vista.titulo),
+            filtros: Parametro(sql.NVarChar(1000), vista.filtrosTexto),
+            analisis: Parametro(sql.NVarChar(4000), vista.analisis)
+          });
+          const visualizacionId = Number(creadas[0].visualizacion_id);
+          let orden = 1;
+          for (const fila of FilasAgregadas(vista)) {
+            await tx.query(`
+INSERT INTO dbo.inf_agregado (
+  visualizacion_id, orden, etiqueta, valor_numerico, valor_texto
+)
+VALUES (@vista, @orden, @etiqueta, @numero, @texto)
+`, {
+              vista: Parametro(sql.BigInt, visualizacionId),
+              orden: Parametro(sql.Int, orden),
+              etiqueta: Parametro(sql.NVarChar(300), fila.etiqueta),
+              numero: Parametro(sql.Decimal(18, 4), fila.valorNumerico),
+              texto: Parametro(sql.NVarChar(500), fila.valorTexto)
+            });
+            orden += 1;
+          }
+        }
+        return informeId;
+      });
+    } catch (error) {
+      throw TraducirInforme(error);
+    }
+  }
 }
 
 module.exports = { CrearRepositorioReporteria };

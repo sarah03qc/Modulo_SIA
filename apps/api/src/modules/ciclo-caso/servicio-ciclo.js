@@ -7,6 +7,7 @@
  */
 'use strict';
 
+const { FechaCalendarioLocal } = require('../../common/fecha-local');
 const {
   ErrorConflicto,
   ErrorInfraestructura,
@@ -29,7 +30,7 @@ const NOTA_REPORTE = 'Este registro conserva fecha, tipo, responsable y motivo. 
   + 'No congela el texto. La vista se vuelve a armar con la información vigente.';
 
 function FechaHoy() {
-  return new Date().toISOString().slice(0, 10);
+  return FechaCalendarioLocal();
 }
 
 function TraducirPersistencia(error, mensajes) {

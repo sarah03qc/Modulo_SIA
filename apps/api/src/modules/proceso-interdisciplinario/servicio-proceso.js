@@ -6,6 +6,7 @@
  */
 'use strict';
 
+const { FechaCalendarioLocal } = require('../../common/fecha-local');
 const {
   ErrorConflicto,
   ErrorInfraestructura,
@@ -234,7 +235,7 @@ function UltimaFecha(individual, grupal) {
 }
 
 function FechaHoy() {
-  return new Date().toISOString().slice(0, 10);
+  return FechaCalendarioLocal();
 }
 
 function EtiquetaCategoria(categoria) {

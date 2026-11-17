@@ -108,11 +108,42 @@ describe('pantalla de reportería', () => {
     expect(pantalla.getByRole('dialog')).toHaveTextContent('HU-050');
     expect(solicitarApi).toHaveBeenCalledTimes(1);
     expect(solicitarApi.mock.calls[0][1]).not.toMatch(/oficinaLocalId/);
+    fireEvent.click(pantalla.getByRole('button', { name: 'Cerrar' }));
     fireEvent.click(pantalla.getByRole('button', { name: 'Descargar consolidación' }));
     const descarga = await pantalla.findByRole('button', {
       name: 'Descargar consolidación'
     });
     expect(descarga).toBeEnabled();
     expect(solicitarApi.mock.calls.some((llamada) => String(llamada[1]).includes('consolidacion'))).toBe(true);
+  });
+
+  test('exige cinco visualizaciones y conserva el análisis al retroceder', async () => {
+    const solicitarApi = jest.fn(async () => Respuesta());
+    render(
+      <ReporteriaPagina
+        direccionApi="http://127.0.0.1:3001"
+        identidad="dev-oficina-hatillo"
+        contexto={{ puedeDescargarConsolidacion: true }}
+        solicitarApi={solicitarApi}
+      />
+    );
+    fireEvent.click(await pantalla.findByRole('button', { name: 'Generar reporte' }));
+    expect(pantalla.getByText(/Seleccione al menos 5 visualizaciones/)).toBeTruthy();
+    const casillas = pantalla.getAllByRole('checkbox');
+    expect(pantalla.getByRole('button', { name: 'Siguiente' })).toBeDisabled();
+    casillas.slice(0, 4).forEach((casilla) => fireEvent.click(casilla));
+    expect(pantalla.getByRole('button', { name: 'Siguiente' })).toBeDisabled();
+    fireEvent.click(casillas[4]);
+    fireEvent.click(pantalla.getByRole('button', { name: 'Siguiente' }));
+    expect(pantalla.getByText(/redacte su análisis/i)).toBeTruthy();
+    fireEvent.click(pantalla.getByRole('button', { name: 'Siguiente' }));
+    expect(pantalla.getByText(/No se genera una interpretación automática/)).toBeTruthy();
+    fireEvent.change(pantalla.getByLabelText('Análisis'), {
+      target: { value: 'Lectura del profesional.' }
+    });
+    fireEvent.click(pantalla.getByRole('button', { name: 'Anterior' }));
+    fireEvent.click(pantalla.getByRole('button', { name: 'Siguiente' }));
+    expect(pantalla.getByLabelText('Análisis').value).toBe('Lectura del profesional.');
+    expect(solicitarApi).toHaveBeenCalledTimes(1);
   });
 });

@@ -75,4 +75,44 @@ describe('HTTP de reportería', () => {
     expect(archivo.headers['content-disposition']).toMatch(/consolidacion-oficina-local.xlsx/);
     expect(reporteria.DescargarConsolidacion).toHaveBeenCalled();
   });
+
+  test('el informe analítico no sustituye la consolidación y niega el establecimiento', async () => {
+    const reporteria = {
+      GenerarInforme: jest.fn(async () => ({
+        contenido: Buffer.from('<html>informe</html>'),
+        persistencia: 'REGISTRADO',
+        informeId: 7
+      }))
+    };
+    const app = Aplicacion(reporteria);
+    const negado = await request(app)
+      .post('/api/reporteria/oficina/informe')
+      .set('Authorization', 'Bearer dev-establecimiento-unico')
+      .send({ titulo: 'Informe' });
+    expect(negado.status).toBe(403);
+    expect(reporteria.GenerarInforme).not.toHaveBeenCalled();
+    const ajena = await request(app)
+      .post('/api/reporteria/oficina/informe?oficinaLocalId=501')
+      .set('Authorization', 'Bearer dev-oficina-hatillo')
+      .send({ titulo: 'Informe' });
+    expect(ajena.status).toBe(400);
+    const archivo = await request(app)
+      .post('/api/reporteria/oficina/informe?anio=2026')
+      .set('Authorization', 'Bearer dev-oficina-hatillo')
+      .send({ titulo: 'Informe', claveOperacion: 'informe-prueba-01' });
+    expect(archivo.status).toBe(200);
+    expect(archivo.headers['content-type']).toMatch(/text\/html/);
+    expect(archivo.headers['content-disposition']).toMatch(/informe-analitico-oficina-local.html/);
+    expect(archivo.headers['x-persistencia-informe']).toBe('REGISTRADO');
+    expect(archivo.text).toContain('informe');
+    expect(archivo.headers['content-disposition']).not.toMatch(/consolidacion/);
+    expect(reporteria.GenerarInforme).toHaveBeenCalledWith(
+      expect.objectContaining({ localOfficeId: 101 }),
+      expect.objectContaining({ anio: 2026 }),
+      expect.objectContaining({
+        titulo: 'Informe',
+        claveOperacion: 'informe-prueba-01'
+      })
+    );
+  });
 });

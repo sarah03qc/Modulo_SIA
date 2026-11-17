@@ -6,6 +6,7 @@
  */
 'use strict';
 
+const { FechaCalendarioLocal } = require('../../common/fecha-local');
 const { ErrorValidacion } = require('../../common/errors');
 
 const FECHA = /^\d{4}-\d{2}-\d{2}$/;
@@ -39,7 +40,7 @@ function LeerFecha(valor, etiqueta) {
   if (!coincide || anio < ANIO_MINIMO || anio > ANIO_MAXIMO) {
     EntradaInvalida(`La ${etiqueta} no es válida.`);
   }
-  const hoy = new Date().toISOString().slice(0, 10);
+  const hoy = FechaCalendarioLocal();
   if (valor > hoy) {
     EntradaInvalida(`La ${etiqueta} no puede ser posterior a hoy.`);
   }

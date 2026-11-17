@@ -131,7 +131,8 @@ describe('servicio de reportería de Oficina Local', () => {
       fin: '2027-01-01'
     }));
     expect(respuesta.visualizaciones).toHaveLength(12);
-    expect(respuesta.informeAnalitico.disponible).toBe(false);
+    expect(respuesta.informeAnalitico.disponible).toBe(true);
+    expect(respuesta.huellaCorte).toMatch(/^[a-f0-9]{64}$/);
     expect(respuesta.informeAnalitico.mensaje).toMatch(/HU-050/);
     expect(respuesta.casosSinAtencion.filas).toBeUndefined();
   });

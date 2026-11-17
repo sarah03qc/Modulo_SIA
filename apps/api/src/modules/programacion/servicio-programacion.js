@@ -6,6 +6,7 @@
  */
 'use strict';
 
+const { FechaCalendarioLocal } = require('../../common/fecha-local');
 const {
   ErrorConflicto,
   ErrorInfraestructura,
@@ -57,7 +58,7 @@ function TraducirPersistencia(error) {
 }
 
 function FechaHoy() {
-  return new Date().toISOString().slice(0, 10);
+  return FechaCalendarioLocal();
 }
 
 function MarcarVencida(actividad, hoy) {

@@ -1,7 +1,8 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-16.
- * HU-038 y HU-039. La capacidad se vuelve a exigir en el servicio.
+ * HU-038, HU-039 y HU-050. La capacidad se vuelve a exigir en el servicio.
+ * El informe acepta un cuerpo JSON acotado al máximo validado.
  */
 'use strict';
 
@@ -12,6 +13,7 @@ const { ErrorProhibido } = require('../../common/errors');
 const { CAPABILITY } = require('../../infrastructure/auth/capabilities');
 const { ExigirCapacidad } = require('../../infrastructure/auth/authorization-policy');
 const { ACCESS_LEVEL } = require('../../infrastructure/auth/institutional-roles');
+const { AnioCalendarioLocal } = require('../../common/fecha-local');
 const { LeerFiltrosReporteria } = require('./validacion-reporteria');
 
 function ExigirOficina(capacidad) {
@@ -31,7 +33,7 @@ function ExigirOficina(capacidad) {
 }
 
 function Filtros(req) {
-  const anio = Number(new Date().toISOString().slice(0, 4));
+  const anio = AnioCalendarioLocal();
   return LeerFiltrosReporteria(req.query, anio);
 }
 
@@ -43,12 +45,32 @@ function Filtros(req) {
  */
 function CrearEnrutadorReporteria(servicio) {
   const router = express.Router();
+  const json = express.json({ limit: '128kb' });
 
   router.get(
     '/oficina',
     ExigirOficina(CAPABILITY.REPORTING_READ),
     EnvolverAsincrono(async (req, res) => {
       res.status(200).json(await servicio.ConsultarOficina(req.acceso, Filtros(req)));
+    })
+  );
+
+  router.post(
+    '/oficina/informe',
+    ExigirOficina(CAPABILITY.REPORTING_EXPORT),
+    json,
+    EnvolverAsincrono(async (req, res) => {
+      const archivo = await servicio.GenerarInforme(req.acceso, Filtros(req), req.body);
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.setHeader(
+        'Content-Disposition',
+        'attachment; filename="informe-analitico-oficina-local.html"'
+      );
+      res.setHeader('X-Persistencia-Informe', archivo.persistencia);
+      if (archivo.informeId) {
+        res.setHeader('X-Informe-Id', String(archivo.informeId));
+      }
+      res.status(200).send(archivo.contenido);
     })
   );
 

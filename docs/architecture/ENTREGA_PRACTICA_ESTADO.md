@@ -14,7 +14,7 @@ sintética que el servidor ya asoció a un ámbito. El cliente no elige el rol.
 3. `npm run verify:config` y `npm run dev`. Abrir `http://127.0.0.1:5174`, no `localhost`, para que coincida el origen CORS.
 4. Entrar con **Establecimiento de demostración** o **Oficina Local de demostración**.
 5. Recorrido: Buscar persona → Nueva referencia → validar → confirmar el envío → en Oficina Local abrir Pendientes → Sesiones → asociar la referencia → valorar → decidir → abrir el caso → Casos → expediente → Atenciones → Sin atención. En el expediente, Oficina Local registra coordinaciones, reportes y cierre. El script `050` ya fue aplicado manualmente en este desarrollo local; no volver a ejecutarlo.
-6. Reportería, solo con Oficina Local de demostración: abrir Reportería, revisar las doce visualizaciones, cambiar año, estado o establecimiento y descargar la consolidación. Generar reporte informa que el asistente de HU-050 sigue pendiente y no descarga el archivo.
+6. Reportería, solo con Oficina Local de demostración: abrir Reportería, revisar las doce visualizaciones, cambiar año, estado o establecimiento y descargar la consolidación. Generar reporte abre el asistente de HU-050. Exige al menos cinco visualizaciones, un análisis redactado y un título, muestra la revisión y descarga `informe-analitico-oficina-local.html`. No descarga la consolidación ni el reporte individual.
 
 Los datos de demostración son los de `database/sia-cencinai/seeds/`. No se ejecutan al arrancar
 y esta entrega no los borra ni los vuelve a cargar. Las referencias nuevas se crean por la aplicación.
@@ -70,11 +70,12 @@ La clasificación entre atención grupal de A.I. y sesiones educativas generales
 | HU-028 | Implementada en el alcance confirmado | Caso 1120: destino 5010104, oficina 301 y región 3 leídos de la réplica. Origen `CERRADO` por Traslado, con referencia 1516 y el mismo consecutivo. No se creó caso de destino ni ingreso de continuidad. El navegador mostró el destino y el historial | HU-029 sigue retirada y no se implementa. La oficina o región enviadas por el cliente se rechazan |
 | HU-030 | Parcial | Caso 1777: se conservó «Informe de avance» con su propósito y el estado siguió `ACTIVO`. La vista provisional se consultó e imprimió desde el navegador. El reintento no duplicó el metadato | No está satisfecha por completo: no se conserva el documento emitido y la plantilla oficial sigue `NEEDS_VALIDATION`. La vista se regenera con el expediente vigente |
 | HU-031 | Implementada en el alcance confirmado | Caso 1434, cierre satisfactorio sin reporte previo. Caso 1377, dos cierres simultáneos y una sola fila. Caso 1171, Otro con explicación obligatoria. Otro intento con otra clave respondió 409. La atención posterior respondió 404 y no insertó fila. El expediente histórico siguió consultable | No hay regla institucional para reabrir. No se cerraron los casos de demostración 1, 5, 1092, 1304, 1305, 1435, 1775, 1776, 1817 ni 10089 |
-| HU-038 | Parcial | Las doce visualizaciones de 15.3, filtros, cobertura y ámbito en API, SQL, libro y navegador. Oficina 101, año 2026: 15 personas únicas, 17 atenciones y cobertura 8 de 18 (44.4 %) | CA-21: Generar reporte no abre el asistente de HU-050. RN-040 sigue pendiente de ratificación con Alina. La atención individual no tiene `TIPO_ATENCION` |
-| HU-039 | Implementada en el alcance tabular | `GET /api/reporteria/oficina/consolidacion` entrega el corte filtrado en columnas. Con estado Cerrado conservó D 18 y N 8. No descarga una página parcial | El formato del informe analítico pertenece a HU-050 y sigue sin confirmarse |
+| HU-038 | Implementada en el alcance confirmado | Las doce visualizaciones, filtros, cobertura, ámbito y el asistente de CA-21. Oficina 101, año 2026: 15 personas únicas, 17 atenciones y cobertura 8 de 18 (44.4 %). La fecha local de consulta quedó 2026-11-16 | RN-040 sigue pendiente de ratificación con Alina. La atención individual no tiene `TIPO_ATENCION` |
+| HU-039 | Implementada en el alcance tabular | `GET /api/reporteria/oficina/consolidacion` entrega el corte filtrado en columnas. Con estado Cerrado conservó D 18 y N 8. No descarga una página parcial | El informe analítico es otro archivo y otro endpoint |
+| HU-050 | Parcial | Asistente de Oficina Local verificado en navegador y API. HTML provisional con las visualizaciones y el análisis. CA-01 a CA-08 y CA-10 cumplidos en ese alcance | CA-09 no queda completo: la tabla existe, pero la cuenta no puede escribirla. Regional y Nacional no reciben la ruta |
 
 Quedan fuera de este avance, sin cifras ficticias: HU-003, HU-004, HU-040 a HU-043,
-HU-045, HU-046, reportería regional y nacional, el asistente de HU-050 y las posibles
+HU-045, HU-046, reportería regional y nacional y las posibles
 referencias automáticas.
 
 ## Endpoints de este incremento
@@ -91,6 +92,7 @@ referencias automáticas.
 - `GET /api/programacion/catalogos`, `GET /api/programacion/actividades`
 - `POST /api/programacion/actividades`, `POST /api/programacion/actividades/:actividadId/resoluciones`
 - `GET /api/reporteria/oficina`, `GET /api/reporteria/oficina/consolidacion`
+- `POST /api/reporteria/oficina/informe`
 
 ## Pantallas
 
@@ -111,9 +113,10 @@ Sin atención, Programación, Reportería ni el expediente.
 - Las seis actividades vencidas de la semilla, 1, 597, 602, 625, 672 y 677, siguen programadas. No se usaron para demostrar la resolución.
 - Catálogos vigentes de institución y estado de coordinación, y plantilla oficial del reporte: `NEEDS_VALIDATION`. Por eso HU-030 no queda completa.
 - No se preparó un índice único de `aud_evento.codigo_cambio`. La concurrencia observada dejó una sola auditoría. Un plan que no tome el bloqueo de rango no se observó.
-- Zona horaria institucional de las fechas de resumen. La consulta de reportería usa la fecha UTC del servidor; el 2026-11-16 local la pantalla mostró 2026-11-17.
+- La zona horaria operativa usada para la fecha calendario es `America/Costa_Rica`. La zona institucional definitiva sigue `NEEDS_VALIDATION`. No se reescribieron fechas almacenadas.
 - RN-040 y RF-129 siguen `NEEDS_VALIDATION` hasta la ratificación con Alina. La fórmula operativa ya se calcula y se identifica como provisional.
-- El asistente de HU-050 / CU-38 no está implementado. Generar reporte lo dice y no simula la descarga.
+- El formato definitivo del informe de HU-050 sigue `NEEDS_VALIDATION`. La salida actual es HTML provisional.
+- La migración `070` ya está aplicada. No se ejecutó `071_informe_clave_unica.sql` ni `security/070_grant_analytical_report_to_app.sql`. Sin ese permiso, el informe se descarga y no queda en `inf_informe`.
 - La atención individual no tiene tipo institucional. La visualización 8 no le asigna uno.
 - `ate_grupal` no tiene región. La grupal se limita por la oficina de la sesión.
 - RF-083 nombra un filtro de tipo de atención. No se agregó como control: solo aplica a la visualización 8 y la atención individual no es clasificable.
@@ -214,6 +217,55 @@ Al cierre, `npm run verify:config`, `npm run lint`, `npm test`, `npm run build`
 y `npm run health` terminaron bien. La API sumó 184 pruebas aprobadas, 7
 omitidas y 2 suites omitidas que ya existían. La web sumó 13. Salud y
 preparación respondieron 200, con `SIDINACC_LOCAL` en solo lectura.
+Esa comprobación es anterior al asistente. El resultado posterior está en
+«Informe analítico HU-050».
+
+## Informe analítico HU-050, 2026-11-16
+
+La fecha de consulta que esa tarde apareció como 2026-11-17 se calculaba con
+UTC. La presentación de la fecha calendario usa ahora `America/Costa_Rica`
+(`UTC-6`, sin horario de verano) mediante `FechaCalendarioLocal` y
+`FechaHoraLocal`. El mismo criterio quedó en «hoy» de programación, proceso y
+cierre, para no adelantar ni atrasar el día. Las fechas ya almacenadas no se
+convirtieron. `corte_en` y `generado_en` siguen siendo el instante UTC. La
+zona institucional definitiva permanece `NEEDS_VALIDATION`.
+
+Generar reporte abre el asistente. En el navegador, con Oficina Local, cuatro
+visualizaciones dejaron Siguiente bloqueado y cinco lo habilitaron. El análisis
+vacío no avanzó. Anterior y Siguiente conservaron el texto. El título vacío no
+avanzó. La revisión mostró el título, `dev-oficina-hatillo`, Oficina Local, el
+período 2026, la fecha 2026-11-16 y los cinco análisis. Confirmar descargó
+`informe-analitico-oficina-local.html`, con las categorías del corte (entre
+ellas Colonia 15 de Setiembre) y el análisis inmediatamente después. No es el
+libro de HU-039 ni el reporte individual de HU-030. El formato HTML es
+provisional: el proyecto no tiene una biblioteca PDF y la especificación no
+obliga a PDF.
+
+El cuerpo solo acepta título, clave de operación, huella del corte y el número
+con su análisis. La identidad, el ámbito y las cifras salen del servidor. Un
+cambio de filtro descarta la selección para no mezclar cortes. Regional,
+Nacional y Establecimiento recibieron 403 en `POST /api/reporteria/oficina/informe`.
+Una oficina enviada en la consulta recibió 400. El menú de Establecimiento no
+incluye Reportería. El año 2000 dejó los eventos sin registros y la cobertura
+en 0 de 18, con denominador conservado. Un análisis con `<script>` salió
+escapado. El denominador cero, «Sin casos activos. No aplica.», quedó cubierto
+por la prueba automatizada; esta oficina tiene 18 casos activos.
+
+CA-09 no está completo. `schema_migracion` tiene `070_documents_and_reporting`,
+así que las tablas `inf_informe`, `inf_visualizacion` e `inf_agregado` ya
+existen. La cuenta `sia_cencinai_app` no puede leerlas ni escribirlas: la
+respuesta fue `PENDIENTE_PERMISO` y el archivo lo dice. No se ejecutó
+`database/sia-cencinai/security/070_grant_analytical_report_to_app.sql` ni
+`database/sia-cencinai/migrations/071_informe_clave_unica.sql`. El reintento
+sin duplicar está probado con un repositorio simulado, no contra SQL. No hay
+una fila histórica que se pueda reabrir.
+
+Al cierre de este incremento, `npm run verify:config`, `npm run lint`,
+`npm test`, `npm run build` y `npm run health` terminaron bien. La API sumó
+195 pruebas aprobadas y 7 omitidas; las 2 suites omitidas ya existían. La web
+sumó 14. Salud y preparación respondieron 200, con `SIDINACC_LOCAL` en solo
+lectura. No se ejecutaron los scripts `030`, `040`, `050` ni `060`, ni se
+modificaron los datos sintéticos de demostración.
 
 ## Programación operativa, 2026-11-16
 

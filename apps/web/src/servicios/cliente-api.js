@@ -38,11 +38,23 @@ export async function SolicitarApi(direccionApi, ruta, opciones = {}) {
   }
   if (opciones.archivo) {
     if (!respuesta.ok) {
-      throw new ErrorDeApi('No fue posible obtener el archivo.', respuesta.status);
+      const textoError = await respuesta.text();
+      let mensaje = 'No fue posible obtener el archivo.';
+      try {
+        const datosError = JSON.parse(textoError);
+        if (datosError && datosError.error && datosError.error.message) {
+          mensaje = datosError.error.message;
+        }
+      } catch {
+        mensaje = 'No fue posible obtener el archivo.';
+      }
+      throw new ErrorDeApi(mensaje, respuesta.status);
     }
     return {
       blob: await respuesta.blob(),
-      nombre: NombreDeArchivo(respuesta.headers.get('Content-Disposition'))
+      nombre: NombreDeArchivo(respuesta.headers.get('Content-Disposition')),
+      persistencia: respuesta.headers.get('X-Persistencia-Informe'),
+      informeId: respuesta.headers.get('X-Informe-Id')
     };
   }
   if (respuesta.status === 204) {

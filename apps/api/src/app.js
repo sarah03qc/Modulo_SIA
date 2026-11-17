@@ -53,6 +53,10 @@ function ConfigurarCors(origenPermitido) {
       res.setHeader('Access-Control-Allow-Origin', origen);
       res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
       res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      res.setHeader(
+        'Access-Control-Expose-Headers',
+        'Content-Disposition, X-Persistencia-Informe, X-Informe-Id'
+      );
     }
     if (req.method === 'OPTIONS') {
       res.status(204).end();

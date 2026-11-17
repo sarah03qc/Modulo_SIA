@@ -7,6 +7,7 @@
 'use strict';
 
 const {
+  ErrorConflicto,
   ErrorInfraestructura,
   ErrorProhibido,
   ErrorValidacion
@@ -14,16 +15,25 @@ const {
 const { CAPABILITY } = require('../../infrastructure/auth/capabilities');
 const { ExigirCapacidad } = require('../../infrastructure/auth/authorization-policy');
 const { ACCESS_LEVEL } = require('../../infrastructure/auth/institutional-roles');
-const { LIMITE_PERSONAS_DEMOGRAFICAS } = require('./definiciones-analiticas');
+const {
+  ESTADO_ZONA_HORARIA,
+  FechaCalendarioLocal,
+  FechaHoraLocal,
+  ZONA_HORARIA_OPERATIVA
+} = require('../../common/fecha-local');
+const { TEXTO_COBERTURA, LIMITE_PERSONAS_DEMOGRAFICAS } = require('./definiciones-analiticas');
 const { EnsamblarCorte, EnsamblarDemografia } = require('./ensamblar-corte');
+const { CrearDocumentoInforme } = require('./documento-informe');
 const { CrearLibroConsolidacion } = require('./exportacion-consolidacion');
+const { HuellaCorte } = require('./huella-corte');
+const { AfirmarClaveInforme, LeerPedidoInforme } = require('./validacion-informe');
 
-const MENSAJE_INFORME = 'El asistente del informe analítico de HU-050 y CU-38 '
-  + 'todavía no está disponible. El formato de descarga sigue pendiente de confirmación. '
-  + 'Esta acción no descarga la consolidación de Oficina Local ni el reporte individual del caso.';
+const MENSAJE_INFORME = 'El asistente genera el informe analítico de HU-050 y CU-38. '
+  + 'No descarga la consolidación tabular de Oficina Local ni el reporte individual del caso. '
+  + 'El formato institucional definitivo sigue pendiente de confirmación.';
 
 function FechaHoy() {
-  return new Date().toISOString().slice(0, 10);
+  return FechaCalendarioLocal();
 }
 
 function ExigirOficina(acceso, capacidad) {
@@ -45,7 +55,7 @@ function RangoAnio(anio) {
   };
 }
 
-function ParaCliente(corte) {
+function ParaCliente(corte, acceso) {
   return {
     fechaConsulta: corte.fechaConsulta,
     anio: corte.anio,
@@ -87,16 +97,103 @@ function ParaCliente(corte) {
         : (item.serie || []).length,
       numerador: item.numerador,
       denominador: item.denominador,
-      porcentaje: item.porcentaje
+      porcentaje: item.porcentaje,
+      autorizada: true
     })),
     opciones: corte.opciones,
     disciplinas: corte.catalogoDisciplinas,
     establecimientos: corte.establecimientos,
+    identificacion: acceso ? {
+      responsable: acceso.principalId,
+      rol: acceso.accessLevel,
+      unidad: 'Oficina Local',
+      oficinaLocalId: acceso.localOfficeId,
+      regionId: acceso.regionId,
+      zonaHoraria: ZONA_HORARIA_OPERATIVA,
+      estadoZona: ESTADO_ZONA_HORARIA
+    } : null,
     informeAnalitico: {
-      disponible: false,
-      estado: 'PENDIENTE',
-      mensaje: MENSAJE_INFORME
+      disponible: true,
+      estado: 'DISPONIBLE',
+      formatoProvisional: 'HTML',
+      mensaje: MENSAJE_INFORME,
+      instruccionSeleccion: 'Seleccione al menos 5 visualizaciones de las '
+        + 'siguientes para incluir en su reporte',
+      instruccionAnalisis: 'Por favor, redacte su análisis asociado a la '
+        + 'visualización mostrada'
     }
+  };
+}
+
+function RespuestaCliente(corte, acceso) {
+  const respuesta = ParaCliente(corte, acceso);
+  respuesta.huellaCorte = HuellaCorte(respuesta);
+  return respuesta;
+}
+
+function FiltrosTexto(visualizacion) {
+  const filtros = visualizacion.filtrosAplicados || [];
+  return filtros.length > 0 ? filtros.join('; ') : 'Ninguno adicional.';
+}
+
+function ArmarModelo(acceso, respuesta, pedido, filtros, instante) {
+  const etiquetasFiltro = (respuesta.filtrosActivos || [])
+    .map((filtro) => filtro.etiqueta)
+    .join('; ');
+  const fechaHoraLocal = FechaHoraLocal(instante);
+  const resumen = `fecha_hora_local=${fechaHoraLocal}; `
+    + `fecha_calendario=${respuesta.fechaConsulta}; `
+    + `personas=${respuesta.personasUnicas}; `
+    + `atenciones=${respuesta.totalAtenciones} | ${etiquetasFiltro}`;
+  return {
+    titulo: pedido.titulo,
+    responsable: acceso.principalId,
+    rol: acceso.accessLevel,
+    unidad: 'Oficina Local',
+    ambito: 'OFICINA_LOCAL',
+    regionId: acceso.regionId,
+    oficinaLocalId: acceso.localOfficeId,
+    establecimientoId: filtros.establecimientoId,
+    anio: respuesta.anio,
+    fechaHoraLocal,
+    fechaCalendario: respuesta.fechaConsulta,
+    zonaHoraria: ZONA_HORARIA_OPERATIVA,
+    estadoZona: ESTADO_ZONA_HORARIA,
+    filtrosResumen: resumen,
+    filtrosVisibles: etiquetasFiltro,
+    personasUnicas: respuesta.personasUnicas,
+    totalAtenciones: respuesta.totalAtenciones,
+    coberturaTexto: TEXTO_COBERTURA,
+    claveOperacion: pedido.claveOperacion,
+    visualizaciones: pedido.seleccion.map((item, indice) => ({
+      numero: item.origen.numero,
+      orden: indice + 1,
+      titulo: item.origen.titulo,
+      formato: item.origen.formato,
+      fechaAplicada: item.origen.fechaAplicada,
+      estado: item.origen.estado,
+      mensaje: item.origen.mensaje,
+      nota: item.origen.nota,
+      filtrosTexto: FiltrosTexto(item.origen),
+      analisis: item.analisis,
+      serie: item.origen.serie || [],
+      numerador: item.origen.numerador,
+      denominador: item.origen.denominador,
+      porcentaje: item.origen.porcentaje
+    }))
+  };
+}
+
+function PersistenciaPendiente(error) {
+  return error && (error.code === 'PERMISO' || error.code === 'AUSENTE');
+}
+
+function Archivo(modelo, opciones) {
+  return {
+    contenido: Buffer.from(CrearDocumentoInforme(modelo, opciones), 'utf8'),
+    persistencia: opciones.persistido ? 'REGISTRADO' : opciones.persistencia,
+    informeId: opciones.informeId || null,
+    reintento: Boolean(opciones.reintento)
   };
 }
 
@@ -235,13 +332,81 @@ function CrearServicioReporteria(dependencias) {
   return {
     async ConsultarOficina(acceso, filtros) {
       ExigirOficina(acceso, CAPABILITY.REPORTING_READ);
-      return ParaCliente(await Preparar(acceso, filtros));
+      return RespuestaCliente(await Preparar(acceso, filtros), acceso);
     },
 
     async DescargarConsolidacion(acceso, filtros) {
       ExigirOficina(acceso, CAPABILITY.REPORTING_EXPORT);
       const corte = await Preparar(acceso, filtros);
       return CrearLibroConsolidacion(corte);
+    },
+
+    async GenerarInforme(acceso, filtros, cuerpo) {
+      ExigirOficina(acceso, CAPABILITY.REPORTING_EXPORT);
+      const instante = new Date();
+      let previo = null;
+      const clave = AfirmarClaveInforme(cuerpo);
+      if (typeof repositorio.BuscarInformePorClave === 'function') {
+        try {
+          previo = await repositorio.BuscarInformePorClave(acceso.localOfficeId, clave);
+        } catch (error) {
+          if (!PersistenciaPendiente(error)) {
+            throw new ErrorInfraestructura('No fue posible comprobar el informe ya emitido.');
+          }
+        }
+      }
+      if (previo) {
+        return Archivo(previo, {
+          persistido: true,
+          informeId: previo.informeId,
+          reintento: true
+        });
+      }
+      const corte = await Preparar(acceso, filtros);
+      const respuesta = RespuestaCliente(corte, acceso);
+      const pedido = LeerPedidoInforme(cuerpo, respuesta.visualizaciones);
+      if (pedido.huellaCorte !== respuesta.huellaCorte) {
+        throw new ErrorConflicto(
+          'El corte analítico cambió. Vuelva a consultar antes de generar el informe.'
+        );
+      }
+      const modelo = ArmarModelo(acceso, respuesta, pedido, filtros, instante);
+      if (modelo.filtrosResumen.length > 2000) {
+        throw new ErrorValidacion('Los filtros del informe exceden la longitud permitida.');
+      }
+      let informeId = null;
+      let persistencia = 'PENDIENTE_PERMISO';
+      if (typeof repositorio.GuardarInforme === 'function') {
+        try {
+          informeId = await repositorio.GuardarInforme(modelo);
+          persistencia = 'REGISTRADO';
+        } catch (error) {
+          if (error && error.code === 'DUPLICADO') {
+            const existente = await repositorio.BuscarInformePorClave(
+              acceso.localOfficeId,
+              pedido.claveOperacion
+            );
+            if (existente) {
+              return Archivo(existente, {
+                persistido: true,
+                informeId: existente.informeId,
+                reintento: true
+              });
+            }
+          }
+          if (!PersistenciaPendiente(error)) {
+            throw new ErrorInfraestructura('No fue posible conservar el informe.');
+          }
+          persistencia = error.code === 'AUSENTE' ? 'PENDIENTE_TABLA' : 'PENDIENTE_PERMISO';
+        }
+      } else {
+        persistencia = 'PENDIENTE_TABLA';
+      }
+      return Archivo(modelo, {
+        persistido: persistencia === 'REGISTRADO',
+        persistencia,
+        informeId
+      });
     }
   };
 }

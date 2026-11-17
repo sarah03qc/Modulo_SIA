@@ -6,6 +6,7 @@
 import { useEffect, useState } from 'react';
 import { Aviso, Cargando, Campo, Vacio } from '../../componentes/interfaz';
 import { DescargarArchivo, SolicitarApi } from '../../servicios/cliente-api';
+import AsistenteInforme from './AsistenteInforme';
 import GraficoReporteria from './GraficosReporteria';
 
 const ANIO_ACTUAL = String(new Date().getFullYear());
@@ -60,6 +61,7 @@ export default function ReporteriaPagina({
   const [cargando, establecerCargando] = useState(false);
   const [descargando, establecerDescargando] = useState(false);
   const [informeAbierto, establecerInformeAbierto] = useState(false);
+  const [consultaResultado, establecerConsultaResultado] = useState('');
   const consulta = Consulta(filtros);
 
   useEffect(() => {
@@ -70,11 +72,13 @@ export default function ReporteriaPagina({
       .then((datos) => {
         if (vigente) {
           establecerResultado(datos);
+          establecerConsultaResultado(consulta);
         }
       })
       .catch((fallo) => {
         if (vigente) {
           establecerResultado(null);
+          establecerConsultaResultado('');
           establecerError(fallo.message);
         }
       })
@@ -132,7 +136,11 @@ export default function ReporteriaPagina({
           </p>
         </div>
         <div className="acciones-reporteria">
-          <button type="button" onClick={() => establecerInformeAbierto(true)}>
+          <button
+            type="button"
+            onClick={() => establecerInformeAbierto(true)}
+            disabled={!resultado}
+          >
             Generar reporte
           </button>
           {contexto && contexto.puedeDescargarConsolidacion ? (
@@ -397,27 +405,15 @@ export default function ReporteriaPagina({
         </>
       ) : null}
 
-      {informeAbierto ? (
-        <div className="dialogo-fondo">
-          <div
-            className="dialogo"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="titulo-informe"
-          >
-            <h2 id="titulo-informe">Generar reporte</h2>
-            <p>
-              {resultado
-                ? resultado.informeAnalitico.mensaje
-                : 'El asistente del informe analítico todavía no está disponible. '
-                  + 'No descarga la consolidación ni el reporte de un caso.'}
-            </p>
-            <button type="button" onClick={() => establecerInformeAbierto(false)}>
-              Cerrar
-            </button>
-          </div>
-        </div>
-      ) : null}
+      <AsistenteInforme
+        abierto={informeAbierto && Boolean(resultado)}
+        resultado={consultaResultado === consulta ? resultado : null}
+        consulta={consulta}
+        direccionApi={direccionApi}
+        identidad={identidad}
+        solicitarApi={solicitarApi}
+        alCerrar={() => establecerInformeAbierto(false)}
+      />
     </section>
   );
 }
