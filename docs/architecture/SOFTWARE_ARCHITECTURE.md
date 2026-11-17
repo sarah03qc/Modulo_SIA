@@ -1,5 +1,12 @@
 # Arquitectura de software — SIA-CENCINAI
 
+Estado de la práctica, 2026-11-16. React en `apps/web` llama por HTTP a Express
+en `apps/api`. Express escribe en `SIA_CENCINAI` y lee `SIDINACC_LOCAL`.
+El navegador no abre SQL. La autorización se vuelve a exigir en el servicio.
+El detalle demostrable está en `ENTREGA_PRACTICA_ESTADO.md`.
+El texto siguiente conserva el bootstrap del 2026-11-06 y no describe por sí
+solo las pantallas ya construidas.
+
 Bootstrap del 2026-11-06. La arquitectura de datos ya implementada no se modifica. Decisión de modularidad: `docs/decisions/0001-modular-monolith.md`.
 
 ## Arquitectura general

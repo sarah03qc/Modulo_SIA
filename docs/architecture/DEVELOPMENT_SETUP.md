@@ -1,5 +1,9 @@
 # Entorno de desarrollo
 
+Esta guía instala la versión de práctica. No crea una instalación productiva.
+El recorrido de los cuatro perfiles está en `GUIA_DEMOSTRACION.md`.
+Las bases locales se reutilizan. Este procedimiento no las migra ni las siembra.
+
 ## Requisitos
 
 - Node.js 22 o superior. Verificado con 24.20.0.

@@ -9,6 +9,48 @@ Esta entrega no es la versión institucional definitiva ni está autorizada para
 La sesión productiva de SIDINACC sigue `NEEDS_VALIDATION`. En local se usa una identidad
 sintética que el servidor ya asoció a un ámbito. El cliente no elige el rol.
 
+## Cierre de la entrega, 2026-11-16
+
+Veredicto: `READY_WITH_LIMITATIONS`.
+
+No hay defectos críticos ni altos pendientes. La demostración puede recorrer
+los cuatro perfiles con los datos sintéticos actuales. Deben comunicarse las
+limitaciones de la guía de demostración: RN-040 provisional, sesión productiva
+pendiente, expediente superior sin relato clínico, HU-050 solo en Oficina Local
+y HU-030 sin plantilla oficial.
+
+| Comprobación | Resultado |
+| --- | --- |
+| Rama | `main`, alineada con `origin/main` en `8d384a1` antes de este cierre documental |
+| Etiqueta de recuperación | `entrega-practica-2026-11-16`, local, sobre `8d384a1`. No se hizo push de la etiqueta |
+| Árbol antes del cierre | Limpio. No hay `.env` versionado |
+| Migraciones aplicadas | 001, 010, 020, 030, 040, 050, 060, 070, 071, 080 y 090, todas `APLICADA` |
+| `SIDINACC_LOCAL` | Lectura concedida e inserción en 0 sobre `dbo.CAF_CAT_REGION` |
+| Zona operativa | `America/Costa_Rica` en la reportería de Oficina Local |
+| Personas activas | 1009 distintas en el país y 1009 al sumar las regiones. En estos datos ninguna persona activa está en dos regiones. El cálculo nacional sigue siendo un distinto del universo, no una suma de porcentajes |
+
+Perfiles reconsultados el 2026-11-16 por la noche, sin escrituras nuevas:
+
+| Perfil | Casos | Escritura | Reportería |
+| --- | ---: | --- | --- |
+| Establecimiento | 6 | Caso y reportería, 403 | No aparece |
+| Oficina Local Hatillo | 40 | Cuerpo vacío de caso, 400. No se creó caso | 8 de 18. Informes 10005 y 10008, 200 |
+| Región Central Sur | 259 | Atención, 403 | 45 de 135. Hatillo coincide en 8 de 18 |
+| Región Brunca | 220 | Caso 10089, 404 | 46 de 130 |
+| Nacional | 1793 | Caso, 403 | 333 de 1009. Exportación CSV, 1793 filas |
+
+La exportación regional de activos con prioridad Alto tuvo 39 filas, además del
+encabezado. Sin sesión, el contexto responde 401.
+
+En el navegador, Establecimiento mostró 6 de 6 y no ofreció expediente.
+Oficina Local mostró el ciclo en la navegación y la cobertura 8 de 18, con
+Generar reporte habilitado. Regional y Nacional se recorrieron en la verificación
+anterior de la misma noche: doce visualizaciones, consolidaciones y limpieza
+jerárquica al pasar de Central Sur a Brunca.
+
+No se repitió un cierre ni un traslado. Los casos reservados siguen disponibles.
+No se ejecutaron migraciones ni scripts de permisos.
+
 ## Cómo iniciar y demostrar
 
 1. Tener Node.js 22 o superior y las bases locales ya migradas. No ejecutar migraciones desde la API.

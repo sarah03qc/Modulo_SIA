@@ -1,5 +1,12 @@
 # Modelo de autorización — SIA-CENCINAI
 
+Estado de la práctica, 2026-11-16. Oficina Local ya usa las rutas de sesión,
+valoración, caso, atención, coordinación, programación y reportería.
+Región y Nacional consultan casos y reportería, y el servicio rechaza sus
+escrituras. Establecimiento crea referencias y ve una lista de casos sin el
+expediente interno. La tabla de más abajo conserva el lote 01. El
+comportamiento demostrable está en `ENTREGA_PRACTICA_ESTADO.md`.
+
 Consolidación posterior al Lote 01. Decisión: `docs/decisions/0002-authorization-model.md`.
 
 El objetivo es declarar una capacidad y exigirla en la ruta y en el servicio, sin rediseñar el ámbito territorial que ya resuelve Establecimiento, Oficina Local, Región y Nacional.

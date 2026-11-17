@@ -7,7 +7,7 @@ Estos archivos no modifican `SIDINACC_LOCAL`.
 
 | Carpeta | Contenido |
 | --- | --- |
-| `migrations/` | Diez scripts ordenados, de la base vacía a las FK circulares y los permisos. |
+| `migrations/` | Once scripts ordenados, de la base vacía a las FK circulares, la clave del informe y los permisos. |
 | `seeds/010_confirmed_catalogs.sql` | Catálogos confirmados y las nueve filas de RN-009. |
 | `seeds/020_synthetic_dataset.sql` | Expediente pequeño para las pruebas funcionales. No es semilla productiva. |
 | `seeds/030_synthetic_scale.sql` | Generador reproducible `small` / `medium` / `large`. Lee identificadores `SYN-` y no escribe en `SIDINACC_LOCAL`. |
@@ -28,13 +28,14 @@ Solo con autorización explícita, en una instancia que no sea institucional:
 6. `migrations/050_cases_and_plans.sql`
 7. `migrations/060_attentions_and_scheduling.sql`
 8. `migrations/070_documents_and_reporting.sql`
-9. `migrations/080_audit_and_security.sql`
-10. `migrations/090_constraints_and_indexes.sql`
-11. `seeds/010_confirmed_catalogs.sql` después de cambiar `@permitir` a 1
-12. `seeds/020_synthetic_dataset.sql` después de cambiar `@permitir_sintetico` a 1, solo en desarrollo
-13. `seeds/030_synthetic_scale.sql` en desarrollo, con `@permitir_escala = 1`, semilla fija y `@escala` en `small`, luego `medium`, luego `large`
-14. `seeds/040_territorial_coverage.sql` en desarrollo, con `@permitir_cobertura = 1` y la misma semilla, solo si la auditoría muestra establecimientos activos elegibles sin caso
-15. Pruebas, en el orden de `docs/TEST_PLAN.md`
+9. `migrations/071_informe_clave_unica.sql`
+10. `migrations/080_audit_and_security.sql`
+11. `migrations/090_constraints_and_indexes.sql`
+12. `seeds/010_confirmed_catalogs.sql` después de cambiar `@permitir` a 1
+13. `seeds/020_synthetic_dataset.sql` después de cambiar `@permitir_sintetico` a 1, solo en desarrollo
+14. `seeds/030_synthetic_scale.sql` en desarrollo, con `@permitir_escala = 1`, semilla fija y `@escala` en `small`, luego `medium`, luego `large`
+15. `seeds/040_territorial_coverage.sql` en desarrollo, con `@permitir_cobertura = 1` y la misma semilla, solo si la auditoría muestra establecimientos activos elegibles sin caso
+16. Pruebas, en el orden de `docs/TEST_PLAN.md`
 
 Cada archivo de migración es una invocación aparte. `001` crea la base; el resto empieza con `USE SIA_CENCINAI`.
 
