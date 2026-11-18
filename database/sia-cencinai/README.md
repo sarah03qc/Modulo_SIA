@@ -15,6 +15,7 @@ Estos archivos no modifican `SIDINACC_LOCAL`.
 | `tests/` | Validación de catálogo, integridad, transacciones, reportería y concurrencia. |
 | `queries/` | Consultas de las visualizaciones y conciliaciones. |
 | `docs/` | Diseño, migraciones, transacciones, seguridad, pruebas y huecos. |
+| `pending/` | Scripts 100, 101 y 102 del catálogo. En el repositorio `@permitir` queda en 0. |
 
 ## Orden de ejecución futura
 
@@ -38,6 +39,11 @@ Solo con autorización explícita, en una instancia que no sea institucional:
 16. Pruebas, en el orden de `docs/TEST_PLAN.md`
 
 Cada archivo de migración es una invocación aparte. `001` crea la base; el resto empieza con `USE SIA_CENCINAI`.
+
+En la base local de desarrollo ya se aplicaron los scripts `pending/100`, `101` y `102`.
+No forman parte de la cadena `001` a `090` y no se vuelven a ejecutar con las semillas.
+El catálogo vigente de motivos tiene 20 ítems. El instrumento de valoración vigente es la
+versión 2, con 9 categorías y 74 factores. La versión 1 queda histórica.
 
 Ejemplo, no ejecutado en este diseño:
 

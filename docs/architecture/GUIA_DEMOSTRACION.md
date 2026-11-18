@@ -23,7 +23,9 @@ Resultado esperado:
 
 Para la búsqueda, usar un criterio sintético de al menos dos caracteres.
 La lista de referencias ya existente confirma la consulta. No hace falta
-enviar una referencia nueva durante la demostración.
+enviar una referencia nueva durante la demostración. Nueva referencia recorre
+cuatro pasos y ofrece los veinte motivos del catálogo local, agrupados en
+Crecimiento, Desarrollo, Salud y Factores de riesgo.
 
 ## Oficina Local de demostración
 

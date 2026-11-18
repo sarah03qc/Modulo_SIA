@@ -91,7 +91,10 @@ El permiso es de columna. Una actualización de prueba se revirtió dentro de un
 
 Si el instrumento, las disciplinas o las estrategias no están en el catálogo vigente, la pantalla
 lo dice y no inventa factores ni opciones. La semilla sintética trae valores marcados como sintéticos.
-La clasificación entre atención grupal de A.I. y sesiones educativas generales sigue `NEEDS_VALIDATION`.
+En la base local de desarrollo el instrumento vigente es la versión 2, con nueve categorías y
+74 factores. La versión 1 permanece histórica. El catálogo vigente de motivos de referencia tiene
+veinte ítems. La clasificación entre atención grupal de A.I. y sesiones educativas generales
+sigue `NEEDS_VALIDATION`.
 
 ## Reportería Regional y Nacional, HU-040 a HU-043, 2026-11-16
 

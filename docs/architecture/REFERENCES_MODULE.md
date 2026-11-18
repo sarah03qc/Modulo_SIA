@@ -72,7 +72,7 @@ Versión técnica `SIA-REF-PLANTILLA-1`. Hoja `Referencia`, una fila de datos, e
 
 La precarga devuelve el mismo cuerpo que el envío manual, sin responsable. Confirmar llama a `submitReferral`. HU-014 sigue en propuesta de diseño validada: este libro no es el formulario gráfico definitivo.
 
-Los factores de riesgo individual, hogar-familiar y comunitario no están en el catálogo vigente. El catálogo los informa como `NEEDS_VALIDATION` y el filtro `FACTORES_RIESGO` no devuelve filas. No se inventaron ítems.
+El catálogo vigente tiene veinte motivos: dos de Crecimiento, dos de Desarrollo, trece de Salud y tres factores de riesgo, individual, hogar-familiar y comunitario. La clasificación está en `MOTIVE_CATEGORY_BY_CODE`. La precarga de la plantilla acepta esos códigos y no envía la referencia.
 
 ## Documento
 

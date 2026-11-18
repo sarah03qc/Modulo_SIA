@@ -13,8 +13,8 @@ Crea la versión 2 del instrumento con las nueve categorías de RF-042 y los
 La versión 1 sintética deja de estar vigente y conserva sus filas.
 Las valoraciones ya emitidas siguen apuntando a su instrumento_version_id.
 
-Hasta que una persona autorice este texto como instrumento vigente, el
-estado funcional de los ítems es NEEDS_VALIDATION.
+La activación en la base local de desarrollo no oficializa el instrumento
+ante la institución.
 
 Para aplicarlo en una instancia de desarrollo autorizada, cambie @permitir a 1.
 */

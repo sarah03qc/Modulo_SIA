@@ -16,8 +16,7 @@ RF-024, HU-013 CA-13 y CU-04 distinguen:
 - Factor de riesgo hogar-familiar
 - Factor de riesgo comunitario
 
-No agrega las alternativas de Salud del prototipo que v0.7 no enumera.
-Esas alternativas quedan NEEDS_VALIDATION.
+Las doce opciones de Salud del prototipo se agregan en el script 102.
 
 Para aplicarlo en una instancia de desarrollo autorizada, cambie @permitir a 1.
 */

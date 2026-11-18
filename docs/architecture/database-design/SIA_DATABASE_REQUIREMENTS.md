@@ -99,8 +99,8 @@ Hechos confirmados (HU-013, HU-014, HU-015 a HU-018; RF-021 a RF-037, RF-114 a R
 - Varios motivos de catálogo, cada uno con especificación opcional. Al quitar el motivo se invalida la especificación (RF-026).
 - Motivos confirmados de Crecimiento: `Condición de malnutrición`, `Malnutrición con necesidades especiales`.
 - Motivos confirmados de Desarrollo: `EDIN II: riesgo de retraso (rojo)`, `EVADE: riesgo de rezago (0,1 sin logro de edad anterior)`. Son motivos declarados por la persona que refiere, no resultados recalculados por SIA.
-- Salud puede incluir `Otra condición de salud`. El resto de alternativas de Salud no está enumerado.
-- Factores de riesgo de referencia distinguen ámbito individual, hogar-familiar y comunitario, sin opción genérica `Otro factor de riesgo`. Los ítems concretos de ese grupo no están enumerados.
+- Salud incluye trece condiciones: alteración visual, auditiva, del lenguaje, motora y de salud oral; alergia alimentaria; enfermedad crónica; lactancia materna / alimentación complementaria; trastorno específico del aprendizaje; sospecha o diagnóstico de trastorno del neurodesarrollo; alteraciones emocionales; alteraciones conductuales; y otra condición de salud.
+- Factores de riesgo de referencia: individual, hogar-familiar y comunitario. No hay una opción genérica `Otro factor de riesgo`.
 - Acciones previas, resultados previos e información complementaria: tres textos distintos.
 - Consecutivo digitado por la persona usuaria, `DNCC-DRXX-OLXXX-{código de establecimiento}-REF-XXX-20XX`, único, más un identificador técnico. El sistema valida formato y unicidad; no lo genera ni exige correlatividad. Códigos regionales identificados: CS, HN, CH, HC, BR, CN, PC, CO, CE. El establecimiento es el del niño, no el del digitador.
 - Contexto histórico del apartado 2.3.
