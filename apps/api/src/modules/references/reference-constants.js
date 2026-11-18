@@ -46,21 +46,25 @@ const STATUS_LABEL = Object.freeze({
 });
 
 /**
- * Agrupación de lectura de los motivos confirmados en el catálogo vigente.
- * No inventa ítems de factores de riesgo: esos códigos no están en la semilla.
+ * Agrupación de lectura. Los tres factores de riesgo son la distinción de
+ * RF-024 y CA-13. No se publican en el formulario hasta existir en SQL.
  */
 const MOTIVE_CATEGORY_BY_CODE = Object.freeze({
   CONDICION_MALNUTRICION: 'CRECIMIENTO',
   MALNUTRICION_NECESIDADES_ESPECIALES: 'CRECIMIENTO',
   EDIN_II_RIESGO_RETRASO_ROJO: 'DESARROLLO',
   EVADE_RIESGO_REZAGO_0_1: 'DESARROLLO',
-  OTRA_CONDICION_SALUD: 'SALUD'
+  OTRA_CONDICION_SALUD: 'SALUD',
+  FACTOR_RIESGO_INDIVIDUAL: 'FACTORES_RIESGO',
+  FACTOR_RIESGO_HOGAR_FAMILIAR: 'FACTORES_RIESGO',
+  FACTOR_RIESGO_COMUNITARIO: 'FACTORES_RIESGO'
 });
 
 const CATEGORY_LABEL = Object.freeze({
   CRECIMIENTO: 'Crecimiento',
   DESARROLLO: 'Desarrollo',
   SALUD: 'Salud',
+  FACTORES_RIESGO: 'Factores de riesgo',
   SIN_CLASIFICAR: 'Sin clasificación confirmada'
 });
 

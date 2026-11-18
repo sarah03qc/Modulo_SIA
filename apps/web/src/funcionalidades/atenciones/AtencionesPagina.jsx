@@ -1,6 +1,8 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-16.
+ * Modificación: 2026-11-17. Contexto de la vista y asistencia
+ * Presente / Ausente.
  * HU-036 y HU-037. Una actividad grupal se guarda una sola vez.
  */
 import { useEffect, useState } from 'react';
@@ -167,6 +169,7 @@ export default function AtencionesPagina({
   }
   return (
     <>
+      <p className="contexto">Atención y seguimiento</p>
       <h1>Atenciones</h1>
       {error ? <Aviso>{error}</Aviso> : null}
       {mensaje ? <Aviso tipo="ok">{mensaje}</Aviso> : null}
@@ -403,7 +406,7 @@ export default function AtencionesPagina({
                       ))
                     })}
                   />
-                  Asistió
+                  {item.asistio ? 'Presente' : 'Ausente'}
                 </label>
               </li>
             ))}

@@ -3,6 +3,7 @@
  * Creación: 2026-11-14.
  * Modificación: 2026-11-16. Expediente, programación, reportería
  * y consulta de casos de Región y Nacional.
+ * Modificación: 2026-11-17. Etiquetas de categoría y cobertura de nueve grupos.
  * HU-001, HU-002 y HU-018 a HU-025, HU-048. El equipo decide; RN-009 calcula la prioridad.
  */
 'use strict';
@@ -34,9 +35,9 @@ const LIMITE_NOMBRES = 100;
 const LIMITE_EXPORTACION = 2000;
 const LIMITE_ACCIONES = 8;
 const ETIQUETA_EJE = Object.freeze({
-  PROTECTOR: 'Factor protector',
-  RIESGO: 'Factor de riesgo',
-  SIGNO_ALERTA: 'Signo de alerta'
+  PROTECTOR: 'Factores protectores',
+  RIESGO: 'Factores de riesgo',
+  SIGNO_ALERTA: 'Signos de alerta'
 });
 const ETIQUETA_AMBITO = Object.freeze({
   INDIVIDUAL: 'Individual',
@@ -353,11 +354,17 @@ function AgruparInstrumento(filas) {
       });
     }
   }
+  const presentes = categorias.size;
   return {
     disponibilidad: 'DISPONIBLE',
     instrumentoVersionId: Number(filas[0].instrumento_version_id),
     numeroVersion: Number(filas[0].numero_version),
-    categorias: [...categorias.values()]
+    categorias: [...categorias.values()],
+    cobertura: {
+      categoriasPresentes: presentes,
+      categoriasEsperadas: 9,
+      completa: presentes === 9
+    }
   };
 }
 

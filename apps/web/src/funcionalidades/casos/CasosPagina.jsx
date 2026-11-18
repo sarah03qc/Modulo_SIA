@@ -1,6 +1,8 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-14.
+ * Modificación: 2026-11-17. Nivel de riesgo, título de casos,
+ * contexto y nombres de filtros.
  * Modificación: 2026-11-16. Paginación, exportación, línea de tiempo,
  * ciclo del caso, apertura directa, clave única y consulta Regional y Nacional.
  * HU-023, HU-024, HU-025 y HU-032 a HU-035.
@@ -34,7 +36,7 @@ function TituloCasos(contexto) {
     return 'Casos nacionales';
   }
   if (contexto.puedeVerCasosOficina) {
-    return 'Casos de la Oficina Local';
+    return 'Casos de Atención Interdisciplinaria';
   }
   return 'Lista de Atención Interdisciplinaria';
 }
@@ -206,6 +208,7 @@ export default function CasosPagina({
 
   return (
     <>
+      <p className="contexto">Gestión del caso</p>
       <h1>{TituloCasos(contexto)}</h1>
       {superior ? <p>La consulta no modifica casos ni habilita la gestión de Oficina Local.</p> : null}
       <form onSubmit={(evento) => {
@@ -220,14 +223,14 @@ export default function CasosPagina({
         <Campo id="caso-nombre" etiqueta="Nombre">
           <input id="caso-nombre" value={consulta.nombre} onChange={(evento) => establecerConsulta({ ...consulta, nombre: evento.target.value, identificacion: '' })} />
         </Campo>
-        <Campo id="caso-estado" etiqueta="Estado">
+        <Campo id="caso-estado" etiqueta="Estado del caso">
           <select id="caso-estado" value={consulta.estado} onChange={(evento) => establecerConsulta({ ...consulta, estado: evento.target.value })}>
             <option value="">Todos</option>
             <option value="ACTIVO">Activo</option>
             <option value="CERRADO">Cerrado</option>
           </select>
         </Campo>
-        <Campo id="caso-prioridad" etiqueta="Prioridad A.I.">
+        <Campo id="caso-prioridad" etiqueta="Prioridad del caso">
           <select id="caso-prioridad" value={consulta.prioridad} onChange={(evento) => establecerConsulta({ ...consulta, prioridad: evento.target.value })}>
             <option value="">Todas</option>
             <option value="ALTO">Alto</option>
@@ -419,7 +422,10 @@ export default function CasosPagina({
           <p>
             Prioridad vigente: <strong className={ClasePrioridad(detalle.prioridadCodigo)}>{detalle.prioridadEtiqueta || 'Sin valoración vigente'}</strong>
           </p>
-          <p>Riesgo profesional: {detalle.riesgoCodigo || 'No registrado'}. Protección: {detalle.proteccionCodigo || 'No registrada'}.</p>
+          <p>
+            Nivel de riesgo: {detalle.riesgoCodigo || 'No registrado'}.
+            Nivel de protección: {detalle.proteccionCodigo || 'No registrada'}.
+          </p>
           <h3>Contexto de ingreso</h3>
           <p>Encargado: {detalle.contextoIngreso.encargado || 'No registrado'}</p>
           <p>Relación: {detalle.contextoIngreso.relacion || 'No registrada'}</p>

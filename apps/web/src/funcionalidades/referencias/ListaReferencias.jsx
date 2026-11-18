@@ -1,6 +1,7 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-14.
+ * Modificación: 2026-11-17. Título, filtros y detalle de la bandeja.
  * HU-015, HU-016, HU-017 y HU-018.
  */
 import { useEffect, useState } from 'react';
@@ -12,6 +13,30 @@ const ESTADOS = [
   ['PENDIENTE_REVISION', 'Pendiente de revisión'],
   ['ADMITIDA_AI', 'Admitida a A.I.'],
   ['NO_REQUIERE_AI', 'No requiere A.I.']
+];
+
+const ORIGENES = [
+  ['', 'Todos'],
+  ['VIGILANCIA_TAMIZAJE', 'Vigilancia / tamizaje'],
+  ['OBSERVACION', 'Observación'],
+  ['INFORMACION_FAMILIA_U_OTROS', 'Información aportada por la familia u otros'],
+  ['REFERENCIA_EXTERNA', 'Referencia externa']
+];
+
+const CATEGORIAS = [
+  ['', 'Todas'],
+  ['CRECIMIENTO', 'Crecimiento'],
+  ['DESARROLLO', 'Desarrollo'],
+  ['SALUD', 'Salud'],
+  ['FACTORES_RIESGO', 'Factores de riesgo']
+];
+
+const GRUPOS = [
+  ['CRECIMIENTO', 'Crecimiento'],
+  ['DESARROLLO', 'Desarrollo'],
+  ['SALUD', 'Salud'],
+  ['FACTORES_RIESGO', 'Factores de riesgo'],
+  ['SIN_CLASIFICAR', 'Sin clasificación confirmada']
 ];
 
 export default function ListaReferencias({
@@ -26,6 +51,9 @@ export default function ListaReferencias({
   const [identificacion, establecerIdentificacion] = useState('');
   const [nombre, establecerNombre] = useState('');
   const [via, establecerVia] = useState('');
+  const [origen, establecerOrigen] = useState('');
+  const [categoria, establecerCategoria] = useState('');
+  const [consecutivo, establecerConsecutivo] = useState('');
   const [pagina, establecerPagina] = useState(null);
   const [detalle, establecerDetalle] = useState(null);
   const [error, establecerError] = useState('');
@@ -46,6 +74,15 @@ export default function ListaReferencias({
     if (via) {
       parametros.set('attentionRoute', via);
     }
+    if (origen) {
+      parametros.set('origin', origen);
+    }
+    if (categoria) {
+      parametros.set('category', categoria);
+    }
+    if (consecutivo.trim()) {
+      parametros.set('consecutive', consecutivo.trim());
+    }
     solicitarApi(direccionApi, `/api/references?${parametros.toString()}`, { identidad })
       .then((datos) => {
         if (vigente) {
@@ -62,7 +99,7 @@ export default function ListaReferencias({
     return () => {
       vigente = false;
     };
-  }, [direccionApi, identidad, estado, identificacion, nombre, via, solicitarApi]);
+  }, [direccionApi, identidad, estado, identificacion, nombre, via, origen, categoria, consecutivo, solicitarApi]);
 
   async function VerDetalle(referenceId) {
     establecerError('');
@@ -94,7 +131,13 @@ export default function ListaReferencias({
   const items = pagina && pagina.result ? pagina.result.items : [];
   return (
     <>
-      <h1>{soloPendientes ? 'Referencias pendientes de revisión' : 'Referencias'}</h1>
+      <p className="contexto">Detección y referencia</p>
+      <h1>
+        {soloPendientes
+          ? 'Referencias pendientes de revisión'
+          : 'Referencias a Atención Interdisciplinaria'}
+      </h1>
+      <h2>Bandeja de referencias</h2>
       <form onSubmit={(evento) => evento.preventDefault()}>
         <Campo id="filtro-estado" etiqueta="Estado">
           <select id="filtro-estado" value={estado} onChange={(evento) => establecerEstado(evento.target.value)}>
@@ -107,11 +150,28 @@ export default function ListaReferencias({
         <Campo id="filtro-nombre" etiqueta="Nombre">
           <input id="filtro-nombre" value={nombre} onChange={(evento) => establecerNombre(evento.target.value)} />
         </Campo>
-        <Campo id="filtro-via" etiqueta="Vía de atención">
+        <Campo id="filtro-consecutivo" etiqueta="Consecutivo">
+          <input id="filtro-consecutivo" value={consecutivo} onChange={(evento) => establecerConsecutivo(evento.target.value)} />
+        </Campo>
+        <Campo id="filtro-via" etiqueta="Vía de Atención">
           <select id="filtro-via" value={via} onChange={(evento) => establecerVia(evento.target.value)}>
             <option value="">Todas</option>
             <option value="URGENCIA">Urgencia</option>
             <option value="NO_INMEDIATA">No inmediata</option>
+          </select>
+        </Campo>
+        <Campo id="filtro-origen" etiqueta="Origen">
+          <select id="filtro-origen" value={origen} onChange={(evento) => establecerOrigen(evento.target.value)}>
+            {ORIGENES.map(([valor, etiqueta]) => (
+              <option key={valor || 'todos-origen'} value={valor}>{etiqueta}</option>
+            ))}
+          </select>
+        </Campo>
+        <Campo id="filtro-categoria" etiqueta="Categoría">
+          <select id="filtro-categoria" value={categoria} onChange={(evento) => establecerCategoria(evento.target.value)}>
+            {CATEGORIAS.map(([valor, etiqueta]) => (
+              <option key={valor || 'todas-categoria'} value={valor}>{etiqueta}</option>
+            ))}
           </select>
         </Campo>
       </form>
@@ -160,7 +220,7 @@ export default function ListaReferencias({
       ) : null}
       {detalle ? (
         <section className="panel" aria-labelledby="titulo-detalle-referencia">
-          <h2 id="titulo-detalle-referencia">Detalle de la referencia</h2>
+          <h2 id="titulo-detalle-referencia">Detalle de referencia</h2>
           <p>Consecutivo: {detalle.consecutive}</p>
           <p>Estado: {detalle.statusLabel}</p>
           <p>Fecha de referencia: {detalle.referenceDate}</p>
@@ -170,14 +230,45 @@ export default function ListaReferencias({
           <p>Vía: {detalle.attentionRoute.label}</p>
           <p>Identificación: {detalle.person.personId}</p>
           <p>Nombre vigente: {detalle.person.fullName || 'No disponible'}</p>
+          {detalle.historicalContext ? (
+            <>
+              <p>Región: {detalle.historicalContext.regionName || 'No disponible'}</p>
+              <p>Oficina Local: {detalle.historicalContext.localOfficeName || 'No disponible'}</p>
+              <p>Establecimiento: {detalle.historicalContext.establishmentName || 'No disponible'}</p>
+            </>
+          ) : null}
           <h3>Motivos</h3>
-          <ul>
-            {detalle.motives.map((motivo) => (
-              <li key={motivo.code}>{motivo.label}{motivo.specification ? ` — ${motivo.specification}` : ''}</li>
-            ))}
-          </ul>
+          {GRUPOS.map(([codigo, etiqueta]) => {
+            const motivos = detalle.motives.filter((motivo) => motivo.category === codigo);
+            if (motivos.length === 0) {
+              return null;
+            }
+            return (
+              <div key={codigo}>
+                <h4>{etiqueta}</h4>
+                <ul>
+                  {motivos.map((motivo) => (
+                    <li key={motivo.code}>
+                      {motivo.label}{motivo.specification ? ` — ${motivo.specification}` : ''}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
+          <p>
+            Acciones realizadas previo a la referencia: {detalle.previousActions || 'No disponible'}
+          </p>
+          <p>
+            Resultados obtenidos previo a la referencia: {detalle.previousResults || 'No disponible'}
+          </p>
+          <p>
+            Información complementaria asociada al motivo de referencia:
+            {' '}
+            {detalle.complementaryInformation || 'No disponible'}
+          </p>
           <div className="acciones">
-            <button type="button" onClick={() => Descargar(detalle.referenceId)}>Descargar documento</button>
+            <button type="button" onClick={() => Descargar(detalle.referenceId)}>Imprimir referencia</button>
             {contexto.puedeGestionarSesiones && detalle.status === 'PENDIENTE_REVISION' ? (
               <button type="button" className="secundario" onClick={() => navegar('sesiones', { referenciaId: detalle.referenceId })}>
                 Llevar a una sesión

@@ -168,8 +168,8 @@ function LeerConsultaReferencias(query) {
     attentionRoute,
     origin,
     category,
-    motiveCodes: category && category !== 'FACTORES_RIESGO' ? CodigosMotivoDeCategoria(category) : [],
-    categoryHasNoConfirmedCodes: category === 'FACTORES_RIESGO',
+    motiveCodes: category ? CodigosMotivoDeCategoria(category) : [],
+    categoryHasNoConfirmedCodes: Boolean(category) && CodigosMotivoDeCategoria(category).length === 0,
     establishmentId: LeerEnteroOpcional(source.establishmentId, 'establishmentId')
   };
 }

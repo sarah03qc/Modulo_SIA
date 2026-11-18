@@ -427,7 +427,7 @@ function CrearServicioReferencias(dependencies) {
 
   /**
    * Publica el catálogo vigente de vías, orígenes y motivos.
-   * Los factores de riesgo no están confirmados: se informan vacíos, sin inventar códigos.
+   * Los factores de riesgo solo aparecen si la versión vigente los trae.
    */
   async function ListarCatalogos(acceso) {
     ExigirCapacidad(acceso, CAPABILITY.REFERRAL_CREATE);
@@ -437,15 +437,19 @@ function CrearServicioReferencias(dependencies) {
       category: CategoriaDeMotivo(item.code),
       categoryLabel: CATEGORY_LABEL[CategoriaDeMotivo(item.code)]
     }));
+    const riskItems = motives.filter((item) => item.category === 'FACTORES_RIESGO');
     return {
       attentionRoutes: [...catalog.routes.values()],
       origins: [...catalog.origins.values()],
       motives,
-      riskFactors: {
-        status: 'NEEDS_VALIDATION',
-        items: [],
-        message: 'El catálogo vigente no incluye motivos de factor de riesgo por ámbito individual, hogar-familiar y comunitario.'
-      }
+      riskFactors: riskItems.length > 0
+        ? { status: 'DISPONIBLE', items: riskItems, message: null }
+        : {
+          status: 'NEEDS_VALIDATION',
+          items: [],
+          message: 'El catálogo vigente no incluye motivos de factor de riesgo '
+            + 'por ámbito individual, hogar-familiar y comunitario.'
+        }
     };
   }
 

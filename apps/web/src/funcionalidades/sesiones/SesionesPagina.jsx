@@ -1,6 +1,7 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-14.
+ * Modificación: 2026-11-17. Contexto de Equipo Interdisciplinario.
  * HU-019. La sesión puede guardarse sin situaciones y recibirlas después.
  */
 import { useEffect, useState } from 'react';
@@ -156,6 +157,7 @@ export default function SesionesPagina({
   }
   return (
     <>
+      <p className="contexto">Equipo Interdisciplinario</p>
       <h1>Sesiones interdisciplinarias</h1>
       {error ? <Aviso>{error}</Aviso> : null}
       {mensaje ? <Aviso tipo="ok">{mensaje}</Aviso> : null}
@@ -163,7 +165,7 @@ export default function SesionesPagina({
         ? <Aviso tipo="pendiente">{catalogos.disciplinas.mensaje}</Aviso>
         : null}
       <form onSubmit={Crear}>
-        <h2>Registrar sesión</h2>
+        <h2>Nueva sesión</h2>
         <Campo id="fecha-sesion" etiqueta="Fecha">
           <input id="fecha-sesion" type="date" required value={formulario.fecha} onChange={(evento) => establecerFormulario({ ...formulario, fecha: evento.target.value })} />
         </Campo>

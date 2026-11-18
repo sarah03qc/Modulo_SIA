@@ -2,6 +2,7 @@
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-16.
  * Modificación: 2026-11-16. El alta y la resolución usan metodo y json.
+ * Modificación: 2026-11-17. Título de planificación operativa.
  * HU-044 y HU-002. La resolución no borra la actividad anterior.
  */
 import { useEffect, useState } from 'react';
@@ -163,7 +164,8 @@ export default function ProgramacionPagina({
   const puedeGestionar = contexto && contexto.puedeGestionarProgramacion;
   return (
     <>
-      <h1>Programación de la Oficina Local</h1>
+      <p className="contexto">Planificación operativa</p>
+      <h1>Programación</h1>
       <p>
         Fecha de consulta: {consulta.fechaConsulta}. Una actividad vencida sigue
         programada después de su fecha. El texto «Vencida» acompaña la alerta.

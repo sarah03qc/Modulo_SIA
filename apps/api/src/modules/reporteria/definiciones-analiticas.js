@@ -80,35 +80,35 @@ const CATALOGO_VISUALIZACIONES = Object.freeze([
   {
     numero: 6,
     codigo: 'MOTIVOS_CANCELACION',
-    titulo: 'Principales motivos de cancelación',
+    titulo: 'Principales motivos de cancelación de actividades programadas',
     formato: 'TABLA',
     fecha: 'Fecha del evento de cancelación. No usa la fecha vigente de la actividad.'
   },
   {
     numero: 7,
     codigo: 'MOTIVOS_REFERENCIA',
-    titulo: 'Motivos de referencia a Atención Interdisciplinaria',
+    titulo: 'Principales motivos de referencia a A.I.',
     formato: 'NUBE',
     fecha: 'Fecha de la referencia. No usa la fecha de digitación ni la de envío técnico.'
   },
   {
     numero: 8,
     codigo: 'ATENCIONES_TIPO',
-    titulo: 'Atenciones realizadas por tipo',
+    titulo: 'Atenciones REALIZADAS por tipo',
     formato: 'DISTRIBUCION',
     fecha: 'Fecha real de atención. Excluye programación, reprogramación y cancelación.'
   },
   {
     numero: 9,
     codigo: 'MOTIVOS_CIERRE',
-    titulo: 'Motivos de cierre',
+    titulo: 'Motivos de cierre de casos A.I.',
     formato: 'CIRCULAR',
     fecha: 'Fecha de cierre. Traslado no se suma a cierre satisfactorio.'
   },
   {
     numero: 10,
     codigo: 'PALABRAS_OTRO',
-    titulo: 'Palabras frecuentes en cierres Otro',
+    titulo: 'Palabras más frecuentes en cierres con motivo Otro',
     formato: 'NUBE',
     fecha: 'Explicaciones de cierres Otro cuya fecha de cierre cae en el año.'
   },

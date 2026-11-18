@@ -2,11 +2,44 @@
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-14.
  * Modificación: 2026-11-16. Especificación por factor y versión de abordaje.
+ * Modificación: 2026-11-17. Niveles, ámbitos y resumen de cada categoría.
  * Valoración, decisión y apertura de una situación. HU-020 a HU-022.
  */
 import { useState } from 'react';
 import { Aviso, Campo, ClasePrioridad } from '../../componentes/interfaz';
 import { SolicitarApi } from '../../servicios/cliente-api';
+
+const ORDEN_AMBITO = ['INDIVIDUAL', 'HOGAR_FAMILIAR', 'COMUNITARIO'];
+const ORDEN_EJE = ['PROTECTOR', 'RIESGO', 'SIGNO_ALERTA'];
+const TITULO_AMBITO = {
+  INDIVIDUAL: 'Individual',
+  HOGAR_FAMILIAR: 'Hogar/Familiar',
+  COMUNITARIO: 'Comunitario'
+};
+
+function ResumenCategoria(respuesta) {
+  if (!respuesta.respuesta) {
+    return 'Pendiente';
+  }
+  if (respuesta.respuesta === 'NINGUNO') {
+    return 'Ninguno';
+  }
+  const cantidad = respuesta.factores.length;
+  return cantidad === 1 ? '1 seleccionado' : `${cantidad} seleccionados`;
+}
+
+function AgruparCategorias(categorias) {
+  const usadas = new Set();
+  const grupos = ORDEN_AMBITO.map((ambito) => {
+    const items = ORDEN_EJE
+      .map((eje) => categorias.find((item) => item.ambito === ambito && item.eje === eje))
+      .filter(Boolean);
+    items.forEach((item) => usadas.add(item.categoriaId));
+    return { ambito, items };
+  });
+  const resto = categorias.filter((item) => !usadas.has(item.categoriaId));
+  return { grupos, resto };
+}
 
 const APERTURA_VACIA = {
   propositos: '',
@@ -18,6 +51,113 @@ const APERTURA_VACIA = {
 
 function Alternar(lista, valor) {
   return lista.includes(valor) ? lista.filter((item) => item !== valor) : [...lista, valor];
+}
+
+function CategoriaValoracion({ categoria, respuesta, alCambiar }) {
+  return (
+    <details className="categoria">
+      <summary>
+        {categoria.etiqueta}
+        <span className="resumen-categoria">{ResumenCategoria(respuesta)}</span>
+      </summary>
+      <div className="categoria-cuerpo">
+        <label>
+          <input
+            type="checkbox"
+            checked={respuesta.respuesta === 'NINGUNO'}
+            onChange={(evento) => alCambiar(categoria.categoriaId, {
+              respuesta: evento.target.checked ? 'NINGUNO' : '',
+              factores: []
+            })}
+          />
+          Ninguno
+        </label>
+        {categoria.factores.map((factor) => {
+          const seleccionado = respuesta.factores.find((item) => item.factorId === factor.factorId);
+          return (
+            <div key={factor.factorId}>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={Boolean(seleccionado)}
+                  onChange={(evento) => {
+                    const factores = evento.target.checked
+                      ? [...respuesta.factores, { factorId: factor.factorId, especificacion: '' }]
+                      : respuesta.factores.filter((item) => item.factorId !== factor.factorId);
+                    alCambiar(categoria.categoriaId, {
+                      respuesta: factores.length > 0 ? 'FACTORES' : '',
+                      factores
+                    });
+                  }}
+                />
+                {factor.etiqueta}
+              </label>
+              {seleccionado ? (
+                <input
+                  aria-label={`Especificación de ${factor.etiqueta}`}
+                  required={factor.esAbierto}
+                  value={seleccionado.especificacion || ''}
+                  onChange={(evento) => {
+                    const factores = respuesta.factores.map((item) => (
+                      item.factorId === factor.factorId
+                        ? { ...item, especificacion: evento.target.value }
+                        : item
+                    ));
+                    alCambiar(categoria.categoriaId, {
+                      respuesta: 'FACTORES',
+                      factores
+                    });
+                  }}
+                />
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+    </details>
+  );
+}
+
+function CategoriasValoracion({ categorias, valoracion, alCambiar }) {
+  const { grupos, resto } = AgruparCategorias(categorias);
+  return (
+    <>
+      {grupos.map((grupo) => (
+        <section
+          key={grupo.ambito}
+          className="ambito-valoracion"
+          role="region"
+          aria-label={TITULO_AMBITO[grupo.ambito]}
+        >
+          <h4>{TITULO_AMBITO[grupo.ambito]}</h4>
+          {grupo.items.length === 0 ? (
+            <p>Este ámbito no tiene categorías en el instrumento vigente.</p>
+          ) : grupo.items.map((categoria) => (
+            <CategoriaValoracion
+              key={categoria.categoriaId}
+              categoria={categoria}
+              respuesta={valoracion.categorias.find((item) => item.categoriaId === categoria.categoriaId) || {
+                respuesta: '',
+                factores: []
+              }}
+              alCambiar={alCambiar}
+            />
+          ))}
+        </section>
+      ))}
+      {resto.map((categoria) => (
+        <CategoriaValoracion
+          key={categoria.categoriaId}
+          categoria={categoria}
+          respuesta={valoracion.categorias.find((item) => item.categoriaId === categoria.categoriaId) || {
+            respuesta: '',
+            factores: []
+          }}
+          alCambiar={alCambiar}
+        />
+      ))}
+    </>
+  );
 }
 
 export default function SituacionTrabajo({
@@ -144,77 +284,29 @@ export default function SituacionTrabajo({
         ? <Aviso tipo="pendiente">{instrumento.mensaje}</Aviso>
         : null}
       {instrumento && instrumento.disponibilidad === 'DISPONIBLE'
-        ? instrumento.categorias.map((categoria) => {
-          const respuesta = valoracion.categorias.find((item) => item.categoriaId === categoria.categoriaId) || {
-            respuesta: '',
-            factores: []
-          };
-          return (
-            <details key={categoria.categoriaId} className="categoria">
-              <summary>{categoria.etiqueta}</summary>
-              <div className="categoria-cuerpo">
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={respuesta.respuesta === 'NINGUNO'}
-                    onChange={(evento) => CambiarCategoria(categoria.categoriaId, {
-                      respuesta: evento.target.checked ? 'NINGUNO' : '',
-                      factores: []
-                    })}
-                  />
-                  Ninguno
-                </label>
-                {categoria.factores.map((factor) => {
-                  const seleccionado = respuesta.factores.find((item) => item.factorId === factor.factorId);
-                  return (
-                    <div key={factor.factorId}>
-                      <label>
-                        <input
-                          type="checkbox"
-                          checked={Boolean(seleccionado)}
-                          onChange={(evento) => {
-                            const factores = evento.target.checked
-                              ? [...respuesta.factores, { factorId: factor.factorId, especificacion: '' }]
-                              : respuesta.factores.filter((item) => item.factorId !== factor.factorId);
-                            CambiarCategoria(categoria.categoriaId, {
-                              respuesta: factores.length > 0 ? 'FACTORES' : '',
-                              factores
-                            });
-                          }}
-                        />
-                        {factor.etiqueta}
-                      </label>
-                      {seleccionado ? (
-                        <input
-                          aria-label={`Especificación de ${factor.etiqueta}`}
-                          required={factor.esAbierto}
-                          value={seleccionado.especificacion || ''}
-                          onChange={(evento) => {
-                            const factores = respuesta.factores.map((item) => (
-                              item.factorId === factor.factorId
-                                ? { ...item, especificacion: evento.target.value }
-                                : item
-                            ));
-                            CambiarCategoria(categoria.categoriaId, {
-                              respuesta: 'FACTORES',
-                              factores
-                            });
-                          }}
-                        />
-                      ) : null}
-                    </div>
-                  );
-                })}
-              </div>
-            </details>
-          );
-        })
+        && instrumento.cobertura && !instrumento.cobertura.completa ? (
+          <Aviso tipo="pendiente">
+            El instrumento vigente trae {instrumento.cobertura.categoriasPresentes}
+            {' '}de 9 categorías. No se agregan factores fuera de esa versión.
+          </Aviso>
+        ) : null}
+      {instrumento && instrumento.disponibilidad === 'DISPONIBLE'
+        ? (
+          <CategoriasValoracion
+            categorias={instrumento.categorias}
+            valoracion={valoracion}
+            alCambiar={CambiarCategoria}
+          />
+        )
         : null}
-      <Campo id={`riesgo-${situacion.situacionId}`} etiqueta="Riesgo profesional">
+      <Campo id={`riesgo-${situacion.situacionId}`} etiqueta="Nivel de riesgo">
         <select
           id={`riesgo-${situacion.situacionId}`}
           value={valoracion.riesgoCodigo}
-          onChange={(evento) => establecerValoracion({ ...valoracion, riesgoCodigo: evento.target.value })}
+          onChange={(evento) => {
+            establecerPrioridad(null);
+            establecerValoracion({ ...valoracion, riesgoCodigo: evento.target.value });
+          }}
         >
           <option value="">Seleccione</option>
           <option value="ALTO">Alto</option>
@@ -222,11 +314,14 @@ export default function SituacionTrabajo({
           <option value="BAJO">Bajo</option>
         </select>
       </Campo>
-      <Campo id={`proteccion-${situacion.situacionId}`} etiqueta="Protección profesional">
+      <Campo id={`proteccion-${situacion.situacionId}`} etiqueta="Nivel de protección">
         <select
           id={`proteccion-${situacion.situacionId}`}
           value={valoracion.proteccionCodigo}
-          onChange={(evento) => establecerValoracion({ ...valoracion, proteccionCodigo: evento.target.value })}
+          onChange={(evento) => {
+            establecerPrioridad(null);
+            establecerValoracion({ ...valoracion, proteccionCodigo: evento.target.value });
+          }}
         >
           <option value="">Seleccione</option>
           <option value="ALTA">Alta</option>

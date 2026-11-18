@@ -108,9 +108,12 @@ function GenerarDocumentoReferencia(detail, generatedAt) {
   <table>
     ${FilaDefinicion('Vía de Atención', detail.attentionRoute.label)}
     ${FilaDefinicion('Origen', detail.origin.label)}
-    ${FilaDefinicion('Acciones previas', detail.previousActions)}
-    ${FilaDefinicion('Resultados previos', detail.previousResults)}
-    ${FilaDefinicion('Información complementaria', detail.complementaryInformation)}
+    ${FilaDefinicion('Acciones realizadas previo a la referencia', detail.previousActions)}
+    ${FilaDefinicion('Resultados obtenidos previo a la referencia', detail.previousResults)}
+    ${FilaDefinicion(
+      'Información complementaria asociada al motivo de referencia',
+      detail.complementaryInformation
+    )}
   </table>
   <h2>Motivos y especificaciones</h2>
   <ul>${motives || '<li>No disponible</li>'}</ul>

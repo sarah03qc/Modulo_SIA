@@ -9,6 +9,7 @@ const {
   CodigosMotivoDeCategoria
 } = require('../src/modules/references/reference-rules');
 const { GenerarDocumentoReferencia } = require('../src/modules/references/reference-document');
+const { LeerConsultaReferencias } = require('../src/modules/references/reference-validation');
 
 const motives = new Map([
   ['CONDICION_MALNUTRICION', { itemId: 7, code: 'CONDICION_MALNUTRICION', label: 'Condición de malnutrición' }],
@@ -43,8 +44,12 @@ describe('reglas del consecutivo y de la consulta', () => {
     expect(() => NormalizarMotivos([{ code: 'OTRO_FACTOR' }], motives)).toThrow(/catálogo vigente/);
   });
 
-  test('la categoría de factores de riesgo no tiene códigos confirmados', () => {
-    expect(CodigosMotivoDeCategoria('FACTORES_RIESGO')).toEqual([]);
+  test('los factores de riesgo distinguen los tres ámbitos de RF-024', () => {
+    expect(CodigosMotivoDeCategoria('FACTORES_RIESGO')).toEqual([
+      'FACTOR_RIESGO_INDIVIDUAL',
+      'FACTOR_RIESGO_HOGAR_FAMILIAR',
+      'FACTOR_RIESGO_COMUNITARIO'
+    ]);
     expect(CodigosMotivoDeCategoria('CRECIMIENTO')).toEqual([
       'CONDICION_MALNUTRICION',
       'MALNUTRICION_NECESIDADES_ESPECIALES'
@@ -54,6 +59,16 @@ describe('reglas del consecutivo y de la consulta', () => {
       'EVADE_RIESGO_REZAGO_0_1'
     ]);
     expect(CodigosMotivoDeCategoria('SALUD')).toEqual(['OTRA_CONDICION_SALUD']);
+  });
+
+  test('la consulta de factores de riesgo filtra por los tres códigos', () => {
+    const consulta = LeerConsultaReferencias({ category: 'FACTORES_RIESGO' });
+    expect(consulta.categoryHasNoConfirmedCodes).toBe(false);
+    expect(consulta.motiveCodes).toEqual([
+      'FACTOR_RIESGO_INDIVIDUAL',
+      'FACTOR_RIESGO_HOGAR_FAMILIAR',
+      'FACTOR_RIESGO_COMUNITARIO'
+    ]);
   });
 
   test('el filtro SQL no interpola el texto buscado', () => {
