@@ -91,6 +91,11 @@ function RelanzarErrorPersistencia(error) {
   if (error && error.code === 'DRAFT_MISMATCH') {
     throw new ErrorValidacion('El borrador indicado no corresponde a la persona de esta referencia.');
   }
+  if (error && error.code === 'POSIBLE_NO_DISPONIBLE') {
+    throw new ErrorConflicto(
+      'La posible referencia ya no está pendiente o no corresponde a esta persona.'
+    );
+  }
   if (error && error.code === 'DRAFT_NOT_FOUND') {
     throw new ErrorNoEncontrado('El borrador solicitado no existe.');
   }
@@ -286,6 +291,7 @@ function CrearServicioReferencias(dependencies) {
       captureOrigin: solicitud.captureOrigin,
       templateVersion: solicitud.captureOrigin === CAPTURE_ORIGIN.TEMPLATE ? solicitud.templateVersion : null,
       draftId: solicitud.draftId || null,
+      posibleId: solicitud.posibleId || null,
       responsible,
       auditRole: acceso.accessLevel,
       identitySource: acceso.identitySource,

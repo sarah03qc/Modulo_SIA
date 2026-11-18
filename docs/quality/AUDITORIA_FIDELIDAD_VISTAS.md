@@ -40,7 +40,7 @@ comportamiento no fueron revisados.
 | D-021 | Reportería | Cinco títulos no coincidían con §15.3. | ERROR_CONFIRMADO | Títulos alineados en `definiciones-analiticas.js`. El 2026-11-18 se vieron las doce visualizaciones en Oficina Local, Región y Nacional. |
 | D-022 | Reportería | El título visible distingue Oficina Local, región y país. La guía usa «Reportería». | MEJORA_COMPATIBLE | Se conserva el ámbito en el título. |
 | D-023 | Inicio | «Posibles referencias» no tiene fuente verificada. | NEEDS_VALIDATION | Sigue como indicador que consume la disponibilidad del API. No hay pantalla ni conteo inventado. |
-| D-024 | Posibles referencias | HU-049 pide una sección independiente. No hay fuente SIDINACC autorizada para detectar candidatos. | NEEDS_VALIDATION | No se creó la pantalla. |
+| D-024 | Posibles referencias | HU-049 pide una sección independiente. El mapeo clínico de los códigos nutricionales no está confirmado. | NEEDS_VALIDATION | Hay pantalla, listado y detección local sintética. El modo institucional no genera sugerencias. |
 | D-025 | Coordinación | El prototipo lista instituciones de comparación. El catálogo institucional vigente debe confirmarse antes de sustituir opciones. | NEEDS_VALIDATION | El formulario usa el catálogo que devuelve el API. No se copió la lista del prototipo. |
 | D-026 | Diseño transversal | La guía sugiere barra lateral y paneles lado a lado. | MEJORA_COMPATIBLE | No se reconstruyó el frontend. La navegación superior y los cuatro ámbitos se conservan. |
 | D-027 | Casillas | La regla global `input { width: 100% }` separaba la casilla de su texto. | ERROR_CONFIRMADO | Corregido para motivos y categorías de valoración. Comprobado en el paso Motivo. |
@@ -262,7 +262,7 @@ La pantalla ya no avisa que el instrumento trae 2 de 9.
 | Casos | VERIFICADO el título y el expediente de un caso no reservado en Oficina Local. Región y Nacional muestran la consulta de solo lectura. |
 | Reportería | VERIFICADO el título y las doce visualizaciones en Oficina Local, Región y Nacional. |
 | Atenciones, programación, sesiones e inicio | Recorridos en navegador. No se creó una atención, una actividad ni un caso. |
-| Posibles referencias | PENDIENTE DE IMPLEMENTACIÓN como pantalla. No hay fuente de detección que pueda mostrarse sin inventar candidatos. |
+| Posibles referencias | IMPLEMENTADA la sección y la detección sintética local. El mapeo clínico institucional sigue sin validar. |
 | Calidad regional, laboratorio y chat | CAMBIO POSTERIOR APROBADO: v0.7 los retira. No se reintroducen. |
 | Continuidad automática por traslado | CAMBIO POSTERIOR APROBADO. El caso origen se cierra y no se abre un caso destino. |
 

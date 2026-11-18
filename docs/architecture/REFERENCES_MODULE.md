@@ -92,6 +92,10 @@ Script `database/sia-cencinai/security/020_grant_reference_writes_to_app.sql`, a
 
 La sonda de la API sigue en `readOnly: true` porque evalúa el `INSERT` de base, no el de estas tablas.
 
+## Posibles referencias
+
+La sección independiente está en `docs/architecture/POSIBLES_REFERENCIAS.md`. Usa `dbo.ref_posible`. El modo local distingue una señal sintética de demostración. El mapeo institucional permanece sin validar y no genera sugerencias clínicas. El envío de una referencia puede recibir `posibleId` y, en la misma transacción, dejar la sugerencia como `REFERENCIA_CREADA`.
+
 ## Fuera de este lote
 
-Sesiones, valoración, admisión, apertura y cierre de caso, posibles referencias automáticas y la navegación visual de etapas. El contrato de etapas viaja en la validación (`PERSON`, `REFERENCE_DATA`, `MOTIVES`, `NARRATIVE`, `CONSECUTIVE`, `REVIEW`) para una interfaz posterior.
+Sesiones, valoración, admisión, apertura y cierre de caso, y la navegación visual de etapas. La sección de posibles referencias tiene su propio documento. El contrato de etapas viaja en la validación (`PERSON`, `REFERENCE_DATA`, `MOTIVES`, `NARRATIVE`, `CONSECUTIVE`, `REVIEW`) para una interfaz posterior.

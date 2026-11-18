@@ -113,7 +113,12 @@ export default function InicioOperativo({ direccionApi, identidad, contexto, nav
               : <Aviso tipo="pendiente">{resumen.proximasSesiones && resumen.proximasSesiones.motivo}</Aviso>}
           </section>
         ) : null}
-        <Tarjeta titulo="Posibles referencias" indicador={resumen.posiblesReferencias} />
+        <Tarjeta
+          titulo="Posibles referencias"
+          indicador={resumen.posiblesReferencias}
+          accion={contexto.puedeConsultarPosibles ? () => navegar('posibles') : null}
+          textoAccion="Ver posibles referencias"
+        />
         <Tarjeta
           titulo="Atenciones individuales registradas"
           indicador={resumen.atencionesRegistradas}

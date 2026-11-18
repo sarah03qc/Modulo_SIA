@@ -849,6 +849,18 @@ WHERE ${clausulas.join(' AND ')}
       return Number(filas[0].total);
     },
 
+    async ContarPosiblesPendientes(ambito) {
+      const parametros = {};
+      const clausulas = ["sug.estado = N'PENDIENTE'"];
+      AgregarAmbito('sug', ambito, parametros, clausulas);
+      const filas = await Consultar(`
+SELECT COUNT(*) AS total
+FROM dbo.ref_posible AS sug
+WHERE ${clausulas.join(' AND ')}
+`, parametros);
+      return Number(filas[0].total);
+    },
+
     async ContarCasos(ambito, estado) {
       const parametros = {};
       const clausulas = [];

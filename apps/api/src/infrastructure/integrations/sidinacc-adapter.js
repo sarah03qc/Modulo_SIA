@@ -2,6 +2,7 @@
 
 const { SIDINACC_DATABASE } = require('../../config/databases');
 const { CrearLectorPersonasSidinacc } = require('./sidinacc-person-reader');
+const { CrearLectorEvaluaciones } = require('../../modules/posibles-referencias/lector-evaluaciones');
 
 /**
  * Punto de entrada de la réplica institucional.
@@ -12,6 +13,7 @@ const { CrearLectorPersonasSidinacc } = require('./sidinacc-person-reader');
  */
 function CrearAdaptadorSidinacc(client) {
   const persons = CrearLectorPersonasSidinacc(client);
+  const evaluaciones = CrearLectorEvaluaciones(client);
   return {
     /**
      * Comprueba la réplica sin leer datos de personas.
@@ -35,7 +37,8 @@ function CrearAdaptadorSidinacc(client) {
     ListarRegiones: (scope) => persons.ListarRegiones(scope),
     ListarOficinasLocales: (scope) => persons.ListarOficinasLocales(scope),
     ListarEstablecimientos: (scope) => persons.ListarEstablecimientos(scope),
-    LeerSexoYNacimiento: (identificadores) => persons.LeerSexoYNacimiento(identificadores)
+    LeerSexoYNacimiento: (identificadores) => persons.LeerSexoYNacimiento(identificadores),
+    ListarEvaluacionesNutricionales: (periodId) => evaluaciones.ListarEvaluaciones(periodId)
   };
 }
 

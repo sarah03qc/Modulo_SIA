@@ -3,6 +3,7 @@
  * Primer registro del archivo en Git: 2026-11-06 (5fabddc).
  * Modificación del 2026-11-14: proceso interdisciplinario, autorización y CORS.
  * Modificación del 2026-11-16: registro de atenciones, ciclo, programación y reportería.
+ * Modificación del 2026-11-18: posibles referencias.
  */
 'use strict';
 
@@ -25,6 +26,8 @@ const { CrearModuloProgramacion } = require('./modules/programacion/crear-modulo
 const { CrearEnrutadorProgramacion } = require('./modules/programacion/rutas-programacion');
 const { CrearModuloReporteria } = require('./modules/reporteria/crear-modulo-reporteria');
 const { CrearEnrutadorReporteria } = require('./modules/reporteria/rutas-reporteria');
+const { CrearModuloPosibles } = require('./modules/posibles-referencias/crear-modulo-posibles');
+const { CrearEnrutadorPosibles } = require('./modules/posibles-referencias/rutas-posibles');
 
 /**
  * Aplica encabezados para que el navegador no interprete mal el contenido,
@@ -125,6 +128,13 @@ function CrearAplicacion(dependencies) {
     sia: dependencies.databases && dependencies.databases.sia
   });
   app.use('/api/reporteria', CrearEnrutadorReporteria(reporteria));
+  const posibles = dependencies.posibles || CrearModuloPosibles({
+    periodId: dependencies.config.sidinaccPeriodId,
+    adaptador: dependencies.adapter,
+    sia: dependencies.databases && dependencies.databases.sia,
+    logger
+  });
+  app.use('/api/posibles-referencias', CrearEnrutadorPosibles(posibles));
   app.use(ResponderRutaNoEncontrada);
   app.use(CrearControlErrores(logger));
   return app;

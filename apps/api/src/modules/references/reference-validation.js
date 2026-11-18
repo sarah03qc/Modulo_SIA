@@ -258,6 +258,7 @@ function LeerSolicitudReferencia(body, options = {}) {
     captureOrigin,
     templateVersion: typeof body.templateVersion === 'string' ? body.templateVersion.trim() : null,
     draftId: LeerEnteroOpcional(body.draftId, 'draftId'),
+    posibleId: LeerEnteroOpcional(body.posibleId, 'posibleId'),
     responsibleProvided,
     responsible
   };

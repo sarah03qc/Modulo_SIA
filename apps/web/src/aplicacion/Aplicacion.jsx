@@ -4,6 +4,7 @@
  * Modificación del 2026-11-14: navegación operativa por rol.
  * Modificación del 2026-11-16: atenciones, seguimiento, programación,
  * reportería y consulta Regional y Nacional.
+ * Modificación: 2026-11-18. Sección de posibles referencias.
  */
 import { useState } from 'react';
 import { Aviso } from '../componentes/interfaz';
@@ -17,6 +18,7 @@ import InicioOperativo from '../funcionalidades/inicio/InicioOperativo';
 import BusquedaContextual from '../funcionalidades/personas/BusquedaContextual';
 import FormularioReferencia from '../funcionalidades/referencias/FormularioReferencia';
 import ListaReferencias from '../funcionalidades/referencias/ListaReferencias';
+import PosiblesReferenciasPagina from '../funcionalidades/posibles/PosiblesReferenciasPagina';
 import SesionesPagina from '../funcionalidades/sesiones/SesionesPagina';
 import { IDENTIDADES_DESARROLLO } from './identidades-desarrollo';
 import { SolicitarApi } from '../servicios/cliente-api';
@@ -103,6 +105,15 @@ export default function Aplicacion({
         {contexto.puedeBuscarPersonas ? <button type="button" onClick={() => Navegar('buscar')}>Buscar persona</button> : null}
         {contexto.puedeCrearReferencia ? <button type="button" onClick={() => Navegar('referencia-nueva')}>Nueva referencia</button> : null}
         {contexto.puedeConsultarReferencias ? <button type="button" onClick={() => Navegar('referencias')}>Referencias</button> : null}
+        {contexto.puedeConsultarPosibles ? (
+          <button
+            type="button"
+            aria-current={vista.nombre === 'posibles' ? 'page' : undefined}
+            onClick={() => Navegar('posibles')}
+          >
+            Posibles referencias
+          </button>
+        ) : null}
         {contexto.puedeGestionarSesiones ? <button type="button" onClick={() => Navegar('bandeja')}>Pendientes</button> : null}
         {contexto.puedeGestionarSesiones ? <button type="button" onClick={() => Navegar('sesiones')}>Sesiones</button> : null}
         {contexto.puedeVerListaSimplificada || contexto.puedeVerCasosOficina
@@ -148,10 +159,12 @@ export default function Aplicacion({
             direccionApi={direccionApi}
             identidad={identidad}
             personIdInicial={vista.parametros.personId || ''}
+            posibleIdInicial={vista.parametros.posibleId || null}
             solicitarApi={solicitarApi}
           />
         ) : null}
         {vista.nombre === 'referencias' ? <ListaReferencias {...propiedades} /> : null}
+        {vista.nombre === 'posibles' ? <PosiblesReferenciasPagina {...propiedades} /> : null}
         {vista.nombre === 'bandeja' ? <ListaReferencias {...propiedades} soloPendientes /> : null}
         {vista.nombre === 'sesiones' ? <SesionesPagina {...propiedades} /> : null}
         {vista.nombre === 'sesion' ? <SesionesPagina {...propiedades} /> : null}

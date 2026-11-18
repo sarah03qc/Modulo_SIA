@@ -50,6 +50,10 @@ function ConvertirErrorDominio(error) {
     failure.code = 'DRAFT_MISMATCH';
     return failure;
   }
+  if (sqlNumber === 52113) {
+    failure.code = 'POSIBLE_NO_DISPONIBLE';
+    return failure;
+  }
   if (sqlNumber === 547 || sqlNumber === 515 || sqlNumber === 2628) {
     failure.code = 'CONSTRAINT';
     return failure;
@@ -647,6 +651,25 @@ ORDER BY item.orden, motive.motivo_id
             TextoDeAmbito: TiparParametro(sql.NVarChar(200), record.TextoDeAmbito),
             changeCode: TiparParametro(sql.NVarChar(80), 'REFERENCIA_ENVIADA')
           });
+          if (record.posibleId) {
+            await transaction.query(`
+UPDATE dbo.ref_posible
+SET estado = N'REFERENCIA_CREADA',
+    referencia_id = @referenceId
+WHERE posible_id = @posibleId
+  AND per_id_persona = @personId
+  AND establecimiento_id = @establishmentId
+  AND estado = N'PENDIENTE'
+  AND referencia_id IS NULL;
+IF @@ROWCOUNT <> 1
+  THROW 52113, N'POSIBLE', 1;
+`, {
+              referenceId: TiparParametro(sql.BigInt, referenceId),
+              posibleId: TiparParametro(sql.BigInt, record.posibleId),
+              personId: TiparParametro(sql.NVarChar(20), record.personId),
+              establishmentId: TiparParametro(sql.Int, record.context.establishmentId)
+            });
+          }
           return {
             referenceId,
             sentAt: inserted.enviada_en

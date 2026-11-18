@@ -711,6 +711,30 @@ function CrearServicioProceso(dependencias) {
     };
   }
 
+  async function LeerPosibles(ambito) {
+    if (typeof repositorio.ContarPosiblesPendientes !== 'function') {
+      return IndicadorNoDisponible(
+        'La detección de posibles referencias no está disponible en este contexto.'
+      );
+    }
+    try {
+      const cantidad = await repositorio.ContarPosiblesPendientes(ambito);
+      return { disponibilidad: 'DISPONIBLE', cantidad };
+    } catch (error) {
+      if (error && error.code === 'PERMISO') {
+        return {
+          disponibilidad: 'BLOQUEADO',
+          cantidad: null,
+          motivo: 'La consulta de posibles referencias no está disponible para la cuenta técnica actual.'
+        };
+      }
+      TraducirPersistencia(error, {});
+    }
+    return IndicadorNoDisponible(
+      'La detección de posibles referencias no está disponible en este contexto.'
+    );
+  }
+
   return {
     ObtenerContexto(acceso) {
       const nivel = acceso && acceso.accessLevel ? acceso.accessLevel : null;
@@ -720,6 +744,8 @@ function CrearServicioProceso(dependencias) {
         puedeBuscarPersonas: TieneCapacidad(acceso, CAPABILITY.PERSON_SEARCH),
         puedeCrearReferencia: TieneCapacidad(acceso, CAPABILITY.REFERRAL_CREATE),
         puedeConsultarReferencias: TieneCapacidad(acceso, CAPABILITY.REFERRAL_READ),
+        puedeConsultarPosibles: TieneCapacidad(acceso, CAPABILITY.REFERRAL_READ)
+          && (nivel === ACCESS_LEVEL.ESTABLISHMENT || nivel === ACCESS_LEVEL.LOCAL_OFFICE),
         puedeGestionarSesiones: TieneCapacidad(acceso, CAPABILITY.SESSION_MANAGE)
           && nivel === ACCESS_LEVEL.LOCAL_OFFICE,
         puedeRegistrarValoracion: TieneCapacidad(acceso, CAPABILITY.ASSESSMENT_WRITE)
@@ -819,9 +845,7 @@ function CrearServicioProceso(dependencias) {
         referencias: { disponibilidad: 'DISPONIBLE', cantidad: referencias },
         referenciasPendientes: { disponibilidad: 'DISPONIBLE', cantidad: pendientes },
         casosActivos: casos,
-        posiblesReferencias: IndicadorNoDisponible(
-          'La detección de posibles referencias no forma parte de este lote.'
-        ),
+        posiblesReferencias: await LeerPosibles(ambito),
         atencionesRegistradas: await LeerIndicadorAtenciones(ambito),
         proximasAcciones: await LeerProximasAcciones(ambito),
         actividadesVencidas: contexto.nivel === ACCESS_LEVEL.LOCAL_OFFICE

@@ -69,6 +69,7 @@ export default function FormularioReferencia({
   direccionApi,
   identidad,
   personIdInicial = '',
+  posibleIdInicial = null,
   solicitarApi = SolicitarApi
 }) {
   const [catalogos, establecerCatalogos] = useState(null);
@@ -231,7 +232,11 @@ export default function FormularioReferencia({
       const enviado = await solicitarApi(direccionApi, '/api/references', {
         identidad,
         metodo: 'POST',
-        json: { ...Cuerpo(formulario, origenCaptura, versionPlantilla), draftId: borradorId }
+        json: {
+          ...Cuerpo(formulario, origenCaptura, versionPlantilla),
+          draftId: borradorId,
+          posibleId: posibleIdInicial || undefined
+        }
       });
       establecerMensaje(
         `Referencia enviada. Consecutivo ${enviado.consecutive}. Quedó pendiente de revisión.`
@@ -322,6 +327,12 @@ export default function FormularioReferencia({
     <>
       <p className="contexto">Detección y referencia</p>
       <h1>Nueva referencia</h1>
+      {posibleIdInicial ? (
+        <Aviso tipo="pendiente">
+          La persona viene de una posible referencia. El envío se confirma en la revisión
+          y recién entonces se vincula la sugerencia.
+        </Aviso>
+      ) : null}
       {error ? <Aviso>{error}</Aviso> : null}
       {mensaje ? <Aviso tipo="ok">{mensaje}</Aviso> : null}
       <div className="acciones">

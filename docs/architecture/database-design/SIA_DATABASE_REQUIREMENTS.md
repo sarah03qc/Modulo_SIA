@@ -123,7 +123,7 @@ Hechos confirmados (HU-049, RF-127, CU-37, RN-037, RN-001):
 - No abre caso ni admite automáticamente.
 - No se almacenan variables EDIN II, EVADE ni nutrición. Solo la señal mínima y el identificador externo cuando UTIC lo defina.
 
-La experiencia de la sección está validada. La detección automática no está productiva. Criterio exacto de equivalencia: NEEDS_VALIDATION (17.2).
+La experiencia de la sección está validada. En desarrollo local, el modo sintético puede registrar una señal de demostración a partir del código documentado de la réplica. La detección institucional permanece deshabilitada hasta validar el mapeo con UTIC. La recurrencia después de una referencia equivalente ya gestionada sigue en NEEDS_VALIDATION (17.2).
 
 ### 3.4 Sesión interdisciplinaria
 
