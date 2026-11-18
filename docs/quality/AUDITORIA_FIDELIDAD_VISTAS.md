@@ -197,3 +197,23 @@ Hasta una autorización explícita, los ítems de ambos scripts siguen en
 | Reportería | Títulos de definición alineados a §15.3. Falta recorrido de las doce visualizaciones. |
 | Inicio, Regional y Nacional | Revisados en código. Falta recorrido con cada identidad. |
 | Posibles referencias, calidad, laboratorio y chat | Fuera de implementación, por falta de fuente o por decisión v0.7. |
+
+## 9. Validación previa de los scripts 100 y 101
+
+Fecha: 2026-11-18. No se ejecutaron y `@permitir` sigue en 0.
+
+| Script | Veredicto |
+|---|---|
+| `pending/100_motivos_factor_riesgo.sql` | `APTO_PARA_DESARROLLO` |
+| `pending/101_instrumento_valoracion_v2.sql` | `APTO_PARA_DESARROLLO` |
+
+Los 74 factores del script 101 coinciden, uno por uno, con la sección 5 de la
+guía: etiqueta, orden y factor abierto. Los tres motivos del script 100
+coinciden con RF-024 y con la sección 3.4. Ninguno de los dos modifica filas
+históricas. Activar la versión 2 en desarrollo no equivale a una aprobación
+institucional del instrumento.
+
+La comprobación de solo lectura está en
+`database/sia-cencinai/pending/comprobacion_catalogos_100_101.sql`.
+El contraste automatizado está en
+`apps/api/tests/catalogos-fidelidad-pendientes.test.js`: 4 pruebas, correctas.
