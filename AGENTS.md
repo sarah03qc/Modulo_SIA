@@ -239,6 +239,11 @@ Specialized roles include:
 
 Detailed responsibilities belong in `.cursor/agents/`, not in this file.
 
+For frontend design, React review or visual QA, follow the role selection in
+`docs/agent-workflow/visual-ui.md`. A-00 assigns the relevant entry points in
+`apps/web/.agents/skills/`. A-04 and A-08 read their assigned `SKILL.md` and its
+linked references from the repository when working in a root-scoped session.
+
 ---
 
 ## 11. Before Significant Implementation

@@ -1,126 +1,214 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-16.
- * HU-038. Presenta el formato de cada visualización sin recalcular el indicador.
+ * Modificación: 2026-11-18. Presentación con ECharts según la pregunta
+ * de cada visualización. No recalcula el indicador ni altera la serie.
+ * HU-038.
  */
+import { useMemo } from 'react';
 import { Vacio } from '../../componentes/interfaz';
+import { GraficoECharts } from '../../componentes/visualizacion/GraficoECharts';
+import { FORMATO_NUMERICO } from '../../componentes/visualizacion/perfil-visual';
 
-const COLORES = ['#663366', '#0f6e6e', '#8a5a2b', '#3f6212', '#1d4e89', '#7a1f3d'];
+const COLORES = ['#663366', '#0f6666', '#7a4c0a', '#196244', '#1d4e89', '#9b202c'];
+
+const COLOR_PRIORIDAD = {
+  Alto: '#9b202c',
+  Moderado: '#7a4c0a',
+  Bajo: '#196244'
+};
+
+const LECTURA = {
+  CASOS_ESTABLECIMIENTO:
+    'Cantidad de casos por establecimiento en el corte. No es una serie temporal.',
+  CASOS_SEXO:
+    'Composición del corte según el sexo registrado. Las partes no se superponen.',
+  CASOS_EDAD:
+    'Distribución por edad cumplida. El orden de las edades se conserva.',
+  CASOS_PRIORIDAD:
+    'Casos según la prioridad vigente. Se conserva el orden Alto, Moderado y Bajo.',
+  CASOS_ESTADO:
+    'Composición entre casos activos y cerrados en el corte actual.',
+  MOTIVOS_CANCELACION:
+    'Frecuencia de motivos de cancelación. La tabla conserva el valor exacto.',
+  MOTIVOS_REFERENCIA:
+    'Motivos más frecuentes. Una referencia puede aportar más de un motivo.',
+  ATENCIONES_TIPO:
+    'Atenciones realizadas por tipo. No incluye programación ni cancelación.',
+  MOTIVOS_CIERRE:
+    'Composición de los cierres. Traslado no se suma al cierre satisfactorio.',
+  PALABRAS_OTRO:
+    'Frecuencia de palabras en explicaciones de motivo Otro. No interpreta el cierre.',
+  COBERTURA_PORCENTAJE:
+    'Porcentaje N / D del año. Si no hay casos activos, no se muestra un cero.',
+  COBERTURA_CANTIDAD:
+    'Personas del numerador N. No es el total de atenciones ni de personas atendidas.'
+};
+
+function Formatear(valor) {
+  if (typeof valor !== 'number' || Number.isNaN(valor)) {
+    return '';
+  }
+  return FORMATO_NUMERICO.format(valor);
+}
+
+function Presentacion(visualizacion) {
+  if (visualizacion.formato === 'TABLA') {
+    return 'tabla';
+  }
+  if (visualizacion.formato === 'KPI_PORCENTAJE'
+    || visualizacion.formato === 'KPI_CANTIDAD') {
+    return 'kpi';
+  }
+  if (visualizacion.formato === 'CIRCULAR'
+    || visualizacion.codigo === 'CASOS_SEXO'
+    || visualizacion.codigo === 'CASOS_ESTADO') {
+    return 'donut';
+  }
+  if (visualizacion.codigo === 'CASOS_EDAD') {
+    return 'barras-verticales';
+  }
+  if (visualizacion.formato === 'BARRAS'
+    || visualizacion.formato === 'DISTRIBUCION'
+    || visualizacion.formato === 'NUBE') {
+    return 'barras-horizontales';
+  }
+  return 'tabla';
+}
 
 function Maximo(serie) {
   return serie.reduce((mayor, fila) => Math.max(mayor, fila.cantidad), 0);
 }
 
-function ColorCobertura(porcentaje) {
-  const tono = Math.round((Number(porcentaje) / 100) * 140);
-  return `hsl(${tono} 42% 28%)`;
-}
-
-function Gradiente(serie) {
-  const total = serie.reduce((suma, fila) => suma + fila.cantidad, 0);
-  if (total <= 0) {
-    return 'transparent';
-  }
-  let acumulado = 0;
-  const tramos = serie.map((fila, indice) => {
-    const inicio = acumulado;
-    acumulado += (fila.cantidad / total) * 100;
-    const color = COLORES[indice % COLORES.length];
-    return `${color} ${inicio}% ${acumulado}%`;
-  });
-  return `conic-gradient(${tramos.join(', ')})`;
-}
-
 function TablaSerie({ visualizacion }) {
-  if (visualizacion.serie.length === 0) {
+  if (!visualizacion.serie || visualizacion.serie.length === 0) {
     return null;
   }
+  const maximo = Maximo(visualizacion.serie);
+  const mostrarBarra = visualizacion.formato === 'TABLA'
+    || visualizacion.formato === 'NUBE';
   return (
-    <table>
-      <caption className="solo-lectura">{visualizacion.titulo}</caption>
-      <thead>
-        <tr>
-          <th scope="col">Categoría</th>
-          <th scope="col">Cantidad</th>
-        </tr>
-      </thead>
-      <tbody>
-        {visualizacion.serie.map((fila) => (
-          <tr key={fila.clave || fila.etiqueta}>
-            <th scope="row">{fila.etiqueta}</th>
-            <td>{fila.cantidad}</td>
+    <div className="tabla-contenedor">
+      <table className="tabla-frecuencia">
+        <caption>Valores exactos de {visualizacion.titulo}</caption>
+        <thead>
+          <tr>
+            <th scope="col">Categoría</th>
+            <th scope="col">Cantidad</th>
+            {mostrarBarra ? <th scope="col">Proporción</th> : null}
           </tr>
-        ))}
-      </tbody>
-    </table>
-  );
-}
-
-function Barras({ visualizacion }) {
-  const maximo = Maximo(visualizacion.serie);
-  return (
-    <div>
-      <ul className="barras">
-        {visualizacion.serie.map((fila) => (
-          <li key={fila.clave || fila.etiqueta}>
-            <span>{fila.etiqueta}</span>
-            <span className="barra-pista" aria-hidden="true">
-              <span
-                className="barra-valor"
-                style={{ width: maximo === 0 ? '0%' : `${(fila.cantidad / maximo) * 100}%` }}
-              />
-            </span>
-            <span>{fila.cantidad}</span>
-          </li>
-        ))}
-      </ul>
-      <TablaSerie visualizacion={visualizacion} />
+        </thead>
+        <tbody>
+          {visualizacion.serie.map((fila) => (
+            <tr key={fila.clave || fila.etiqueta}>
+              <th scope="row">{fila.etiqueta}</th>
+              <td className="cantidad">{Formatear(fila.cantidad)}</td>
+              {mostrarBarra ? (
+                <td>
+                  <span className="barra-pista" aria-hidden="true">
+                    <span
+                      className="barra-valor"
+                      style={{
+                        width: maximo === 0
+                          ? '0%'
+                          : `${(fila.cantidad / maximo) * 100}%`
+                      }}
+                    />
+                  </span>
+                </td>
+              ) : null}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
 
-function Nube({ visualizacion }) {
-  const maximo = Maximo(visualizacion.serie);
-  return (
-    <div>
-      <p className="nube" aria-hidden="true">
-        {visualizacion.serie.map((fila) => {
-          const escala = maximo === 0 ? 1 : 0.85 + (fila.cantidad / maximo) * 1.35;
-          return (
-            <span key={fila.etiqueta} style={{ fontSize: `${escala}rem` }}>
-              {fila.etiqueta}
-            </span>
-          );
-        })}
-      </p>
-      <TablaSerie visualizacion={visualizacion} />
-    </div>
-  );
+function OpcionesBarras(visualizacion, horizontal) {
+  const etiquetas = visualizacion.serie.map((fila) => fila.etiqueta);
+  const datos = visualizacion.serie.map((fila) => {
+    const color = visualizacion.codigo === 'CASOS_PRIORIDAD'
+      ? COLOR_PRIORIDAD[fila.etiqueta]
+      : '#663366';
+    return {
+      value: fila.cantidad,
+      itemStyle: { color: color || '#663366', borderRadius: 4 }
+    };
+  });
+  const ejes = horizontal
+    ? {
+      xAxis: {
+        type: 'value',
+        minInterval: 1,
+        axisLabel: { formatter: (valor) => Formatear(valor) }
+      },
+      yAxis: {
+        type: 'category',
+        data: etiquetas,
+        inverse: true,
+        axisLabel: { width: 220, overflow: 'break' }
+      }
+    }
+    : {
+      xAxis: {
+        type: 'category',
+        data: etiquetas,
+        axisLabel: { interval: 0, hideOverlap: false, width: 72, overflow: 'break' }
+      },
+      yAxis: {
+        type: 'value',
+        minInterval: 1,
+        axisLabel: { formatter: (valor) => Formatear(valor) }
+      }
+    };
+  return {
+    color: ['#663366'],
+    grid: { left: 8, right: 16, top: 12, bottom: 8, containLabel: true },
+    tooltip: {
+      trigger: 'axis',
+      formatter: (parametros) => {
+        const item = Array.isArray(parametros) ? parametros[0] : parametros;
+        return `${item.name}\n${Formatear(item.value)}`;
+      }
+    },
+    ...ejes,
+    series: [{
+      type: 'bar',
+      name: 'Cantidad',
+      data: datos,
+      barMaxWidth: 22
+    }]
+  };
 }
 
-function Circular({ visualizacion }) {
-  return (
-    <div className="circular-bloque">
-      <div
-        className="circular"
-        style={{ background: Gradiente(visualizacion.serie) }}
-        role="img"
-        aria-label={visualizacion.titulo}
-      />
-      <ul className="leyenda">
-        {visualizacion.serie.map((fila, indice) => (
-          <li key={fila.clave || fila.etiqueta}>
-            <span
-              className="muestra-color"
-              style={{ background: COLORES[indice % COLORES.length] }}
-              aria-hidden="true"
-            />
-            {fila.etiqueta}: {fila.cantidad}
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
+function OpcionesDonut(visualizacion) {
+  return {
+    color: COLORES,
+    tooltip: {
+      trigger: 'item',
+      formatter: (item) => `${item.name}\n${Formatear(item.value)}`
+    },
+    legend: {
+      orient: 'vertical',
+      right: 0,
+      top: 'middle',
+      textStyle: { color: '#211b25', fontSize: 13 }
+    },
+    series: [{
+      type: 'pie',
+      name: visualizacion.titulo,
+      radius: ['46%', '72%'],
+      center: ['34%', '50%'],
+      label: {
+        formatter: (item) => `${item.name}: ${Formatear(item.value)}`
+      },
+      data: visualizacion.serie.map((fila) => ({
+        name: fila.etiqueta,
+        value: fila.cantidad
+      }))
+    }]
+  };
 }
 
 function Kpi({ visualizacion }) {
@@ -128,23 +216,52 @@ function Kpi({ visualizacion }) {
     return <p className="kpi-cifra">{visualizacion.mensaje}</p>;
   }
   if (visualizacion.formato === 'KPI_PORCENTAJE') {
+    const porcentaje = Number(visualizacion.porcentaje);
+    const ancho = Number.isFinite(porcentaje)
+      ? Math.max(0, Math.min(porcentaje, 100))
+      : 0;
     return (
-      <p
-        className="kpi-cifra"
-        style={{ background: ColorCobertura(visualizacion.porcentaje) }}
-      >
-        {visualizacion.porcentaje} %
-        <span className="kpi-detalle">
-          {visualizacion.numerador} de {visualizacion.denominador}
+      <div className="kpi">
+        <p className="kpi-cifra">
+          {Formatear(porcentaje)} %
+          <span className="kpi-detalle">
+            {Formatear(visualizacion.numerador)}
+            {' de '}
+            {Formatear(visualizacion.denominador)}
+            {' personas del denominador'}
+          </span>
+        </p>
+        <span className="kpi-pista" aria-hidden="true">
+          <span style={{ width: `${ancho}%` }} />
         </span>
-      </p>
+      </div>
     );
   }
   return (
     <p className="kpi-cifra kpi-cantidad">
-      {visualizacion.numerador}
-      <span className="kpi-detalle">personas únicas del numerador</span>
+      {Formatear(visualizacion.numerador)}
+      <span className="kpi-detalle">Personas únicas del numerador N</span>
     </p>
+  );
+}
+
+function GraficoSerie({ visualizacion, presentacion }) {
+  const horizontal = presentacion === 'barras-horizontales';
+  const opciones = useMemo(
+    () => (presentacion === 'donut'
+      ? OpcionesDonut(visualizacion)
+      : OpcionesBarras(visualizacion, horizontal)),
+    [horizontal, presentacion, visualizacion]
+  );
+  const altura = horizontal
+    ? `${Math.min(28, 7 + visualizacion.serie.length * 2.1)}rem`
+    : '16rem';
+  return (
+    <GraficoECharts
+      descripcion={visualizacion.titulo}
+      opciones={opciones}
+      altura={altura}
+    />
   );
 }
 
@@ -152,16 +269,18 @@ export default function GraficoReporteria({ visualizacion }) {
   if (visualizacion.estado !== 'CON_DATOS') {
     return <Vacio texto={visualizacion.mensaje || 'Información no disponible.'} />;
   }
-  if (visualizacion.formato === 'BARRAS' || visualizacion.formato === 'DISTRIBUCION') {
-    return <Barras visualizacion={visualizacion} />;
-  }
-  if (visualizacion.formato === 'TABLA' || visualizacion.formato === 'NUBE') {
-    return visualizacion.formato === 'NUBE'
-      ? <Nube visualizacion={visualizacion} />
-      : <TablaSerie visualizacion={visualizacion} />;
-  }
-  if (visualizacion.formato === 'CIRCULAR') {
-    return <Circular visualizacion={visualizacion} />;
-  }
-  return <Kpi visualizacion={visualizacion} />;
+  const presentacion = Presentacion(visualizacion);
+  const lectura = LECTURA[visualizacion.codigo];
+  return (
+    <div>
+      {lectura ? <p className="lectura-visual">{lectura}</p> : null}
+      {presentacion === 'kpi' ? <Kpi visualizacion={visualizacion} /> : null}
+      {presentacion === 'barras-horizontales'
+        || presentacion === 'barras-verticales'
+        || presentacion === 'donut' ? (
+          <GraficoSerie visualizacion={visualizacion} presentacion={presentacion} />
+        ) : null}
+      {presentacion === 'kpi' ? null : <TablaSerie visualizacion={visualizacion} />}
+    </div>
+  );
 }

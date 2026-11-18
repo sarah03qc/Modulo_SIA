@@ -19,6 +19,9 @@ contratos antes de cambiar otra capa. Los roles están en .cursor/agents/.
 7. DOCUMENTATION: A-10 registra estado real, trazabilidad y decisiones.
 8. HUMAN REVIEW: Gate 3 prepara evidencia; solo revisión humana acepta la historia.
 
+Para tareas de interfaz, aplicar el [flujo de diseño y verificación visual](visual-ui.md)
+con inspección del render y revisión independiente de A-08.
+
 Estados funcionales: CONFIRMADO / DRAFT / PROPOSED / NEEDS_VALIDATION /
 EXPLORATORIO / OUT_OF_SCOPE. No confundir con ejecución.
 Estados de ejecución: COMPLETED / BLOCKED / NEEDS_CHANGES / NOT_APPLICABLE /
@@ -35,8 +38,9 @@ Trabajo útil ajeno al objetivo se reporta OUT_OF_SCOPE y no se ejecuta.
 Rules: .cursor/rules/*.mdc. Agentes: .cursor/agents/*.md.
 Skills canónicos: .agents/skills/**/SKILL.md; no duplicar nombres entre raíces.
 Las antiguas copias de .cursor/skills quedan como LEGACY.md no ejecutable.
-Las tres configuraciones .codex/agents son adaptadores locales a roles canónicos,
-no roles adicionales; revisar su compatibilidad en el cliente que las consume.
+Las skills visuales del frontend están en `apps/web/.agents/skills/`. Usa la
+[selección por rol y las rutas de entrada](visual-ui.md#selección-por-rol) al asignar o
+realizar trabajo visual. Las configuraciones `.codex/agents/` remiten a este workflow.
 
 Ejecutar `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/validate-agent-infrastructure.ps1`.
 En Cursor abrir Customize y comprobar reglas, los once roles y skills por nombre;

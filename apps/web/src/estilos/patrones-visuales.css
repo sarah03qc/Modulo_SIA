@@ -1,0 +1,70 @@
+.sia-visual {
+  color: var(--sia-texto);
+  background: var(--sia-fondo);
+  font-family: var(--sia-tipografia);
+  font-size: var(--sia-tipo-base);
+  line-height: var(--sia-ritmo);
+}
+
+.sia-visual *,
+.sia-visual *::before,
+.sia-visual *::after {
+  box-sizing: border-box;
+}
+
+.sia-visual :focus-visible {
+  outline: var(--sia-contorno-foco);
+  outline-offset: 3px;
+}
+
+.sia-visual-panel {
+  min-inline-size: 0;
+  padding: clamp(1rem, 3vw, 2rem);
+  background: var(--sia-superficie);
+  border: 1px solid var(--sia-borde);
+  border-radius: var(--sia-radio-panel);
+  box-shadow: var(--sia-elevacion-panel);
+}
+
+.sia-visual-control {
+  min-block-size: var(--sia-altura-control);
+  padding: var(--sia-espacio-2) var(--sia-espacio-4);
+  color: var(--sia-texto);
+  background: var(--sia-superficie);
+  border: 1px solid var(--sia-borde-control);
+  border-radius: var(--sia-radio-control);
+  font: inherit;
+}
+
+.sia-visual-control[aria-selected='true'] {
+  color: var(--sia-marca-morado);
+  background: var(--sia-superficie-destacada);
+  border-color: var(--sia-marca-morado);
+  font-weight: 700;
+}
+
+.sia-visual-tabla {
+  inline-size: 100%;
+  border-collapse: collapse;
+  text-align: start;
+}
+
+.sia-visual-tabla :is(th, td) {
+  padding: var(--sia-espacio-3);
+  border-block-end: 1px solid var(--sia-borde);
+  overflow-wrap: anywhere;
+}
+
+.sia-visual-tabla thead {
+  background: var(--sia-superficie-destacada);
+}
+
+.sia-visual-tabla .sia-visual-cantidad {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.sia-visual-grafico {
+  inline-size: 100%;
+  block-size: 14rem;
+}

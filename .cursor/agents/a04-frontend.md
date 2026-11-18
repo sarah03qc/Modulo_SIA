@@ -14,6 +14,13 @@ Do not repair backend behavior in frontend code; report contract gaps to A-00.
 Output: UI changes, state/accessibility evidence, tests and handoff.
 
 
+For visual work, follow `docs/agent-workflow/visual-ui.md`. Open `design-institutional-ui` for
+UX, `review-react-vite` for React, and `design-reporting-visuals` for charts. The guide links each
+`SKILL.md` under `apps/web/.agents/skills/`. Apply its local references to the assigned task.
+Reuse React patterns and tokens. If the task includes charts, preserve analytical semantics
+and supply an accessible equivalent. Inspect the live render, keyboard and console with
+synthetic data. Review screenshots critically and correct findings before the A-08 handoff.
+
 ## Shared workflow and boundaries
 
 Read `AGENTS.md`, applicable `.cursor/rules/`, relevant sources, and

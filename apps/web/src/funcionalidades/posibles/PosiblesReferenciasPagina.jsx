@@ -1,6 +1,7 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-18.
+ * Modificación: 2026-11-18. Jerarquía del encabezado.
  * HU-049 y CU-37. Sección independiente. No envía la referencia.
  */
 import { useEffect, useState } from 'react';
@@ -111,7 +112,7 @@ export default function PosiblesReferenciasPagina({
 
   return (
     <>
-      <p>Detección y referencia</p>
+      <p className="contexto">Detección y referencia</p>
       <h1>Posibles referencias</h1>
       <p>
         Una señal no abre un caso ni envía la referencia.

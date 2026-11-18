@@ -1,6 +1,7 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-16.
+ * Modificación: 2026-11-18. Contexto de la vista.
  * HU-048. El período lo elige el equipo. No hay umbral inventado de atraso.
  */
 import { useState } from 'react';
@@ -42,6 +43,7 @@ export default function SeguimientoPagina({
 
   return (
     <>
+      <p className="contexto">Atención y seguimiento</p>
       <h1>Casos activos sin atención en el período</h1>
       <form onSubmit={Consultar}>
         <Campo id="anio-seguimiento" etiqueta="Año a revisar">

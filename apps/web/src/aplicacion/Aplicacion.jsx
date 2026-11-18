@@ -5,14 +5,14 @@
  * Modificación del 2026-11-16: atenciones, seguimiento, programación,
  * reportería y consulta Regional y Nacional.
  * Modificación: 2026-11-18. Sección de posibles referencias.
+ * Modificación: 2026-11-18. Navegación lateral y orientación por ámbito.
  */
-import { useState } from 'react';
-import { Aviso } from '../componentes/interfaz';
+import { lazy, Suspense, useState } from 'react';
+import { Aviso, Cargando } from '../componentes/interfaz';
 import BienvenidaTecnica from '../funcionalidades/bienvenida/BienvenidaTecnica';
 import AtencionesPagina from '../funcionalidades/atenciones/AtencionesPagina';
 import CasosPagina from '../funcionalidades/casos/CasosPagina';
 import ProgramacionPagina from '../funcionalidades/programacion/ProgramacionPagina';
-import ReporteriaPagina from '../funcionalidades/reporteria/ReporteriaPagina';
 import SeguimientoPagina from '../funcionalidades/seguimiento/SeguimientoPagina';
 import InicioOperativo from '../funcionalidades/inicio/InicioOperativo';
 import BusquedaContextual from '../funcionalidades/personas/BusquedaContextual';
@@ -22,6 +22,46 @@ import PosiblesReferenciasPagina from '../funcionalidades/posibles/PosiblesRefer
 import SesionesPagina from '../funcionalidades/sesiones/SesionesPagina';
 import { IDENTIDADES_DESARROLLO } from './identidades-desarrollo';
 import { SolicitarApi } from '../servicios/cliente-api';
+
+const ReporteriaPagina = lazy(
+  () => import('../funcionalidades/reporteria/ReporteriaPagina')
+);
+
+const ETIQUETAS_NIVEL = {
+  ESTABLECIMIENTO: 'Establecimiento',
+  OFICINA_LOCAL: 'Oficina Local',
+  REGION: 'Región',
+  NACIONAL: 'Nivel nacional'
+};
+
+function VistaActiva(vista, nombre) {
+  if (nombre === 'sesiones') {
+    return vista.nombre === 'sesiones' || vista.nombre === 'sesion';
+  }
+  return vista.nombre === nombre;
+}
+
+function BotonNav({ activa, alActivar, secundario = false, children }) {
+  return (
+    <button
+      type="button"
+      className={secundario ? 'secundario' : undefined}
+      aria-current={activa ? 'page' : undefined}
+      onClick={alActivar}
+    >
+      {children}
+    </button>
+  );
+}
+
+function GrupoNav({ id, titulo, children }) {
+  return (
+    <div className="grupo-nav">
+      <p id={id}>{titulo}</p>
+      <div role="group" aria-labelledby={id}>{children}</div>
+    </div>
+  );
+}
 
 /**
  * Aplicación operativa. La identidad de desarrollo solo selecciona un registro del servidor.
@@ -57,7 +97,7 @@ export default function Aplicacion({
 
   if (!contexto) {
     return (
-      <main>
+      <main className="acceso">
         <BienvenidaTecnica
           embebida
           direccionApi={direccionApi}
@@ -94,64 +134,164 @@ export default function Aplicacion({
     parametros: vista.parametros,
     solicitarApi
   };
+  const etiquetaNivel = ETIQUETAS_NIVEL[contexto.nivel] || 'Sin ámbito confirmado';
+  const identidadVisible = IDENTIDADES_DESARROLLO.find((item) => item.id === identidad);
+  const puedeCasos = contexto.puedeVerListaSimplificada
+    || contexto.puedeVerCasosOficina
+    || contexto.puedeVerCasosRegion
+    || contexto.puedeVerCasosNacional;
+  const puedePersonas = contexto.puedeBuscarPersonas
+    || contexto.puedeCrearReferencia
+    || contexto.puedeConsultarReferencias
+    || contexto.puedeConsultarPosibles
+    || contexto.puedeGestionarSesiones;
+  const puedeAtencion = contexto.puedeGestionarSesiones
+    || puedeCasos
+    || contexto.puedeRegistrarAtencion
+    || contexto.puedeConsultarSeguimiento
+    || contexto.puedeConsultarProgramacion;
+
   return (
     <div className="aplicacion">
-      <header>
-        <p className="marca">SIA-CENCINAI</p>
-        <p>Atención Interdisciplinaria — {contexto.nivel || 'sin ámbito confirmado'}</p>
-      </header>
-      <nav className="navegacion" aria-label="Principal">
-        <button type="button" aria-current={vista.nombre === 'inicio' ? 'page' : undefined} onClick={() => Navegar('inicio')}>Inicio</button>
-        {contexto.puedeBuscarPersonas ? <button type="button" onClick={() => Navegar('buscar')}>Buscar persona</button> : null}
-        {contexto.puedeCrearReferencia ? <button type="button" onClick={() => Navegar('referencia-nueva')}>Nueva referencia</button> : null}
-        {contexto.puedeConsultarReferencias ? <button type="button" onClick={() => Navegar('referencias')}>Referencias</button> : null}
-        {contexto.puedeConsultarPosibles ? (
+      <a className="saltar" href="#contenido">Saltar al contenido</a>
+      <aside className="barra-lateral">
+        <div className="marca-bloque">
+          <p className="marca">SIA-CENCINAI</p>
+          <p className="marca-sub">Atención Interdisciplinaria</p>
+        </div>
+        <nav className="navegacion" aria-label="Principal">
+          <GrupoNav id="nav-trabajo" titulo="Trabajo">
+            <BotonNav
+              activa={VistaActiva(vista, 'inicio')}
+              alActivar={() => Navegar('inicio')}
+            >
+              Inicio
+            </BotonNav>
+          </GrupoNav>
+          {puedePersonas ? (
+            <GrupoNav id="nav-personas" titulo="Personas y referencias">
+              {contexto.puedeBuscarPersonas ? (
+                <BotonNav
+                  activa={VistaActiva(vista, 'buscar')}
+                  alActivar={() => Navegar('buscar')}
+                >
+                  Buscar persona
+                </BotonNav>
+              ) : null}
+              {contexto.puedeCrearReferencia ? (
+                <BotonNav
+                  activa={VistaActiva(vista, 'referencia-nueva')}
+                  alActivar={() => Navegar('referencia-nueva')}
+                >
+                  Nueva referencia
+                </BotonNav>
+              ) : null}
+              {contexto.puedeConsultarReferencias ? (
+                <BotonNav
+                  activa={VistaActiva(vista, 'referencias')}
+                  alActivar={() => Navegar('referencias')}
+                >
+                  Referencias
+                </BotonNav>
+              ) : null}
+              {contexto.puedeConsultarPosibles ? (
+                <BotonNav
+                  activa={VistaActiva(vista, 'posibles')}
+                  alActivar={() => Navegar('posibles')}
+                >
+                  Posibles referencias
+                </BotonNav>
+              ) : null}
+              {contexto.puedeGestionarSesiones ? (
+                <BotonNav
+                  activa={VistaActiva(vista, 'bandeja')}
+                  alActivar={() => Navegar('bandeja')}
+                >
+                  Pendientes
+                </BotonNav>
+              ) : null}
+            </GrupoNav>
+          ) : null}
+          {puedeAtencion ? (
+            <GrupoNav id="nav-atencion" titulo="Atención">
+              {contexto.puedeGestionarSesiones ? (
+                <BotonNav
+                  activa={VistaActiva(vista, 'sesiones')}
+                  alActivar={() => Navegar('sesiones')}
+                >
+                  Sesiones
+                </BotonNav>
+              ) : null}
+              {puedeCasos ? (
+                <BotonNav
+                  activa={VistaActiva(vista, 'casos')}
+                  alActivar={() => Navegar('casos')}
+                >
+                  Casos
+                </BotonNav>
+              ) : null}
+              {contexto.puedeRegistrarAtencion ? (
+                <BotonNav
+                  activa={VistaActiva(vista, 'atenciones')}
+                  alActivar={() => Navegar('atenciones')}
+                >
+                  Atenciones
+                </BotonNav>
+              ) : null}
+              {contexto.puedeConsultarSeguimiento ? (
+                <BotonNav
+                  activa={VistaActiva(vista, 'seguimiento')}
+                  alActivar={() => Navegar('seguimiento')}
+                >
+                  Sin atención
+                </BotonNav>
+              ) : null}
+              {contexto.puedeConsultarProgramacion ? (
+                <BotonNav
+                  activa={VistaActiva(vista, 'programacion')}
+                  alActivar={() => Navegar('programacion')}
+                >
+                  Programación
+                </BotonNav>
+              ) : null}
+            </GrupoNav>
+          ) : null}
+          {contexto.puedeConsultarReporteria ? (
+            <GrupoNav id="nav-analisis" titulo="Análisis">
+              <BotonNav
+                activa={VistaActiva(vista, 'reporteria')}
+                alActivar={() => Navegar('reporteria')}
+              >
+                Reportería
+              </BotonNav>
+            </GrupoNav>
+          ) : null}
+          <GrupoNav id="nav-sistema" titulo="Sistema">
+            <BotonNav
+              activa={VistaActiva(vista, 'tecnico')}
+              alActivar={() => Navegar('tecnico')}
+              secundario
+            >
+              Estado técnico
+            </BotonNav>
+          </GrupoNav>
+        </nav>
+      </aside>
+      <div className="columna-trabajo">
+        <header className="barra-contexto">
+          <p className="ambito">{etiquetaNivel}</p>
+          <p className="identidad-sesion">
+            {identidadVisible ? identidadVisible.etiqueta : 'Identidad de desarrollo'}
+          </p>
           <button
             type="button"
-            aria-current={vista.nombre === 'posibles' ? 'page' : undefined}
-            onClick={() => Navegar('posibles')}
+            className="secundario"
+            onClick={() => { establecerContexto(null); establecerIdentidad(''); }}
           >
-            Posibles referencias
+            Salir
           </button>
-        ) : null}
-        {contexto.puedeGestionarSesiones ? <button type="button" onClick={() => Navegar('bandeja')}>Pendientes</button> : null}
-        {contexto.puedeGestionarSesiones ? <button type="button" onClick={() => Navegar('sesiones')}>Sesiones</button> : null}
-        {contexto.puedeVerListaSimplificada || contexto.puedeVerCasosOficina
-          || contexto.puedeVerCasosRegion || contexto.puedeVerCasosNacional
-          ? (
-            <button
-              type="button"
-              aria-current={vista.nombre === 'casos' ? 'page' : undefined}
-              onClick={() => Navegar('casos')}
-            >
-              Casos
-            </button>
-          )
-          : null}
-        {contexto.puedeRegistrarAtencion
-          ? <button type="button" onClick={() => Navegar('atenciones')}>Atenciones</button>
-          : null}
-        {contexto.puedeConsultarSeguimiento
-          ? <button type="button" onClick={() => Navegar('seguimiento')}>Sin atención</button>
-          : null}
-        {contexto.puedeConsultarProgramacion
-          ? <button type="button" onClick={() => Navegar('programacion')}>Programación</button>
-          : null}
-        {contexto.puedeConsultarReporteria
-          ? (
-            <button
-              type="button"
-              aria-current={vista.nombre === 'reporteria' ? 'page' : undefined}
-              onClick={() => Navegar('reporteria')}
-            >
-              Reportería
-            </button>
-          )
-          : null}
-        <button type="button" className="secundario" onClick={() => Navegar('tecnico')}>Estado técnico</button>
-        <button type="button" className="secundario" onClick={() => { establecerContexto(null); establecerIdentidad(''); }}>Salir</button>
-      </nav>
-      <main id="contenido">
+        </header>
+        <main id="contenido">
         {vista.nombre === 'inicio' ? <InicioOperativo {...propiedades} /> : null}
         {vista.nombre === 'buscar' ? <BusquedaContextual {...propiedades} /> : null}
         {vista.nombre === 'referencia-nueva' ? (
@@ -172,7 +312,11 @@ export default function Aplicacion({
         {vista.nombre === 'atenciones' ? <AtencionesPagina {...propiedades} /> : null}
         {vista.nombre === 'seguimiento' ? <SeguimientoPagina {...propiedades} /> : null}
         {vista.nombre === 'programacion' ? <ProgramacionPagina {...propiedades} /> : null}
-        {vista.nombre === 'reporteria' ? <ReporteriaPagina {...propiedades} /> : null}
+        {vista.nombre === 'reporteria' ? (
+          <Suspense fallback={<Cargando texto="Cargando reportería." />}>
+            <ReporteriaPagina {...propiedades} />
+          </Suspense>
+        ) : null}
         {vista.nombre === 'tecnico' ? (
           <BienvenidaTecnica
             embebida
@@ -181,7 +325,8 @@ export default function Aplicacion({
             consultarEstado={consultarEstado}
           />
         ) : null}
-      </main>
+        </main>
+      </div>
     </div>
   );
 }

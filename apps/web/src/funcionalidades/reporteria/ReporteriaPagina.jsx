@@ -2,6 +2,7 @@
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-16.
  * Modificación: 2026-11-18. Título Reportería y contexto analítico.
+ * Modificación: 2026-11-18. Ancho de las visualizaciones con etiquetas largas.
  * HU-038, HU-039 y HU-040 a HU-043.
  * La pantalla no recalcula indicadores ni elige el ámbito de la sesión.
  */
@@ -477,7 +478,14 @@ export default function ReporteriaPagina({
 
           <div className="rejilla-reporteria">
             {resultado.visualizaciones.map((visualizacion) => (
-              <article key={visualizacion.numero} className="panel visualizacion">
+              <article
+                key={visualizacion.numero}
+                className={visualizacion.formato === 'BARRAS'
+                  || visualizacion.codigo === 'ATENCIONES_TIPO'
+                  || visualizacion.codigo === 'CASOS_EDAD'
+                  ? 'panel visualizacion visualizacion-amplia'
+                  : 'panel visualizacion'}
+              >
                 <h2>
                   {visualizacion.numero}. {visualizacion.titulo}
                 </h2>

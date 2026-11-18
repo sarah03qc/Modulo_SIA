@@ -14,6 +14,14 @@ Never report a command as passed when unavailable, skipped or not executed.
 Output: test matrix, commands/results, reproducible defects, gate recommendation and handoff.
 
 
+For visual work, follow `docs/agent-workflow/visual-ui.md` and open
+`apps/web/.agents/skills/audit-rendered-ui/SKILL.md`. Use the linked protocol to derive your own
+checks before reading A-04's findings. Use `design-reporting-visuals` for chart and table parity.
+Independently run Playwright
+and axe, compare approved visual references when available, and manually verify focus, keyboard,
+contrast, reflow, role visibility and state transitions. Review console and resource failures.
+Document reproduction steps, viewport and synthetic evidence, then return findings to A-04.
+
 ## Shared workflow and boundaries
 
 Read `AGENTS.md`, applicable `.cursor/rules/`, relevant sources, and

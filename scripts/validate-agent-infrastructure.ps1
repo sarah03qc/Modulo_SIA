@@ -2,11 +2,13 @@ param([string]$Root = (Split-Path -Parent $PSScriptRoot))
 $ErrorActionPreference = 'Stop'
 $issues = [System.Collections.Generic.List[string]]::new()
 $counts = @{}
+$visualSkillRoot = Join-Path $Root 'apps/web/.agents/skills'
+$visualSkills = @('design-institutional-ui','audit-rendered-ui','review-react-vite','design-reporting-visuals')
 foreach ($kind in @('rules','agents','skills')) {
     $files = switch ($kind) {
         rules { Get-ChildItem -LiteralPath "$Root/.cursor/rules" -Filter '*.mdc' -File }
         agents { Get-ChildItem -LiteralPath "$Root/.cursor/agents" -Filter '*.md' -File }
-        skills { foreach ($dir in @('.agents/skills','.cursor/skills')) {
+        skills { foreach ($dir in @('.agents/skills','.cursor/skills','apps/web/.agents/skills')) {
             Get-ChildItem -LiteralPath "$Root/$dir" -Filter 'SKILL.md' -Recurse -File
         } }
     }
@@ -36,7 +38,7 @@ foreach ($kind in @('rules','agents','skills')) {
         }
         if ($kind -eq 'rules') {
             if ($fields.alwaysApply -notin @('true','false')) { $issues.Add("Invalid alwaysApply: $($file.FullName)") }
-            if ($fields.alwaysApply -eq 'true' -and $file.Name -notin @('c00-sia-context.mdc','00-governance.mdc','06-approved-technology-stack.mdc')) {
+            if ($fields.alwaysApply -eq 'true' -and $file.Name -notin @('c00-sia-context.mdc','00-governance.mdc','06-approved-technology-stack.mdc','09-implementacion-institucional.mdc')) {
                 $issues.Add("Unexpected global rule: $($file.FullName)")
             }
         } else {
@@ -45,6 +47,16 @@ foreach ($kind in @('rules','agents','skills')) {
             elseif ($names.ContainsKey($name)) { $issues.Add("Duplicate $kind name: $name") }
             else { $names[$name] = $true }
             if ($kind -eq 'skills' -and $name -ne $file.Directory.Name) { $issues.Add("Skill folder mismatch: $($file.FullName)") }
+            if ($kind -eq 'skills' -and $name -in $visualSkills) {
+                $expected = Join-Path (Join-Path $visualSkillRoot $name) 'SKILL.md'
+                if ($file.FullName -ne [IO.Path]::GetFullPath($expected)) {
+                    $issues.Add("Visual skill outside shared frontend location: $($file.FullName)")
+                }
+                foreach ($link in [regex]::Matches($s, '\]\(([^():\s]+\.md)\)')) {
+                    $target = Join-Path $file.DirectoryName $link.Groups[1].Value
+                    if (!(Test-Path -LiteralPath $target -PathType Leaf)) { $issues.Add("Broken skill link: $($file.FullName):$($link.Groups[1].Value)") }
+                }
+            }
         }
     }
 }
@@ -53,12 +65,12 @@ foreach ($path in @('docs/agent-workflow/workflow.md','docs/agent-workflow/quali
     'docs/agent-workflow/templates/handoff.md')) {
     if (!(Test-Path -LiteralPath "$Root/$path" -PathType Leaf)) { $issues.Add("Missing shared reference: $path") }
 }
-if ($counts.rules -ne 10 -or $counts.agents -ne 11 -or $counts.skills -lt 8) {
-    $issues.Add('Expected 10 rules, 11 roles, at least 8 active skills')
+if ($counts.rules -ne 11 -or $counts.agents -ne 11 -or $counts.skills -lt 12) {
+    $issues.Add('Expected 11 rules, 11 roles, at least 12 active skills')
 }
-foreach ($name in @('refine-requirement','plan-implementation','implement-backend',
+foreach ($name in (@('refine-requirement','plan-implementation','implement-backend',
     'implement-frontend','evolve-data-model','verify-traceability',
-    'review-accessibility','run-quality-gates')) {
+    'review-accessibility','run-quality-gates') + $visualSkills)) {
     if (!$names.ContainsKey($name)) { $issues.Add("Missing required skill: $name") }
 }
 if ($issues.Count) { $issues | ForEach-Object { Write-Output "FAIL: $_" }; exit 1 }

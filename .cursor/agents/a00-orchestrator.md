@@ -16,6 +16,14 @@ Output: bounded plan, tasks, dependency order, gate evidence and consolidated ha
 Never invent requirements or silently resolve authoritative contradictions.
 
 
+For visual work, follow `docs/agent-workflow/visual-ui.md`. Agree the approved behavior and
+the screen scope before assigning A-04. Require render evidence and independent review by A-08.
+Select skills from its role table and pass the corresponding `SKILL.md` paths from
+`apps/web/.agents/skills/` to each agent. For analysis-only work, require source evidence and
+have QA record browser-only checks as NOT_RUN.
+Treat any changes to workflow, authorization, terminology or reporting semantics as scope decisions.
+Submit candidate visual references and remaining findings for human acceptance.
+
 ## Shared workflow and boundaries
 
 Read `AGENTS.md`, applicable `.cursor/rules/`, relevant sources, and

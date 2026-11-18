@@ -1,6 +1,7 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-14.
+ * Modificación: 2026-11-18. Contexto de la búsqueda.
  * HU-005 a HU-009. La búsqueda es contextual; no hay un padrón general.
  */
 import { useState } from 'react';
@@ -60,6 +61,7 @@ export default function BusquedaContextual({
   const items = resultado && resultado.result ? resultado.result.items : [];
   return (
     <>
+      <p className="contexto">Personas del ámbito</p>
       <h1>Buscar persona</h1>
       <p>La búsqueda usa identificación o nombre dentro del ámbito autorizado.</p>
       <form onSubmit={Buscar}>

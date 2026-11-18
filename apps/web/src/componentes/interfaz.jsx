@@ -1,6 +1,7 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-14.
+ * Modificación: 2026-11-18. Estados de carga y vacío con superficie propia.
  */
 
 export function Aviso({ tipo = 'error', children }) {
@@ -9,7 +10,7 @@ export function Aviso({ tipo = 'error', children }) {
 }
 
 export function Cargando({ texto = 'Cargando.' }) {
-  return <p role="status">{texto}</p>;
+  return <p className="estado-carga" role="status">{texto}</p>;
 }
 
 export function Vacio({ texto }) {

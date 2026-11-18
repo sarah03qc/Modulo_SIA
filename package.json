@@ -17,6 +17,7 @@
     "dev:web": "npm run dev -w @sia/web",
     "start:api": "npm run start -w @sia/api",
     "test": "npm run test --workspaces --if-present",
+    "test:visual": "playwright test --config playwright.config.mjs",
     "lint": "eslint .",
     "build": "npm run build -w @sia/web",
     "verify:config": "npm run verify:config -w @sia/api",
@@ -25,7 +26,9 @@
     "stop": "node scripts/dev-environment.js stop"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
     "@eslint/js": "9.39.5",
+    "@playwright/test": "1.65.1",
     "@swc/core": "1.16.22",
     "@swc/jest": "0.2.39",
     "@testing-library/jest-dom": "7.0.1",

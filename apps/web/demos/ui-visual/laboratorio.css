@@ -1,0 +1,63 @@
+body.sia-visual {
+  margin: 0;
+  min-block-size: 100vh;
+}
+
+.laboratorio-visual {
+  inline-size: min(100%, var(--sia-ancho-contenido));
+  margin-inline: auto;
+  padding: clamp(1rem, 4vw, 3rem);
+}
+
+.laboratorio-encabezado {
+  max-inline-size: var(--sia-ancho-lectura);
+  margin-block-end: var(--sia-espacio-6);
+}
+
+.laboratorio-encabezado h1 {
+  margin: 0;
+  color: var(--sia-marca-morado);
+  font-size: var(--sia-tipo-titulo);
+  line-height: 1.12;
+}
+
+.laboratorio-visual p {
+  margin: var(--sia-espacio-2) 0 0;
+  color: var(--sia-texto-secundario);
+}
+
+.laboratorio-resumen {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--sia-espacio-4);
+  padding-block-end: var(--sia-espacio-5);
+  border-block-end: 1px solid var(--sia-borde);
+}
+
+.laboratorio-resumen h2 {
+  margin: 0;
+  font-size: var(--sia-tipo-seccion);
+  line-height: 1.2;
+}
+
+.laboratorio-pestanas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sia-espacio-3);
+}
+
+.laboratorio-pestanas button {
+  cursor: pointer;
+}
+
+.laboratorio-visualizacion {
+  margin-block-start: var(--sia-espacio-4);
+}
+
+.laboratorio-visualizacion caption {
+  padding-block-end: var(--sia-espacio-3);
+  color: var(--sia-texto-secundario);
+  text-align: start;
+}
