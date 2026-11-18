@@ -3,6 +3,8 @@ SIA_CENCINAI — script pendiente 100_motivos_factor_riesgo
 
 Responsable: Sarah Priscilla Quesada Chaves.
 Fecha del script: 2026-11-17.
+Ajuste de orden: 2026-11-18. Los tres motivos quedan en 18, 19 y 20
+para ir después de Salud cuando se aplique el script 102.
 
 NO EJECUTAR como parte de la cadena 001 a 090.
 No inserta fila en dbo.schema_migracion.
@@ -56,9 +58,9 @@ BEGIN TRY
         1
     FROM dbo.cat_version AS v
     INNER JOIN (VALUES
-        (N'FACTOR_RIESGO_INDIVIDUAL', N'Factor de riesgo individual', 6, N'INDIVIDUAL'),
-        (N'FACTOR_RIESGO_HOGAR_FAMILIAR', N'Factor de riesgo hogar-familiar', 7, N'HOGAR_FAMILIAR'),
-        (N'FACTOR_RIESGO_COMUNITARIO', N'Factor de riesgo comunitario', 8, N'COMUNITARIO')
+        (N'FACTOR_RIESGO_INDIVIDUAL', N'Factor de riesgo individual', 18, N'INDIVIDUAL'),
+        (N'FACTOR_RIESGO_HOGAR_FAMILIAR', N'Factor de riesgo hogar-familiar', 19, N'HOGAR_FAMILIAR'),
+        (N'FACTOR_RIESGO_COMUNITARIO', N'Factor de riesgo comunitario', 20, N'COMUNITARIO')
     ) AS s (codigo, etiqueta, orden, ambito)
         ON v.codigo_catalogo = N'MOTIVO_REFERENCIA'
        AND v.vigente = 1

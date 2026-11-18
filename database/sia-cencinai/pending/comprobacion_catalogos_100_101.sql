@@ -20,8 +20,9 @@ Antes, con la semilla sintética vigente, se espera:
   y 2 factores;
 - la versión 1 conserva sus factores.
 
-Después de 100 y 101, en ese orden, se espera:
-- 8 motivos activos, incluidos los tres factores de riesgo;
+Después de 100, 101 y 102, en ese orden, se espera:
+- 20 motivos activos: 2 de Crecimiento, 2 de Desarrollo, 13 de Salud
+  y 3 factores de riesgo, con órdenes 1 a 20 sin repetirse;
 - una sola versión vigente, la número 2, con 9 categorías y 74 factores;
 - la versión 1 sigue existiendo con vigente = 0 y los mismos factores;
 - los conteos de referencias, motivos guardados, valoraciones y factores

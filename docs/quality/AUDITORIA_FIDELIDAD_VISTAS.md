@@ -27,7 +27,7 @@ comportamiento no fueron revisados.
 | D-009 | Calidad regional, laboratorio y chat | Esas pantallas están en el prototipo y v0.7 las deja fuera. | CAMBIO_APROBADO | No se agregaron. |
 | D-010 | Nueva referencia | La captura estaba en un solo formulario. La guía pide cuatro etapas y revisión. | OMISION_FUNCIONAL | Corregido: persona y trazabilidad, motivo, narrativas y revisar. Motivo y narrativas se recorrieron en navegador. La referencia no se envió. |
 | D-011 | Reportería HU-050 | El asistente de 5 a 12 visualizaciones está en Oficina Local. Regional y Nacional no deben anunciarlo como habilitado. | CAMBIO_APROBADO | Se conserva el aviso de solo lectura y de que HU-050 sigue en Oficina Local. |
-| D-012 | Nueva referencia | Las alternativas ampliadas de Salud del prototipo no están enumeradas como lista cerrada en v0.7 CA-12. | NEEDS_VALIDATION | No se escribieron en SQL ni en React. Salud muestra la opción confirmada «Otra condición de salud». |
+| D-012 | Nueva referencia | Salud del prototipo tiene trece opciones. La semilla solo trae «Otra condición de salud». La ausencia en v0.7 no retira el prototipo aprobado. | APROBADO EN PROTOTIPO | Script `102_motivos_salud_completos.sql` preparado, sin ejecutar. La API ya clasifica los trece códigos. El formulario los muestra cuando el catálogo vigente los devuelve. |
 | D-013 | Valoración | La guía escribe «Hogar-Familiar». RF-042 y los casos de uso escriben «Hogar/Familiar». | CAMBIO_APROBADO | Se conserva «Hogar/Familiar». |
 | D-014 | Valoración | «Ninguno» debe excluir factores, y un factor abierto debe pedir especificación. | ERROR_CONFIRMADO | Ya estaba en servicio y formulario. Comprobado en prueba y, para Ninguno, en la sesión abierta. |
 | D-015 | Bandeja de referencias | Faltaban el título, el bloque de bandeja y filtros de vía, origen y categoría. | OMISION_FUNCIONAL | Corregido en `ListaReferencias.jsx`. No se recorrió de nuevo en navegador en este cierre. |
@@ -204,8 +204,9 @@ Fecha: 2026-11-18. No se ejecutaron y `@permitir` sigue en 0.
 
 | Script | Veredicto |
 |---|---|
-| `pending/100_motivos_factor_riesgo.sql` | `APTO_PARA_DESARROLLO` |
+| `pending/100_motivos_factor_riesgo.sql` | `APTO_PARA_DESARROLLO`. Orden ajustado a 18, 19 y 20 antes de cualquier ejecución, para quedar después de Salud. |
 | `pending/101_instrumento_valoracion_v2.sql` | `APTO_PARA_DESARROLLO` |
+| `pending/102_motivos_salud_completos.sql` | Preparado el 2026-11-18. Completa las doce opciones de Salud y exige los 20 motivos. No ejecutado. |
 
 Los 74 factores del script 101 coinciden, uno por uno, con la sección 5 de la
 guía: etiqueta, orden y factor abierto. Los tres motivos del script 100
@@ -216,4 +217,58 @@ institucional del instrumento.
 La comprobación de solo lectura está en
 `database/sia-cencinai/pending/comprobacion_catalogos_100_101.sql`.
 El contraste automatizado está en
-`apps/api/tests/catalogos-fidelidad-pendientes.test.js`: 4 pruebas, correctas.
+`apps/api/tests/catalogos-fidelidad-pendientes.test.js`.
+
+## 10. Catálogo aprobado del prototipo — 2026-11-18
+
+La guía, sección 3.4, es la transcripción del prototipo aprobado. Que v0.7 no
+repita las doce condiciones de Salud no las retira. Los veinte motivos quedan
+clasificados en la API, en este orden, y las filas nuevas están en los scripts
+100 y 102. Esos scripts no se ejecutaron.
+
+| Orden | Código | Grupo |
+|---|---|---|
+| 1 | CONDICION_MALNUTRICION | Crecimiento |
+| 2 | MALNUTRICION_NECESIDADES_ESPECIALES | Crecimiento |
+| 3 | EDIN_II_RIESGO_RETRASO_ROJO | Desarrollo |
+| 4 | EVADE_RIESGO_REZAGO_0_1 | Desarrollo |
+| 5 | ALTERACION_VISUAL | Salud |
+| 6 | ALTERACION_AUDITIVA | Salud |
+| 7 | ALTERACION_DEL_LENGUAJE | Salud |
+| 8 | ALTERACION_MOTORA | Salud |
+| 9 | ALTERACION_SALUD_ORAL | Salud |
+| 10 | ALERGIA_ALIMENTARIA | Salud |
+| 11 | ENFERMEDAD_CRONICA | Salud |
+| 12 | LACTANCIA_MATERNA_ALIMENTACION_COMPLEMENTARIA | Salud |
+| 13 | TRASTORNO_ESPECIFICO_APRENDIZAJE | Salud |
+| 14 | SOSPECHA_O_DIAGNOSTICO_TRASTORNO_NEURODESARROLLO | Salud |
+| 15 | ALTERACIONES_EMOCIONALES | Salud |
+| 16 | ALTERACIONES_CONDUCTUALES | Salud |
+| 17 | OTRA_CONDICION_SALUD | Salud |
+| 18 | FACTOR_RIESGO_INDIVIDUAL | Factores de riesgo |
+| 19 | FACTOR_RIESGO_HOGAR_FAMILIAR | Factores de riesgo |
+| 20 | FACTOR_RIESGO_COMUNITARIO | Factores de riesgo |
+
+La base de desarrollo sigue con los cinco motivos de la semilla hasta que se
+autorice la ejecución. React no tiene una segunda lista: lee el catálogo de la
+API. La prueba de interfaz confirma que, cuando ese catálogo trae los veinte,
+el formulario muestra los cuatro grupos, las trece opciones de Salud y una
+especificación por motivo seleccionado.
+
+El instrumento de valoración sigue en el script 101: nueve categorías y 74
+factores, sin ejecutar. La pantalla vigente sigue avisando que el instrumento
+sintético trae 2 de 9.
+
+### Vistas revisadas en esta pasada
+
+| Vista | Estado |
+|---|---|
+| Nueva referencia | IMPLEMENTADO el agrupamiento y la clasificación de 20 códigos. VERIFICADO en prueba de componente. PENDIENTE DE IMPLEMENTACIÓN en la base: faltan las filas de los scripts 100 y 102. |
+| Valoración | IMPLEMENTADA la estructura de nueve categorías. PENDIENTE DE IMPLEMENTACIÓN el instrumento de 74 factores hasta ejecutar el script 101. |
+| Bandeja | IMPLEMENTADO el título, los filtros y el detalle. Falta recorrido de navegador en esta pasada. |
+| Casos | IMPLEMENTADO el título «Casos de Atención Interdisciplinaria» también para Región y Nacional. El establecimiento conserva la lista mínima. |
+| Reportería | IMPLEMENTADO el título «Reportería» y el contexto «Analítica operativa». El alcance territorial queda en el texto de la pantalla. |
+| Atenciones, programación, sesiones, inicio y búsqueda | Revisados en código. Los nombres ya alineados en la auditoría anterior se conservan. No se declara verificación de navegador en esta pasada. |
+| Posibles referencias | PENDIENTE DE IMPLEMENTACIÓN como pantalla. No hay fuente de detección que pueda mostrarse sin inventar candidatos. |
+| Calidad regional, laboratorio y chat | CAMBIO POSTERIOR APROBADO: v0.7 los retira. No se reintroducen. |
+| Continuidad automática por traslado | CAMBIO POSTERIOR APROBADO. El caso origen se cierra y no se abre un caso destino. |

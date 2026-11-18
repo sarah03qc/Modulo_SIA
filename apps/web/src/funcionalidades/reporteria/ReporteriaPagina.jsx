@@ -1,6 +1,7 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
- * Creación: 2026-11-16. Modificación: 2026-11-16.
+ * Creación: 2026-11-16.
+ * Modificación: 2026-11-18. Título Reportería y contexto analítico.
  * HU-038, HU-039 y HU-040 a HU-043.
  * La pantalla no recalcula indicadores ni elige el ámbito de la sesión.
  */
@@ -189,11 +190,11 @@ export default function ReporteriaPagina({
     sexos: [],
     edades: []
   };
-  const titulo = nivel === 'NACIONAL'
-    ? 'Reportería nacional'
+  const alcance = nivel === 'NACIONAL'
+    ? 'La consulta es nacional y de solo lectura.'
     : nivel === 'REGION'
-      ? 'Reportería regional'
-      : 'Reportería de Oficina Local';
+      ? 'La consulta es regional y de solo lectura.'
+      : 'El ámbito es el de la sesión.';
   const oficinas = territorio && territorio.filters
     ? territorio.filters.localOffice.options
     : [];
@@ -216,10 +217,10 @@ export default function ReporteriaPagina({
     <section className="reporteria">
       <div className="encabezado-reporteria">
         <div>
-          <h1>{titulo}</h1>
+          <p className="contexto">Analítica operativa</p>
+          <h1>Reportería</h1>
           <p>
-            El ámbito es el de la sesión. Estas doce visualizaciones no sustituyen
-            el juicio profesional.
+            {alcance} Estas doce visualizaciones no sustituyen el juicio profesional.
           </p>
           {superior ? (
             <p>

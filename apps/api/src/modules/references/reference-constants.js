@@ -46,14 +46,27 @@ const STATUS_LABEL = Object.freeze({
 });
 
 /**
- * Agrupación de lectura. Los tres factores de riesgo son la distinción de
- * RF-024 y CA-13. No se publican en el formulario hasta existir en SQL.
+ * Agrupación del catálogo aprobado en el prototipo, sección 3.4 de la guía.
+ * El orden de las claves es el orden de presentación. Las filas se publican
+ * cuando existen en la versión vigente de SQL; esta tabla no las inventa.
  */
 const MOTIVE_CATEGORY_BY_CODE = Object.freeze({
   CONDICION_MALNUTRICION: 'CRECIMIENTO',
   MALNUTRICION_NECESIDADES_ESPECIALES: 'CRECIMIENTO',
   EDIN_II_RIESGO_RETRASO_ROJO: 'DESARROLLO',
   EVADE_RIESGO_REZAGO_0_1: 'DESARROLLO',
+  ALTERACION_VISUAL: 'SALUD',
+  ALTERACION_AUDITIVA: 'SALUD',
+  ALTERACION_DEL_LENGUAJE: 'SALUD',
+  ALTERACION_MOTORA: 'SALUD',
+  ALTERACION_SALUD_ORAL: 'SALUD',
+  ALERGIA_ALIMENTARIA: 'SALUD',
+  ENFERMEDAD_CRONICA: 'SALUD',
+  LACTANCIA_MATERNA_ALIMENTACION_COMPLEMENTARIA: 'SALUD',
+  TRASTORNO_ESPECIFICO_APRENDIZAJE: 'SALUD',
+  SOSPECHA_O_DIAGNOSTICO_TRASTORNO_NEURODESARROLLO: 'SALUD',
+  ALTERACIONES_EMOCIONALES: 'SALUD',
+  ALTERACIONES_CONDUCTUALES: 'SALUD',
   OTRA_CONDICION_SALUD: 'SALUD',
   FACTOR_RIESGO_INDIVIDUAL: 'FACTORES_RIESGO',
   FACTOR_RIESGO_HOGAR_FAMILIAR: 'FACTORES_RIESGO',

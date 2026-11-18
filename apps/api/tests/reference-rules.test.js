@@ -58,7 +58,21 @@ describe('reglas del consecutivo y de la consulta', () => {
       'EDIN_II_RIESGO_RETRASO_ROJO',
       'EVADE_RIESGO_REZAGO_0_1'
     ]);
-    expect(CodigosMotivoDeCategoria('SALUD')).toEqual(['OTRA_CONDICION_SALUD']);
+    expect(CodigosMotivoDeCategoria('SALUD')).toEqual([
+      'ALTERACION_VISUAL',
+      'ALTERACION_AUDITIVA',
+      'ALTERACION_DEL_LENGUAJE',
+      'ALTERACION_MOTORA',
+      'ALTERACION_SALUD_ORAL',
+      'ALERGIA_ALIMENTARIA',
+      'ENFERMEDAD_CRONICA',
+      'LACTANCIA_MATERNA_ALIMENTACION_COMPLEMENTARIA',
+      'TRASTORNO_ESPECIFICO_APRENDIZAJE',
+      'SOSPECHA_O_DIAGNOSTICO_TRASTORNO_NEURODESARROLLO',
+      'ALTERACIONES_EMOCIONALES',
+      'ALTERACIONES_CONDUCTUALES',
+      'OTRA_CONDICION_SALUD'
+    ]);
   });
 
   test('la consulta de factores de riesgo filtra por los tres códigos', () => {

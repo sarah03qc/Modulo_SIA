@@ -1,6 +1,8 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-14.
+ * Modificación: 2026-11-18. Título común de casos con consulta
+ * superior distinguida en el texto, no en otro nombre.
  * Modificación: 2026-11-17. Nivel de riesgo, título de casos,
  * contexto y nombres de filtros.
  * Modificación: 2026-11-16. Paginación, exportación, línea de tiempo,
@@ -29,13 +31,11 @@ function EsConsultaSuperior(contexto) {
 }
 
 function TituloCasos(contexto) {
-  if (contexto.puedeVerCasosRegion) {
-    return 'Casos de la Región';
-  }
-  if (contexto.puedeVerCasosNacional) {
-    return 'Casos nacionales';
-  }
-  if (contexto.puedeVerCasosOficina) {
+  if (
+    contexto.puedeVerCasosOficina
+    || contexto.puedeVerCasosRegion
+    || contexto.puedeVerCasosNacional
+  ) {
     return 'Casos de Atención Interdisciplinaria';
   }
   return 'Lista de Atención Interdisciplinaria';

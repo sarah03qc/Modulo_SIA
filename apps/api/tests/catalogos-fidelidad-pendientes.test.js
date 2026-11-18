@@ -27,6 +27,10 @@ const SCRIPT_101 = path.join(
   RAIZ,
   'database/sia-cencinai/pending/101_instrumento_valoracion_v2.sql'
 );
+const SCRIPT_102 = path.join(
+  RAIZ,
+  'database/sia-cencinai/pending/102_motivos_salud_completos.sql'
+);
 
 const CLAVES = [
   ['INDIVIDUAL', 'PROTECTOR'],
@@ -87,16 +91,44 @@ describe('scripts pendientes de catálogo, sin activarlos', () => {
     expect(sql).toContain('BEGIN TRANSACTION');
     expect(sql).toContain('ROLLBACK TRANSACTION');
     expect(sql).toContain(
-      "(N'FACTOR_RIESGO_INDIVIDUAL', N'Factor de riesgo individual', 6, N'INDIVIDUAL')"
+      "(N'FACTOR_RIESGO_INDIVIDUAL', N'Factor de riesgo individual', 18, N'INDIVIDUAL')"
     );
     expect(sql).toContain(
       "(N'FACTOR_RIESGO_HOGAR_FAMILIAR', N'Factor de riesgo hogar-familiar', "
-      + "7, N'HOGAR_FAMILIAR')"
+      + "19, N'HOGAR_FAMILIAR')"
     );
     expect(sql).toContain(
-      "(N'FACTOR_RIESGO_COMUNITARIO', N'Factor de riesgo comunitario', 8, N'COMUNITARIO')"
+      "(N'FACTOR_RIESGO_COMUNITARIO', N'Factor de riesgo comunitario', 20, N'COMUNITARIO')"
     );
     expect(sql).not.toContain('Otro factor de riesgo');
+  });
+
+  test('el script 102 completa Salud sin borrar historial', () => {
+    const sql = fs.readFileSync(SCRIPT_102, 'utf8');
+    const etiquetas = [
+      'Alteración visual',
+      'Alteración auditiva',
+      'Alteración del lenguaje',
+      'Alteración motora',
+      'Alteración de salud oral',
+      'Alergia alimentaria',
+      'Enfermedad crónica',
+      'Lactancia materna / alimentación complementaria',
+      'Trastorno específico del aprendizaje',
+      'Sospecha o diagnóstico de trastorno del neurodesarrollo',
+      'Alteraciones emocionales',
+      'Alteraciones conductuales',
+      'Otra condición de salud'
+    ];
+    expect(sql).toMatch(/DECLARE @permitir bit = 0;/);
+    expect(sql).not.toMatch(/\bDELETE\b/i);
+    expect(sql).not.toMatch(/ref_motivo/i);
+    expect(sql).toContain('BEGIN TRANSACTION');
+    expect(sql).toContain('ROLLBACK TRANSACTION');
+    expect(sql).toContain('<> 20');
+    etiquetas.forEach((etiqueta) => {
+      expect(sql).toContain(etiqueta);
+    });
   });
 
   test('los 74 factores coinciden en etiqueta, orden y factor abierto', () => {

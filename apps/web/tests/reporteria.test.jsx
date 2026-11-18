@@ -168,7 +168,8 @@ describe('pantalla de reportería', () => {
         solicitarApi={solicitarApi}
       />
     );
-    expect(await pantalla.findByRole('heading', { name: 'Reportería regional' })).toBeTruthy();
+    expect(await pantalla.findByRole('heading', { name: 'Reportería' })).toBeTruthy();
+    expect(pantalla.getByText(/consulta es regional y de solo lectura/)).toBeTruthy();
     expect(pantalla.queryByRole('button', { name: 'Generar reporte' })).toBeNull();
     expect(pantalla.getByText(/asistente HU-050 sigue en Oficina Local/)).toBeTruthy();
     expect(solicitarApi.mock.calls.some((llamada) => (

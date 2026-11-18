@@ -1,6 +1,7 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-14.
+ * Modificación: 2026-11-18. Orden de motivos según el catálogo.
  * Modificación: 2026-11-17. Etapas, grupos de motivo y nombres de campo.
  * HU-013 y HU-014. El envío exige revisión explícita. El consecutivo no se genera.
  */
@@ -58,7 +59,10 @@ function TextoTerritorio(unidad) {
 }
 
 function MotivosDe(catalogos, codigo) {
-  return (catalogos.motives || []).filter((motivo) => motivo.category === codigo);
+  return (catalogos.motives || [])
+    .filter((motivo) => motivo.category === codigo)
+    .slice()
+    .sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
 }
 
 export default function FormularioReferencia({
