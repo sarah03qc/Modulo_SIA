@@ -1,6 +1,7 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-16.
+ * Modificación: 2026-11-18. Estrategia «Otra» con texto y lectura del caso activo.
  * HU-036 y HU-037. No convierte actividades educativas generales en atención.
  */
 'use strict';
@@ -19,6 +20,7 @@ const { ResolverAmbitoTerritorial } = require('../institutional/territorial-scop
 
 const NO_ENCONTRADO = 'El recurso solicitado no existe.';
 const INTENTOS = 3;
+const CATALOGOS_CON_TEXTO = new Set(['ESTRATEGIA']);
 
 function ExigirResponsable(acceso) {
   if (!acceso || typeof acceso.principalId !== 'string' || acceso.principalId.length === 0) {
@@ -51,14 +53,30 @@ function TraducirPersistencia(error, mensajes) {
   throw new ErrorInfraestructura('La operación de base de datos no se completó.');
 }
 
+function RequiereTexto(fila) {
+  return fila.requiere_texto === true || fila.requiere_texto === 1;
+}
+
+/**
+ * Presenta un catálogo vigente. Solo ESTRATEGIA guarda la especificación de «Otra»
+ * (ate_individual.estrategia_otra_texto); en los demás no hay dónde conservarla.
+ *
+ * @param {Array<object>} filas Ítems leídos de cat_item.
+ * @param {string} codigo Código del catálogo.
+ * @returns {object} Disponibilidad e ítems.
+ */
 function PresentarCatalogo(filas, codigo) {
+  const admiteTexto = CATALOGOS_CON_TEXTO.has(codigo);
   const items = filas
     .filter((fila) => fila.codigo_catalogo === codigo)
-    .filter((fila) => fila.codigo !== 'OTRA' && fila.codigo !== 'OTRO')
+    .filter((fila) => admiteTexto || (
+      fila.codigo !== 'OTRA' && fila.codigo !== 'OTRO' && !RequiereTexto(fila)
+    ))
     .map((fila) => ({
       itemId: Number(fila.cat_item_id),
       codigo: fila.codigo,
-      etiqueta: fila.etiqueta
+      etiqueta: fila.etiqueta,
+      requiereTexto: RequiereTexto(fila)
     }));
   if (items.length === 0) {
     return {
@@ -120,8 +138,19 @@ function CrearServicioAtenciones(dependencias) {
     if (catalogo.disponibilidad !== 'DISPONIBLE') {
       throw new ErrorValidacion(catalogo.mensaje);
     }
-    if (!catalogo.items.some((item) => item.itemId === itemId)) {
+    const encontrado = catalogo.items.find((item) => item.itemId === itemId);
+    if (!encontrado) {
       throw new ErrorValidacion(mensaje);
+    }
+    return encontrado;
+  }
+
+  function ExigirTextoEstrategia(estrategia, texto) {
+    if (estrategia.requiereTexto && !texto) {
+      throw new ErrorValidacion('Especifique la estrategia.');
+    }
+    if (!estrategia.requiereTexto && texto) {
+      throw new ErrorValidacion('La estrategia elegida no admite especificación.');
     }
   }
 
@@ -157,11 +186,13 @@ function CrearServicioAtenciones(dependencias) {
         solicitud.disciplinaId,
         'La disciplina no pertenece al catálogo vigente.'
       );
-      ExigirItem(
+      const estrategia = ExigirItem(
         PresentarCatalogo(catalogo, 'ESTRATEGIA'),
         solicitud.estrategiaId,
         'La estrategia no pertenece al catálogo vigente.'
       );
+      const estrategiaOtraTexto = solicitud.estrategiaOtraTexto ?? null;
+      ExigirTextoEstrategia(estrategia, estrategiaOtraTexto);
       const caso = await repositorio.BuscarCasoActivo(solicitud.casoId, ambito);
       if (!caso) {
         throw new ErrorNoEncontrado(NO_ENCONTRADO);
@@ -169,6 +200,7 @@ function CrearServicioAtenciones(dependencias) {
       const responsable = ExigirResponsable(acceso);
       const atencionId = await Reintentar(() => repositorio.RegistrarIndividual({
         ...solicitud,
+        estrategiaOtraTexto,
         personaId: caso.per_id_persona,
         oficinaLocalId: ambito.localOfficeId,
         regionId: ambito.regionId,
@@ -181,7 +213,35 @@ function CrearServicioAtenciones(dependencias) {
         atencionId,
         casoId: solicitud.casoId,
         fechaAtencion: solicitud.fechaAtencion,
+        estrategiaId: solicitud.estrategiaId,
+        estrategiaOtraTexto,
         profesional: responsable
+      };
+    },
+
+    /**
+     * Confirma que el caso está activo y dentro del ámbito de la sesión.
+     * No expone datos clínicos; el nombre se consulta en el listado de casos.
+     *
+     * @param {object} acceso Sesión ya resuelta.
+     * @param {number} casoId Caso solicitado.
+     * @returns {Promise<object>} Identificadores del caso activo.
+     */
+    async ObtenerCasoActivo(acceso, casoId) {
+      ExigirOficina(acceso);
+      const ambito = await Ambito(acceso);
+      const caso = await repositorio.BuscarCasoActivo(casoId, ambito);
+      if (!caso) {
+        throw new ErrorNoEncontrado(NO_ENCONTRADO);
+      }
+      return {
+        casoId: Number(caso.caso_id),
+        identificacion: caso.per_id_persona,
+        establecimientoId: caso.establecimiento_id === null
+          || caso.establecimiento_id === undefined
+          ? null
+          : Number(caso.establecimiento_id),
+        estado: caso.estado
       };
     },
 

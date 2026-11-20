@@ -127,6 +127,13 @@ function TextoDeAmbito(context, identitySource) {
  * @param {object} dependencies Periodo, adaptador y repositorio.
  * @returns {object} Operaciones de catálogo, envío, consulta, plantilla y documento.
  */
+async function TotalDelAmbito(repository, scope, fallback) {
+  if (!repository || typeof repository.ContarEnAmbito !== 'function') {
+    return fallback;
+  }
+  return repository.ContarEnAmbito(scope);
+}
+
 function CrearServicioReferencias(dependencies) {
   const periodId = dependencies.periodId;
   const adapter = dependencies.adapter;
@@ -586,10 +593,12 @@ function CrearServicioReferencias(dependencies) {
   async function ListarReferencias(acceso, criteria) {
     ExigirCapacidad(acceso, CAPABILITY.REFERRAL_READ);
     if (criteria.categoryHasNoConfirmedCodes) {
+      const scope = await ResolverAmbito(acceso, { establishmentId: criteria.establishmentId });
       return {
         query: PresentarConsulta(criteria),
         result: {
           total: 0,
+          totalAmbito: await TotalDelAmbito(repository, scope, 0),
           returned: 0,
           items: []
         }
@@ -600,7 +609,10 @@ function CrearServicioReferencias(dependencies) {
     if (criteria.name) {
       personIds = await IdentificadoresPorNombre(scope, criteria.name);
       if (personIds.length === 0) {
-        return PaginaVacia(criteria);
+        return PaginaVacia(
+          criteria,
+          await TotalDelAmbito(repository, scope, 0)
+        );
       }
     }
     let page;
@@ -618,6 +630,7 @@ function CrearServicioReferencias(dependencies) {
       query: PresentarConsulta(criteria),
       result: {
         total: page.total,
+        totalAmbito: await TotalDelAmbito(repository, scope, page.total),
         returned: page.items.length,
         items: page.items.map((item) => {
           const identidad = identities.get(item.per_id_persona);
@@ -674,10 +687,10 @@ function CrearServicioReferencias(dependencies) {
    * @param {object} criteria Criterios de entrada.
    * @returns {object} Página sin filas.
    */
-  function PaginaVacia(criteria) {
+  function PaginaVacia(criteria, totalAmbito = 0) {
     return {
       query: PresentarConsulta(criteria),
-      result: { total: 0, returned: 0, items: [] }
+      result: { total: 0, totalAmbito, returned: 0, items: [] }
     };
   }
 

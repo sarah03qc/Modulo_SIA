@@ -1,6 +1,7 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-16.
+ * Modificación: 2026-11-18. requiere_texto del catálogo y estrategia_otra_texto.
  * Persistencia de atenciones. HU-036 y HU-037. Una grupal es un solo registro.
  */
 'use strict';
@@ -74,7 +75,7 @@ function CrearRepositorioAtenciones(cliente) {
         return `@${nombre}`;
       });
       return Consultar(`
-SELECT i.cat_item_id, i.codigo_catalogo, i.codigo, i.etiqueta
+SELECT i.cat_item_id, i.codigo_catalogo, i.codigo, i.etiqueta, i.requiere_texto
 FROM dbo.cat_item AS i
 INNER JOIN dbo.cat_version AS v
   ON v.cat_version_id = i.cat_version_id
@@ -127,13 +128,13 @@ WHERE caso_id = @casoId
         const insertadas = await transaccion.query(`
 INSERT INTO dbo.ate_individual (
   caso_id, per_id_persona, fecha_atencion, disciplina_item_id, disciplina_catalogo,
-  estrategia_item_id, estrategia_catalogo, acciones, recomendaciones,
+  estrategia_item_id, estrategia_catalogo, estrategia_otra_texto, acciones, recomendaciones,
   profesional_usuario, proxima_accion, fecha_proxima, digitador_usuario, digitada_en
 )
 OUTPUT INSERTED.atencion_individual_id
 VALUES (
   @casoId, @persona, @fecha, @disciplinaId, N'DISCIPLINA',
-  @estrategiaId, N'ESTRATEGIA', @acciones, @recomendaciones,
+  @estrategiaId, N'ESTRATEGIA', @estrategiaOtra, @acciones, @recomendaciones,
   @profesional, @proxima, @fechaProxima, @digitador,
   CAST(SYSUTCDATETIME() AS datetime2(0))
 )
@@ -143,6 +144,7 @@ VALUES (
           fecha: Parametro(sql.Date, registro.fechaAtencion),
           disciplinaId: Parametro(sql.BigInt, registro.disciplinaId),
           estrategiaId: Parametro(sql.BigInt, registro.estrategiaId),
+          estrategiaOtra: Parametro(sql.NVarChar(300), registro.estrategiaOtraTexto ?? null),
           acciones: Parametro(sql.NVarChar(2000), registro.acciones),
           recomendaciones: Parametro(sql.NVarChar(2000), registro.recomendaciones),
           profesional: Parametro(sql.NVarChar(128), registro.profesional),

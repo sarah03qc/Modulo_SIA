@@ -370,6 +370,7 @@ function CrearServicioPosibles(dependencias) {
         tamano
       };
       const total = await repositorio.Contar(ambito, filtro);
+      const totalAmbito = await repositorio.Contar(await Ambito(acceso, {}), {});
       const filas = total === 0 ? [] : await repositorio.Listar(ambito, filtro);
       const casos = await repositorio.PersonasConCasoActivo();
       const items = [];
@@ -382,6 +383,7 @@ function CrearServicioPosibles(dependencias) {
       }
       return {
         total,
+        totalAmbito,
         page: pagina,
         pageSize: tamano,
         modo,

@@ -332,7 +332,7 @@ describe('servicio del ciclo del caso', () => {
     const resultado = await servicio.CerrarCaso(AccesoOficina(), {
       casoId: 40,
       motivoItemId: 2,
-      explicacion: null,
+      explicacion: 'Cambio de domicilio de la familia.',
       fechaCierre: '2026-11-16',
       destinoEstablecimientoId: 1190108,
       destinoNombre: 'Destino sintético',
@@ -455,7 +455,7 @@ describe('servicio del ciclo del caso', () => {
     const resultado = await servicio.CerrarCaso(AccesoOficina(), {
       casoId: 40,
       motivoItemId: 2,
-      explicacion: null,
+      explicacion: 'Cambio de domicilio de la familia.',
       fechaCierre: '2026-11-16',
       destinoEstablecimientoId: 1190108,
       destinoNombre: 'Destino sintético',

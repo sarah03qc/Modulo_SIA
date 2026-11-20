@@ -1,6 +1,7 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-16. Modificación: 2026-11-16.
+ * Modificación: 2026-11-18. Grupo de edad y nota breve de filtros por indicador.
  * HU-038, HU-039 y HU-040 a HU-043. CU-29, CU-30, CU-31 y CU-32.
  * RN-040 permanece provisional. El ámbito sale de la sesión y solo se estrecha.
  */
@@ -71,7 +72,6 @@ function ParaCliente(corte, acceso, opciones) {
     fechaConsulta: corte.fechaConsulta,
     anio: corte.anio,
     filtrosActivos: corte.filtrosActivos,
-    alcanceFiltros: corte.alcanceFiltros,
     cobertura: corte.cobertura,
     referencias: corte.referencias,
     personasUnicas: corte.personasUnicas,
@@ -103,6 +103,7 @@ function ParaCliente(corte, acceso, opciones) {
       serie: item.serie,
       nota: item.nota,
       filtrosAplicados: item.filtrosAplicados,
+      filtrosNoAplicados: item.filtrosNoAplicados || [],
       totalFrecuencia: Array.isArray(item.frecuenciaCompleta)
         ? item.frecuenciaCompleta.length
         : (item.serie || []).length,
@@ -398,9 +399,10 @@ function CrearServicioReporteria(dependencias) {
       }
     }
     const demografia = await Demografia(hechos, fechaConsulta);
-    if (!demografia && (filtros.sexo || filtros.edad !== null)) {
+    if (!demografia && (filtros.sexo || filtros.grupoEdad)) {
       throw new ErrorInfraestructura(
-        'No fue posible aplicar sexo o edad porque la réplica institucional no está disponible.'
+        'No fue posible aplicar sexo o grupo de edad porque la réplica institucional '
+          + 'no está disponible.'
       );
     }
     const nombres = ambito

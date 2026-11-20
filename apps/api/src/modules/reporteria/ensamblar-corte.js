@@ -1,6 +1,9 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-16.
+ * Modificación: 2026-11-18. Sexo por código, cinco grupos de edad y nota de filtros.
+ * Modificación: 2026-11-19. Sexo y edad reciben los filtros del corte.
+ * El grupo etario se muestra con su etiqueta. No se usa una edad que ya no llega.
  * HU-038 y HU-039. El mismo ensamblado alimenta la API, la pantalla y la descarga.
  * No convierte un dato desconocido en cero. Un cero solo sale de un conteo realizado.
  */
@@ -13,13 +16,21 @@ const {
   PRIORIDADES,
   ESTADOS_CASO,
   MOTIVOS_CIERRE,
+  SEXOS_FILTRO,
+  SEXO_OTRO_VALOR,
+  SEXO_SIN_DATO,
+  GRUPOS_EDAD,
+  EDAD_SIN_DATO,
   TEXTO_COBERTURA,
   CATALOGO_VISUALIZACIONES,
   PorcentajeCobertura,
   ContarPalabras,
   TituloDinamico,
   EtiquetaPrioridad,
-  EtiquetaEstado
+  EtiquetaEstado,
+  EtiquetaSexoFiltro,
+  EtiquetaGrupoEdad,
+  ClasificarGrupoEdad
 } = require('./definiciones-analiticas');
 
 function Asistio(valor) {
@@ -41,14 +52,14 @@ function DemografiaDe(mapa, personaId) {
 }
 
 function PersonaCumple(personaId, filtros, demografia) {
-  if (!filtros.sexo && filtros.edad === null) {
+  if (!filtros.sexo && !filtros.grupoEdad) {
     return true;
   }
   const dato = DemografiaDe(demografia, personaId);
   if (filtros.sexo && (!dato || dato.sexo !== filtros.sexo)) {
     return false;
   }
-  if (filtros.edad !== null && (!dato || dato.edad !== filtros.edad)) {
+  if (filtros.grupoEdad && (!dato || dato.grupoEdad !== filtros.grupoEdad)) {
     return false;
   }
   return true;
@@ -182,11 +193,16 @@ function ComplementosCaso(filtros, nombres, fechaConsulta) {
   if (filtros.establecimientoId) {
     partes.push(NombreEstablecimiento(filtros.establecimientoId, nombres));
   }
+  return partes.concat(ComplementosPersona(filtros));
+}
+
+function ComplementosPersona(filtros) {
+  const partes = [];
   if (filtros.sexo) {
-    partes.push(`sexo ${filtros.sexo}`);
+    partes.push(`sexo ${EtiquetaSexoFiltro(filtros.sexo)}`);
   }
-  if (filtros.edad !== null) {
-    partes.push(`edad ${filtros.edad} años`);
+  if (filtros.grupoEdad) {
+    partes.push(`edad ${EtiquetaGrupoEdad(filtros.grupoEdad)}`);
   }
   return partes;
 }
@@ -227,23 +243,32 @@ function Definicion(numero) {
   return CATALOGO_VISUALIZACIONES.find((item) => item.numero === numero);
 }
 
+/**
+ * Sexo y grupo de edad por persona. Los indicadores que usan edad describen corte
+ * actual, por eso la edad se cumple a la fecha de consulta y no a la apertura del caso.
+ *
+ * @param {object[]} personas Filas con sexCode y birthDate de la réplica.
+ * @param {string} fechaConsulta Fecha de corte AAAA-MM-DD.
+ * @returns {Map} Demografía sin nombres.
+ */
 function EnsamblarDemografia(personas, fechaConsulta) {
   const mapa = new Map();
-  const hoy = FechaConsulta(fechaConsulta);
+  const corte = FechaConsulta(fechaConsulta);
   for (const persona of personas) {
     if (!persona.personId) {
       continue;
     }
-    const sexo = persona.sexName && persona.sexName.length > 0 ? persona.sexName : null;
+    const edad = AniosCumplidos(persona.birthDate, corte);
     mapa.set(persona.personId, {
-      sexo,
-      edad: AniosCumplidos(persona.birthDate, hoy)
+      sexo: persona.sexCode || null,
+      edad,
+      grupoEdad: ClasificarGrupoEdad(edad)
     });
   }
   return mapa;
 }
 
-function Opciones(hechos, demografia) {
+function Opciones(hechos) {
   const profesionales = new Set();
   for (const fila of hechos.individuales) {
     if (fila.profesional) {
@@ -255,24 +280,10 @@ function Opciones(hechos, demografia) {
       profesionales.add(fila.profesional);
     }
   }
-  const sexos = new Set();
-  const edades = new Set();
-  for (const caso of hechos.casos) {
-    const dato = DemografiaDe(demografia, caso.personaId);
-    if (!dato) {
-      continue;
-    }
-    if (dato.sexo) {
-      sexos.add(dato.sexo);
-    }
-    if (Number.isInteger(dato.edad)) {
-      edades.add(dato.edad);
-    }
-  }
   return {
     profesionales: [...profesionales].sort((a, b) => a.localeCompare(b, 'es')),
-    sexos: [...sexos].sort((a, b) => a.localeCompare(b, 'es')),
-    edades: [...edades].sort((a, b) => a - b)
+    sexos: SEXOS_FILTRO.map((item) => ({ codigo: item.codigo, etiqueta: item.etiqueta })),
+    gruposEdad: GRUPOS_EDAD.map((item) => ({ codigo: item.codigo, etiqueta: item.etiqueta }))
   };
 }
 
@@ -288,54 +299,76 @@ function DistribucionEstablecimiento(casos, nombres) {
   return OrdenarSerie(serie);
 }
 
-function DistribucionSexo(casos, demografia) {
+/**
+ * Cuenta casos en categorías fijas y agrega aparte los valores sin categoría y los ausentes.
+ *
+ * @param {object[]} casos Casos del corte.
+ * @param {Map} demografia Datos por persona.
+ * @param {object} definicion Campo, categorías, residual y mensaje.
+ * @returns {object} Estado, serie y mensaje.
+ */
+function DistribucionDemografica(casos, demografia, definicion) {
+  const conteo = new Map(definicion.categorias.map((item) => [item.codigo, 0]));
+  let residual = 0;
   let sinDato = 0;
-  const serie = new Map();
   for (const caso of casos) {
     const dato = DemografiaDe(demografia, caso.personaId);
-    if (!dato || !dato.sexo) {
+    const valor = dato ? dato[definicion.campo] : null;
+    if (!valor) {
       sinDato += 1;
-      continue;
+    } else if (conteo.has(valor)) {
+      conteo.set(valor, conteo.get(valor) + 1);
+    } else {
+      residual += 1;
     }
-    Contar(serie, dato.sexo, dato.sexo);
   }
-  if (serie.size === 0) {
-    return {
-      estado: 'NO_DISPONIBLE',
-      serie: [],
-      mensaje: 'El sexo no está disponible para los casos de este corte.'
-    };
+  if (sinDato === casos.length) {
+    return { estado: 'NO_DISPONIBLE', serie: [], mensaje: definicion.mensaje };
   }
-  const resultado = OrdenarSerie(serie);
-  if (sinDato > 0) {
-    resultado.push({ clave: 'NO_DISPONIBLE', etiqueta: 'No disponible', cantidad: sinDato });
+  const serie = definicion.categorias
+    .filter((item) => !definicion.seleccion || item.codigo === definicion.seleccion)
+    .map((item) => ({
+      clave: item.codigo,
+      etiqueta: item.etiqueta,
+      cantidad: conteo.get(item.codigo)
+    }));
+  if (residual > 0 && definicion.residual && !definicion.seleccion) {
+    serie.push({
+      clave: definicion.residual.codigo,
+      etiqueta: definicion.residual.etiqueta,
+      cantidad: residual
+    });
   }
-  return { estado: 'CON_DATOS', serie: resultado, mensaje: null };
+  if (sinDato > 0 && !definicion.seleccion) {
+    serie.push({
+      clave: definicion.sinDato.codigo,
+      etiqueta: definicion.sinDato.etiqueta,
+      cantidad: sinDato
+    });
+  }
+  return { estado: 'CON_DATOS', serie, mensaje: null };
 }
 
-function DistribucionEdad(casos, demografia) {
-  let sinDato = 0;
-  const serie = new Map();
-  for (const caso of casos) {
-    const dato = DemografiaDe(demografia, caso.personaId);
-    if (!dato || !Number.isInteger(dato.edad)) {
-      sinDato += 1;
-      continue;
-    }
-    Contar(serie, String(dato.edad), `${dato.edad} años`);
-  }
-  if (serie.size === 0) {
-    return {
-      estado: 'NO_DISPONIBLE',
-      serie: [],
-      mensaje: 'La edad actual no está disponible para los casos de este corte.'
-    };
-  }
-  const resultado = [...serie.values()].sort((a, b) => Number(a.clave) - Number(b.clave));
-  if (sinDato > 0) {
-    resultado.push({ clave: 'NO_DISPONIBLE', etiqueta: 'No disponible', cantidad: sinDato });
-  }
-  return { estado: 'CON_DATOS', serie: resultado, mensaje: null };
+function DistribucionSexo(casos, demografia, filtros) {
+  return DistribucionDemografica(casos, demografia, {
+    campo: 'sexo',
+    categorias: SEXOS_FILTRO,
+    residual: SEXO_OTRO_VALOR,
+    sinDato: SEXO_SIN_DATO,
+    seleccion: filtros.sexo,
+    mensaje: 'El sexo no está disponible para los casos de este corte.'
+  });
+}
+
+function DistribucionEdad(casos, demografia, filtros) {
+  return DistribucionDemografica(casos, demografia, {
+    campo: 'grupoEdad',
+    categorias: GRUPOS_EDAD,
+    residual: null,
+    sinDato: EDAD_SIN_DATO,
+    seleccion: filtros.grupoEdad,
+    mensaje: 'La edad no está disponible para los casos de este corte.'
+  });
 }
 
 function DistribucionPrioridad(casos, filtros) {
@@ -518,10 +551,18 @@ function FiltrosActivos(filtros, nombres) {
     activos.push({ codigo: 'profesional', etiqueta: `Profesional ${filtros.profesional}` });
   }
   if (filtros.sexo) {
-    activos.push({ codigo: 'sexo', etiqueta: `Sexo ${filtros.sexo}` });
+    const etiqueta = EtiquetaSexoFiltro(filtros.sexo);
+    activos.push({
+      codigo: 'sexo',
+      etiqueta: etiqueta ? `Sexo ${etiqueta}` : 'Sexo seleccionado'
+    });
   }
-  if (filtros.edad !== null) {
-    activos.push({ codigo: 'edad', etiqueta: `Edad ${filtros.edad} años` });
+  if (filtros.grupoEdad) {
+    const etiqueta = EtiquetaGrupoEdad(filtros.grupoEdad);
+    activos.push({
+      codigo: 'grupoEdad',
+      etiqueta: etiqueta ? `Edad ${etiqueta}` : 'Grupo de edad seleccionado'
+    });
   }
   return activos;
 }
@@ -592,7 +633,7 @@ function AlcanceFiltros() {
  * @returns {object} Catálogo, complementos y cobertura.
  */
 function EnsamblarCorte(hechos, filtros, demografia, nombres) {
-  if ((filtros.sexo || filtros.edad !== null) && !(demografia instanceof Map)) {
+  if ((filtros.sexo || filtros.grupoEdad) && !(demografia instanceof Map)) {
     const error = new Error('La demografía no está disponible.');
     error.code = 'DEMOGRAFIA';
     throw error;
@@ -682,10 +723,10 @@ function EnsamblarCorte(hechos, filtros, demografia, nombres) {
       mensaje: null
     }), partesCaso),
     VisualizacionPersona(2, casos, demografiaDisponible, () => (
-      DistribucionSexo(casos, mapa)
+      DistribucionSexo(casos, mapa, filtros)
     ), partesCaso),
     VisualizacionPersona(3, casos, demografiaDisponible, () => (
-      DistribucionEdad(casos, mapa)
+      DistribucionEdad(casos, mapa, filtros)
     ), partesCaso),
     VisualizacionCasos(4, casos, () => ({
       estado: 'CON_DATOS',
@@ -750,10 +791,10 @@ function partesCobertura(filtros, nombres) {
     partes.push(NombreEstablecimiento(filtros.establecimientoId, nombres));
   }
   if (filtros.sexo) {
-    partes.push(`sexo ${filtros.sexo}`);
+    partes.push(`sexo ${EtiquetaSexoFiltro(filtros.sexo) || 'seleccionado'}`);
   }
-  if (filtros.edad !== null) {
-    partes.push(`edad ${filtros.edad} años`);
+  if (filtros.grupoEdad) {
+    partes.push(`edad ${EtiquetaGrupoEdad(filtros.grupoEdad) || 'grupo seleccionado'}`);
   }
   return partes;
 }

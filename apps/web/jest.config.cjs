@@ -14,6 +14,7 @@ module.exports = {
   },
   moduleNameMapper: {
     '\\.css$': '<rootDir>/tests/style-mock.cjs',
+    '\\.(png|ico)$': '<rootDir>/tests/archivo-mock.cjs',
     '^echarts/core$': '<rootDir>/tests/echarts-mock.cjs',
     '^echarts/charts$': '<rootDir>/tests/echarts-mock.cjs',
     '^echarts/components$': '<rootDir>/tests/echarts-mock.cjs',

@@ -500,6 +500,22 @@ SELECT CASE WHEN EXISTS (
     },
 
     /**
+     * Cuenta las referencias del ámbito, sin los filtros voluntarios de la bandeja.
+     *
+     * @param {object} scope Ámbito ya autorizado.
+     * @returns {Promise<number>} Total del ámbito.
+     */
+    async ContarEnAmbito(scope) {
+      const statement = ConstruirConsultaReferencias({
+        scope,
+        offset: 0,
+        pageSize: 1
+      });
+      const counts = await LeerFilas(statement.countSql, statement.parameters);
+      return counts[0] ? Number(counts[0].total_matches) : 0;
+    },
+
+    /**
      * Lee la cabecera y el contexto si la referencia está dentro del ámbito.
      * Fuera de ámbito no devuelve fila. No indica si existe en otro lado.
      *

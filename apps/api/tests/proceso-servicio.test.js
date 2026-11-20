@@ -246,6 +246,34 @@ describe('servicio del proceso interdisciplinario', () => {
     expect(resumen.atencionesRegistradas.cantidad).toBeNull();
   });
 
+  test('el resumen regional calcula el ámbito y no anuncia un lote pendiente', async () => {
+    const servicio = CrearServicioProceso({
+      periodId: '2026',
+      adaptador: {
+        BuscarRegion: jest.fn(async () => ({ name: 'Región Central Sur' })),
+        ListarOficinasLocales: jest.fn(async () => [
+          { localOfficeId: 101, name: 'Hatillo' }
+        ])
+      },
+      repositorio: RepositorioBase({
+        ListarDistribucion: jest.fn(async () => [{ clave: 101, cantidad: 1 }]),
+        ContarActividadesVencidasAmbito: jest.fn(async () => 0)
+      })
+    });
+    const acceso = CrearContextoUsuario({
+      source: 'SYNTHETIC_DEVELOPMENT',
+      principalId: 'dev-region-central-sur',
+      grants: [{ role: 'REGION', regionId: 1 }]
+    });
+    const resumen = await servicio.ObtenerResumen(acceso);
+    expect(resumen.mensaje).toBeUndefined();
+    expect(resumen.casosActivos.cantidad).toBe(1);
+    expect(resumen.etiquetaAmbito).toBe('Región Central Sur');
+    expect(resumen.distribucion.filas[0].nombre).toBe('Hatillo');
+    expect(resumen.distribucion.filas[0].casosActivos).toBe(1);
+    expect(resumen.posiblesReferencias).toBeUndefined();
+  });
+
   test('un cambio de estado inválido se rechaza sin persistir otro resultado', async () => {
     const registrar = jest.fn(async () => {
       const error = new Error('estado');

@@ -5,7 +5,7 @@
  * HU-005 a HU-009. La búsqueda es contextual; no hay un padrón general.
  */
 import { useState } from 'react';
-import { Aviso, Cargando, Campo, Vacio } from '../../componentes/interfaz';
+import { Aviso, Cargando, Campo, ResumenResultados, Vacio } from '../../componentes/interfaz';
 import { SolicitarApi } from '../../servicios/cliente-api';
 
 export default function BusquedaContextual({
@@ -63,7 +63,9 @@ export default function BusquedaContextual({
     <>
       <p className="contexto">Personas del ámbito</p>
       <h1>Buscar persona</h1>
-      <p>La búsqueda usa identificación o nombre dentro del ámbito autorizado.</p>
+      <p className="introduccion">
+        Busque a una persona por identificación o nombre dentro de su ámbito.
+      </p>
       <form onSubmit={Buscar}>
         <Campo id="criterio-persona" etiqueta="Identificación o nombre">
           <input
@@ -79,7 +81,11 @@ export default function BusquedaContextual({
       {error ? <Aviso>{error}</Aviso> : null}
       {cargando ? <Cargando /> : null}
       {resultado && resultado.result ? (
-        <p>{resultado.result.returned} de {resultado.result.total}</p>
+        <ResumenResultados
+          filtrados={resultado.result.total}
+          pagina={resultado.query && resultado.query.page}
+          tamano={resultado.query && resultado.query.pageSize}
+        />
       ) : null}
       {resultado && items.length === 0 ? <Vacio texto={resultado.result.message || 'Sin coincidencias.'} /> : null}
       {items.length > 0 ? (

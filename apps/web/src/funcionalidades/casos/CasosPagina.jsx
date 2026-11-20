@@ -1,6 +1,8 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-14.
+ * Modificación: 2026-11-18. El expediente abierto sustituye al listado.
+ * Modificación: 2026-11-19. El inicio puede abrir la lista en Activo.
  * Modificación: 2026-11-18. Título común de casos con consulta
  * superior distinguida en el texto, no en otro nombre.
  * Modificación: 2026-11-17. Nivel de riesgo, título de casos,
@@ -11,9 +13,9 @@
  * El establecimiento no recibe el detalle interno.
  */
 import { useEffect, useState } from 'react';
-import { Aviso, Cargando, Campo, ClasePrioridad, Vacio } from '../../componentes/interfaz';
-import CicloCaso from './CicloCaso';
+import { Aviso, Cargando, Campo, ClasePrioridad, ResumenResultados, Vacio } from '../../componentes/interfaz';
 import ExpedienteConsulta from './ExpedienteConsulta';
+import ExpedienteOperativo from './ExpedienteOperativo';
 import { DescargarArchivo, SolicitarApi } from '../../servicios/cliente-api';
 
 const CONSULTA_VACIA = {
@@ -74,13 +76,16 @@ function ConsultaInicial(parametros) {
   const identificacion = parametros && typeof parametros.identificacion === 'string'
     ? parametros.identificacion
     : '';
-  return { ...CONSULTA_VACIA, identificacion };
+  const estados = ['ACTIVO', 'CERRADO'];
+  const estado = parametros && estados.includes(parametros.estado) ? parametros.estado : '';
+  return { ...CONSULTA_VACIA, identificacion, estado };
 }
 
 export default function CasosPagina({
   direccionApi,
   identidad,
   contexto,
+  navegar,
   parametros = {},
   solicitarApi = SolicitarApi
 }) {
@@ -206,11 +211,42 @@ export default function CasosPagina({
     }
   }
 
+  if (detalle && contexto.puedeVerDetalleCaso) {
+    return (
+      <ExpedienteOperativo
+        detalle={detalle}
+        direccionApi={direccionApi}
+        identidad={identidad}
+        contexto={contexto}
+        solicitarApi={solicitarApi}
+        alCerrar={() => establecerDetalle(null)}
+        alActualizar={() => VerDetalle(detalle.casoId)}
+      />
+    );
+  }
+  if (detalle && contexto.puedeVerDetalleConsulta && !contexto.puedeVerDetalleCaso) {
+    return (
+      <ExpedienteConsulta
+        detalle={detalle}
+        alCerrar={() => establecerDetalle(null)}
+      />
+    );
+  }
+
   return (
     <>
       <p className="contexto">Gestión del caso</p>
       <h1>{TituloCasos(contexto)}</h1>
-      {superior ? <p>La consulta no modifica casos ni habilita la gestión de Oficina Local.</p> : null}
+      <p className="introduccion">
+        {superior
+          ? 'Consulte los casos de su ámbito. Esta vista no modifica la información.'
+          : 'Busque un caso, revise su situación y continúe la atención.'}
+      </p>
+      {contexto && contexto.puedeConsultarSeguimiento && navegar ? (
+        <button type="button" className="secundario" onClick={() => navegar('seguimiento')}>
+          Casos sin atención
+        </button>
+      ) : null}
       <form onSubmit={(evento) => {
         evento.preventDefault();
         establecerCargando(true);
@@ -325,10 +361,19 @@ export default function CasosPagina({
       </form>
       {error ? <Aviso>{error}</Aviso> : null}
       {cargando ? <Cargando /> : null}
-      {pagina && superior ? (
-        <p>Total del ámbito filtrado: {pagina.total}. En esta página: {pagina.devueltos}.</p>
+      {pagina ? (
+        <ResumenResultados
+          filtrados={pagina.total}
+          totalAmbito={pagina.totalAmbito}
+          pagina={numeroPagina}
+          tamano={pagina.consulta && pagina.consulta.tamano}
+          hayFiltros={Boolean(
+            aplicada.estado || aplicada.prioridad || aplicada.identificacion
+            || aplicada.nombre || aplicada.establecimientoId
+            || aplicada.regionId || aplicada.localOfficeId
+          )}
+        />
       ) : null}
-      {pagina && !superior ? <p>{pagina.devueltos} de {pagina.total}</p> : null}
       {pagina && pagina.items.length === 0 ? <Vacio texto="No hay casos que coincidan con el criterio." /> : null}
       {pagina && pagina.items.length > 0 ? (
         <div className="tabla-contenedor">
@@ -405,133 +450,6 @@ export default function CasosPagina({
             Exportar el corte filtrado completo
           </button>
         </div>
-      ) : null}
-      {detalle && contexto.puedeVerDetalleConsulta && !contexto.puedeVerDetalleCaso ? (
-        <ExpedienteConsulta detalle={detalle} />
-      ) : null}
-      {detalle && contexto.puedeVerDetalleCaso ? (
-        <section className="panel" aria-labelledby="titulo-caso">
-          <h2 id="titulo-caso">Caso {detalle.casoId}</h2>
-          <p>{detalle.nombre || 'Nombre no disponible'} — {detalle.identificacion}</p>
-          <p>Establecimiento: {detalle.establecimientoNombre || detalle.establecimientoId}</p>
-          <p>Consecutivo de origen: {detalle.consecutivo}</p>
-          <p>
-            Estado: {detalle.estado}. Apertura: {detalle.fechaApertura}.
-            {detalle.fechaCierre ? ` Cierre: ${detalle.fechaCierre}.` : ''}
-          </p>
-          <p>
-            Prioridad vigente: <strong className={ClasePrioridad(detalle.prioridadCodigo)}>{detalle.prioridadEtiqueta || 'Sin valoración vigente'}</strong>
-          </p>
-          <p>
-            Nivel de riesgo: {detalle.riesgoCodigo || 'No registrado'}.
-            Nivel de protección: {detalle.proteccionCodigo || 'No registrada'}.
-          </p>
-          <h3>Contexto de ingreso</h3>
-          <p>Encargado: {detalle.contextoIngreso.encargado || 'No registrado'}</p>
-          <p>Relación: {detalle.contextoIngreso.relacion || 'No registrada'}</p>
-          <p>Contacto: {detalle.contextoIngreso.contacto || 'No registrado'}</p>
-          <h3>Valoraciones</h3>
-          <ul>
-            {detalle.valoraciones.map((item) => (
-              <li key={item.valoracionId}>
-                {item.fecha} — {item.prioridadEtiqueta}{item.vigente ? ' (vigente)' : ''} — {item.responsable}
-              </li>
-            ))}
-          </ul>
-          <h3>Plan vigente</h3>
-          {detalle.plan ? (
-            <>
-              <p>Frecuencia: {detalle.plan.frecuenciaEtiqueta}</p>
-              <p>Propósitos: {detalle.plan.propositos.join('; ')}</p>
-              <p>Estrategias: {detalle.plan.estrategias.join(', ')}</p>
-              <p>Disciplinas: {detalle.plan.disciplinas.join(', ')}</p>
-            </>
-          ) : <p>No hay plan vigente.</p>}
-          <h3>Última atención</h3>
-          <p>{detalle.ultimaAtencion.mensaje || detalle.ultimaAtencion.fecha}</p>
-          <h3>Línea de tiempo</h3>
-          {detalle.lineaTiempo && detalle.lineaTiempo.length > 0 ? (
-            <ol>
-              {detalle.lineaTiempo.map((evento) => (
-                <li key={evento.clave}>
-                  {evento.fecha} — {evento.texto}
-                  {evento.responsable ? ` — ${evento.responsable}` : ''}
-                </li>
-              ))}
-            </ol>
-          ) : <p>Sin eventos persistidos para mostrar.</p>}
-          {detalle.consultaIndividual
-            && detalle.consultaIndividual.disponibilidad !== 'DISPONIBLE' ? (
-              <p>{detalle.consultaIndividual.mensaje}</p>
-            ) : null}
-          <h3>Atenciones individuales</h3>
-          {detalle.atenciones && detalle.atenciones.length > 0 ? (
-            <ul>
-              {detalle.atenciones.map((item) => (
-                <li key={item.atencionId}>
-                  {item.fechaAtencion}. Registro: {item.fechaRegistro}. {item.acciones}
-                </li>
-              ))}
-            </ul>
-          ) : <p>Sin atenciones individuales registradas.</p>}
-          <h3>Participaciones grupales</h3>
-          {detalle.consultaGrupal && detalle.consultaGrupal.disponibilidad !== 'DISPONIBLE'
-            ? <p>{detalle.consultaGrupal.mensaje}</p>
-            : null}
-          {detalle.consultaGrupal && detalle.consultaGrupal.disponibilidad === 'DISPONIBLE'
-            && detalle.participacionesGrupales && detalle.participacionesGrupales.length > 0 ? (
-            <ul>
-              {detalle.participacionesGrupales.map((item) => (
-                <li key={item.atencionGrupalId}>
-                  {item.fechaAtencion} — {item.tema}
-                  {item.asistio === true ? ' — asistió' : ''}
-                  {item.asistio === false ? ' — no asistió' : ''}
-                  {item.asistio === null ? ' — asistencia no registrada' : ''}
-                </li>
-              ))}
-            </ul>
-          ) : null}
-          {(!detalle.consultaGrupal || detalle.consultaGrupal.disponibilidad === 'DISPONIBLE')
-            && (!detalle.participacionesGrupales || detalle.participacionesGrupales.length === 0)
-            ? <p>Sin participaciones grupales registradas.</p>
-            : null}
-          <h3>Versiones del plan</h3>
-          {detalle.consultaPlanes && detalle.consultaPlanes.disponibilidad !== 'DISPONIBLE' ? (
-            <p>{detalle.consultaPlanes.mensaje}</p>
-          ) : null}
-          {detalle.planes && detalle.planes.length > 0
-            && (!detalle.consultaPlanes || detalle.consultaPlanes.disponibilidad === 'DISPONIBLE') ? (
-            <ul>
-              {detalle.planes.map((item) => (
-                <li key={item.planId}>
-                  Versión {item.numero} — {item.fecha}
-                  {item.vigente ? ' (vigente)' : ''} — {item.frecuenciaEtiqueta}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            detalle.consultaPlanes && detalle.consultaPlanes.disponibilidad !== 'DISPONIBLE'
-              ? null
-              : <p>Sin versiones adicionales consultables.</p>
-          )}
-          <h3>Documentos</h3>
-          <p>{detalle.documentos ? detalle.documentos.mensaje || detalle.documentos.cantidad : 'Sin documentos registrados.'}</p>
-          <CicloCaso
-            direccionApi={direccionApi}
-            identidad={identidad}
-            contexto={contexto}
-            detalle={detalle}
-            solicitarApi={solicitarApi}
-            alActualizar={() => VerDetalle(detalle.casoId)}
-          />
-          <h3>Historial de estado</h3>
-          <ul>
-            {detalle.historial.map((item) => (
-              <li key={`${item.estado}-${item.ocurridoEn}`}>{item.ocurridoEn} — {item.estado}</li>
-            ))}
-          </ul>
-          {detalle.pendientes.map((pendiente) => <Aviso key={pendiente} tipo="pendiente">{pendiente}</Aviso>)}
-        </section>
       ) : null}
     </>
   );

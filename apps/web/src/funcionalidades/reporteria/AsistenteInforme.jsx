@@ -246,7 +246,7 @@ export default function AsistenteInforme({
         <p className="progreso">{progreso}</p>
         <h2 id="titulo-informe">Generar reporte</h2>
         <p>
-          Informe analítico de HU-050. No es la consolidación de HU-039
+          Este informe recoge su análisis. No sustituye el consolidado descargable.
           ni el reporte individual de un caso.
         </p>
         {avisoCorte ? <Aviso>{avisoCorte}</Aviso> : null}
@@ -359,9 +359,7 @@ export default function AsistenteInforme({
               <dd>{fijo.fechaConsulta}</dd>
             </dl>
             <p>
-              La fecha y hora de generación se toman al confirmar,
-              en la zona horaria operativa. La zona institucional definitiva
-              sigue pendiente de confirmación.
+              La fecha y hora se registran al confirmar el informe.
             </p>
             <div className="acciones-asistente">
               <button

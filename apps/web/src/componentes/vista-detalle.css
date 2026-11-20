@@ -1,0 +1,77 @@
+/* Patrón listado → detalle. Creación: 2026-11-18. */
+.vista-detalle {
+  display: grid;
+  gap: 1rem;
+}
+
+.vista-detalle-barra {
+  display: flex;
+}
+
+.vista-detalle-barra .volver {
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.vista-detalle-encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--borde-suave);
+}
+
+.vista-detalle-encabezado h2 {
+  margin: 0;
+}
+
+.vista-detalle-encabezado h2:focus {
+  outline: none;
+}
+
+.vista-detalle-encabezado h2:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+
+.vista-detalle-subtitulo {
+  margin: 0.25rem 0 0;
+  color: var(--texto-suave);
+}
+
+.vista-detalle-cuerpo {
+  display: grid;
+  gap: 1rem;
+}
+
+.seccion-detalle {
+  padding: 1rem;
+  border: 1px solid var(--borde-suave);
+  border-radius: var(--radio);
+  background: var(--superficie);
+}
+
+.seccion-detalle > h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1.05rem;
+}
+
+.datos-detalle {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.75rem 1.5rem;
+  margin: 0;
+}
+
+.datos-detalle dt {
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+}
+
+.datos-detalle dd {
+  margin: 0.15rem 0 0;
+  overflow-wrap: anywhere;
+}

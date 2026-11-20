@@ -40,7 +40,7 @@ function Filtros(extra = {}) {
     disciplinaId: null,
     profesional: null,
     sexo: null,
-    edad: null,
+    grupoEdad: null,
     catalogoDisciplinas: [{ itemId: 3, etiqueta: 'Trabajo social' }],
     ...extra
   };
@@ -300,6 +300,22 @@ describe('definiciones analíticas de reportería', () => {
     expect(porDisciplina.totalAtenciones).toBe(1);
     expect(porDisciplina.cobertura.denominador).toBe(2);
     expect(Visualizacion(porDisciplina, 2).estado).toBe('CON_DATOS');
+    const sinSeleccion = EnsamblarCorte(hechos, Filtros(), demografia, new Map());
+    expect(Visualizacion(sinSeleccion, 2).estado).toBe('CON_DATOS');
+    expect(Visualizacion(sinSeleccion, 3).estado).toBe('NO_DISPONIBLE');
+    expect(sinSeleccion.filtrosActivos.map((item) => item.etiqueta)).toEqual([
+      'Año 2026'
+    ]);
+    expect(Visualizacion(sinSeleccion, 11).titulo).not.toMatch(/undefined/);
+    const conGrupo = EnsamblarCorte(
+      hechos,
+      Filtros({ grupoEdad: 'EDAD_3_5' }),
+      demografia,
+      new Map()
+    );
+    expect(conGrupo.filtrosActivos.map((item) => item.etiqueta)).toContain(
+      'Edad 3–5 años'
+    );
   });
 
   test('sin demografía no inventa sexo ni edad en cero', () => {

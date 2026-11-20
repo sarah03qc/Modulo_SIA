@@ -6,8 +6,13 @@
  * reportería y consulta Regional y Nacional.
  * Modificación: 2026-11-18. Sección de posibles referencias.
  * Modificación: 2026-11-18. Navegación lateral y orientación por ámbito.
+ * Modificación: 2026-11-19. Logotipo oficial sobre el título del sistema.
+ * Modificación: 2026-11-19. Título del módulo centrado en la columna.
+ * Modificación: 2026-11-19. Iconos discretos en la navegación lateral.
  */
 import { lazy, Suspense, useState } from 'react';
+import logoCenCinai from '../activos/logo-cen-cinai.png';
+import Icono from '../componentes/Icono';
 import { Aviso, Cargando } from '../componentes/interfaz';
 import BienvenidaTecnica from '../funcionalidades/bienvenida/BienvenidaTecnica';
 import AtencionesPagina from '../funcionalidades/atenciones/AtencionesPagina';
@@ -38,10 +43,15 @@ function VistaActiva(vista, nombre) {
   if (nombre === 'sesiones') {
     return vista.nombre === 'sesiones' || vista.nombre === 'sesion';
   }
+  if (nombre === 'referencias') {
+    return vista.nombre === 'referencias'
+      || vista.nombre === 'bandeja'
+      || vista.nombre === 'referencia-nueva';
+  }
   return vista.nombre === nombre;
 }
 
-function BotonNav({ activa, alActivar, secundario = false, children }) {
+function BotonNav({ activa, alActivar, secundario = false, icono, children }) {
   return (
     <button
       type="button"
@@ -49,7 +59,8 @@ function BotonNav({ activa, alActivar, secundario = false, children }) {
       aria-current={activa ? 'page' : undefined}
       onClick={alActivar}
     >
-      {children}
+      {icono ? <Icono nombre={icono} /> : null}
+      <span>{children}</span>
     </button>
   );
 }
@@ -156,12 +167,19 @@ export default function Aplicacion({
       <a className="saltar" href="#contenido">Saltar al contenido</a>
       <aside className="barra-lateral">
         <div className="marca-bloque">
-          <p className="marca">SIA-CENCINAI</p>
-          <p className="marca-sub">Atención Interdisciplinaria</p>
+          <img
+            className="logo-institucional"
+            src={logoCenCinai}
+            width="500"
+            height="392"
+            alt="Logotipo oficial de CEN-CINAI"
+          />
+          <p className="marca-sub">Módulo de Atención Interdisciplinaria</p>
         </div>
         <nav className="navegacion" aria-label="Principal">
           <GrupoNav id="nav-trabajo" titulo="Trabajo">
             <BotonNav
+              icono="casa"
               activa={VistaActiva(vista, 'inicio')}
               alActivar={() => Navegar('inicio')}
             >
@@ -172,22 +190,16 @@ export default function Aplicacion({
             <GrupoNav id="nav-personas" titulo="Personas y referencias">
               {contexto.puedeBuscarPersonas ? (
                 <BotonNav
+                  icono="lupa"
                   activa={VistaActiva(vista, 'buscar')}
                   alActivar={() => Navegar('buscar')}
                 >
                   Buscar persona
                 </BotonNav>
               ) : null}
-              {contexto.puedeCrearReferencia ? (
-                <BotonNav
-                  activa={VistaActiva(vista, 'referencia-nueva')}
-                  alActivar={() => Navegar('referencia-nueva')}
-                >
-                  Nueva referencia
-                </BotonNav>
-              ) : null}
               {contexto.puedeConsultarReferencias ? (
                 <BotonNav
+                  icono="documento"
                   activa={VistaActiva(vista, 'referencias')}
                   alActivar={() => Navegar('referencias')}
                 >
@@ -196,18 +208,11 @@ export default function Aplicacion({
               ) : null}
               {contexto.puedeConsultarPosibles ? (
                 <BotonNav
+                  icono="personas"
                   activa={VistaActiva(vista, 'posibles')}
                   alActivar={() => Navegar('posibles')}
                 >
                   Posibles referencias
-                </BotonNav>
-              ) : null}
-              {contexto.puedeGestionarSesiones ? (
-                <BotonNav
-                  activa={VistaActiva(vista, 'bandeja')}
-                  alActivar={() => Navegar('bandeja')}
-                >
-                  Pendientes
                 </BotonNav>
               ) : null}
             </GrupoNav>
@@ -216,6 +221,7 @@ export default function Aplicacion({
             <GrupoNav id="nav-atencion" titulo="Atención">
               {contexto.puedeGestionarSesiones ? (
                 <BotonNav
+                  icono="calendario"
                   activa={VistaActiva(vista, 'sesiones')}
                   alActivar={() => Navegar('sesiones')}
                 >
@@ -224,6 +230,7 @@ export default function Aplicacion({
               ) : null}
               {puedeCasos ? (
                 <BotonNav
+                  icono="carpeta"
                   activa={VistaActiva(vista, 'casos')}
                   alActivar={() => Navegar('casos')}
                 >
@@ -232,22 +239,26 @@ export default function Aplicacion({
               ) : null}
               {contexto.puedeRegistrarAtencion ? (
                 <BotonNav
+                  icono="corazon"
                   activa={VistaActiva(vista, 'atenciones')}
                   alActivar={() => Navegar('atenciones')}
                 >
                   Atenciones
                 </BotonNav>
               ) : null}
-              {contexto.puedeConsultarSeguimiento ? (
-                <BotonNav
-                  activa={VistaActiva(vista, 'seguimiento')}
-                  alActivar={() => Navegar('seguimiento')}
-                >
-                  Sin atención
-                </BotonNav>
-              ) : null}
+              {contexto.puedeConsultarSeguimiento && !puedeCasos
+                && !contexto.puedeRegistrarAtencion ? (
+                  <BotonNav
+                    icono="aviso"
+                    activa={VistaActiva(vista, 'seguimiento')}
+                    alActivar={() => Navegar('seguimiento')}
+                  >
+                    Sin atención
+                  </BotonNav>
+                ) : null}
               {contexto.puedeConsultarProgramacion ? (
                 <BotonNav
+                  icono="calendario"
                   activa={VistaActiva(vista, 'programacion')}
                   alActivar={() => Navegar('programacion')}
                 >
@@ -259,6 +270,7 @@ export default function Aplicacion({
           {contexto.puedeConsultarReporteria ? (
             <GrupoNav id="nav-analisis" titulo="Análisis">
               <BotonNav
+                icono="grafico"
                 activa={VistaActiva(vista, 'reporteria')}
                 alActivar={() => Navegar('reporteria')}
               >
@@ -268,6 +280,7 @@ export default function Aplicacion({
           ) : null}
           <GrupoNav id="nav-sistema" titulo="Sistema">
             <BotonNav
+              icono="ajuste"
               activa={VistaActiva(vista, 'tecnico')}
               alActivar={() => Navegar('tecnico')}
               secundario

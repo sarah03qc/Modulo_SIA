@@ -2,7 +2,7 @@
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-16.
  * Modificación: 2026-11-18. Título Reportería y contexto analítico.
- * Modificación: 2026-11-18. Ancho de las visualizaciones con etiquetas largas.
+ * Modificación: 2026-11-18. Lenguaje visible y notas de lectura.
  * HU-038, HU-039 y HU-040 a HU-043.
  * La pantalla no recalcula indicadores ni elige el ámbito de la sesión.
  */
@@ -24,12 +24,26 @@ const FILTROS_INICIALES = {
   disciplinaId: '',
   profesional: '',
   sexo: '',
-  edad: ''
+  grupoEdad: ''
 };
 
 function EsSuperior(contexto) {
   const nivel = contexto && contexto.nivel;
   return nivel === 'REGION' || nivel === 'NACIONAL';
+}
+
+function NotaLegible(nota) {
+  if (!nota) {
+    return '';
+  }
+  if (nota.includes('TIPO_ATENCION')) {
+    return 'Hay atenciones individuales sin un tipo institucional. '
+      + 'No se incluyen en este gráfico.';
+  }
+  if (nota.includes('RN-040') || nota.includes('ratificación')) {
+    return '';
+  }
+  return nota;
 }
 
 function Consulta(filtros, nivel) {
@@ -59,8 +73,8 @@ function Consulta(filtros, nivel) {
   if (filtros.sexo) {
     parametros.set('sexo', filtros.sexo);
   }
-  if (filtros.edad !== '') {
-    parametros.set('edad', filtros.edad);
+  if (filtros.grupoEdad) {
+    parametros.set('grupoEdad', filtros.grupoEdad);
   }
   return parametros.toString();
 }
@@ -186,16 +200,17 @@ export default function ReporteriaPagina({
   }
 
   const disciplinas = resultado ? resultado.disciplinas : [];
-  const opciones = resultado ? resultado.opciones : {
+  const opciones = resultado && resultado.opciones ? resultado.opciones : {
     profesionales: [],
     sexos: [],
-    edades: []
+    gruposEdad: []
   };
-  const alcance = nivel === 'NACIONAL'
-    ? 'La consulta es nacional y de solo lectura.'
-    : nivel === 'REGION'
-      ? 'La consulta es regional y de solo lectura.'
-      : 'El ámbito es el de la sesión.';
+  const sexos = (opciones.sexos || []).map((sexo) => (
+    sexo && typeof sexo === 'object'
+      ? { codigo: sexo.codigo, etiqueta: sexo.etiqueta }
+      : { codigo: String(sexo), etiqueta: String(sexo) }
+  ));
+  const gruposEdad = opciones.gruposEdad || [];
   const oficinas = territorio && territorio.filters
     ? territorio.filters.localOffice.options
     : [];
@@ -218,16 +233,12 @@ export default function ReporteriaPagina({
     <section className="reporteria">
       <div className="encabezado-reporteria">
         <div>
-          <p className="contexto">Analítica operativa</p>
+          <p className="contexto">Indicadores</p>
           <h1>Reportería</h1>
-          <p>
-            {alcance} Estas doce visualizaciones no sustituyen el juicio profesional.
+          <p className="introduccion">
+            Consulte los indicadores del período y revise el corte con los filtros.
+            {superior ? ' Esta consulta es de solo lectura.' : ''}
           </p>
-          {superior ? (
-            <p>
-              La consulta es de solo lectura. El asistente HU-050 sigue en Oficina Local.
-            </p>
-          ) : null}
         </div>
         <div className="acciones-reporteria">
           {superior ? null : (
@@ -246,7 +257,7 @@ export default function ReporteriaPagina({
               onClick={Descargar}
               disabled={descargando || cargando || !resultado}
             >
-              {descargando ? 'Preparando consolidación…' : 'Descargar consolidación'}
+              {descargando ? 'Preparando el consolidado…' : 'Descargar consolidado'}
             </button>
           ) : null}
         </div>
@@ -356,15 +367,15 @@ export default function ReporteriaPagina({
           <select
             id="profesional-reporteria"
             value={filtros.profesional}
-            disabled={opciones.profesionales.length === 0}
+            disabled={(opciones.profesionales || []).length === 0}
             onChange={(evento) => Cambiar('profesional', evento.target.value)}
           >
             <option value="">
-              {opciones.profesionales.length > 0
+              {(opciones.profesionales || []).length > 0
                 ? 'Todos'
                 : 'Sin profesionales verificables en este corte'}
             </option>
-            {opciones.profesionales.map((profesional) => (
+            {(opciones.profesionales || []).map((profesional) => (
               <option key={profesional} value={profesional}>{profesional}</option>
             ))}
           </select>
@@ -373,25 +384,25 @@ export default function ReporteriaPagina({
           <select
             id="sexo-reporteria"
             value={filtros.sexo}
-            disabled={opciones.sexos.length === 0}
+            disabled={sexos.length === 0}
             onChange={(evento) => Cambiar('sexo', evento.target.value)}
           >
             <option value="">Todos</option>
-            {opciones.sexos.map((sexo) => (
-              <option key={sexo} value={sexo}>{sexo}</option>
+            {sexos.map((sexo) => (
+              <option key={sexo.codigo} value={sexo.codigo}>{sexo.etiqueta}</option>
             ))}
           </select>
         </Campo>
-        <Campo id="edad-reporteria" etiqueta="Edad actual">
+        <Campo id="edad-reporteria" etiqueta="Grupo de edad">
           <select
             id="edad-reporteria"
-            value={filtros.edad}
-            disabled={opciones.edades.length === 0}
-            onChange={(evento) => Cambiar('edad', evento.target.value)}
+            value={filtros.grupoEdad}
+            disabled={gruposEdad.length === 0}
+            onChange={(evento) => Cambiar('grupoEdad', evento.target.value)}
           >
-            <option value="">Todas</option>
-            {opciones.edades.map((edad) => (
-              <option key={edad} value={edad}>{edad} años</option>
+            <option value="">Todos</option>
+            {gruposEdad.map((grupo) => (
+              <option key={grupo.codigo} value={grupo.codigo}>{grupo.etiqueta}</option>
             ))}
           </select>
         </Campo>
@@ -412,20 +423,6 @@ export default function ReporteriaPagina({
               <li key={filtro.codigo}>{filtro.etiqueta}</li>
             ))}
           </ol>
-          <details>
-            <summary>Alcance de cada filtro</summary>
-            <ul>
-              {resultado.alcanceFiltros.map((filtro) => (
-                <li key={filtro.codigo}>
-                  <strong>{filtro.codigo}</strong>
-                  {': aplica a '}
-                  {filtro.aplicaA.join(', ') || 'ninguna'}
-                  .
-                  {' '}{filtro.motivo}
-                </li>
-              ))}
-            </ul>
-          </details>
         </div>
       ) : null}
 
@@ -436,8 +433,6 @@ export default function ReporteriaPagina({
         <>
           <section className="panel" aria-label="Indicadores complementarios">
             <h2>Indicadores complementarios</h2>
-            <p>{resultado.notaPersonas}</p>
-            <p>{resultado.notaAtenciones}</p>
             <dl className="cifras">
               <div>
                 <dt>Personas únicas atendidas</dt>
@@ -472,8 +467,17 @@ export default function ReporteriaPagina({
                 <dd>{resultado.referencias.noRequiere}</dd>
               </div>
             </dl>
-            <p>{resultado.referencias.nota}</p>
-            <p className="aviso aviso-info">{resultado.cobertura.texto}</p>
+            <details>
+              <summary>Cómo leer estos números</summary>
+              <p>
+                Cada persona se cuenta una vez, aunque tenga varias atenciones.
+                El porcentaje compara a quienes tienen un caso activo y recibieron
+                al menos una atención en el año, con el total de personas que tienen
+                un caso activo. Si no hay casos activos, el porcentaje no aplica.
+                Esta forma de calcular el porcentaje todavía está en revisión
+                institucional.
+              </p>
+            </details>
           </section>
 
           <div className="rejilla-reporteria">
@@ -491,13 +495,15 @@ export default function ReporteriaPagina({
                 </h2>
                 <p>{visualizacion.fechaAplicada}</p>
                 <GraficoReporteria visualizacion={visualizacion} />
-                {visualizacion.nota ? <p>{visualizacion.nota}</p> : null}
+                {NotaLegible(visualizacion.nota) ? (
+                  <p className="ayuda">{NotaLegible(visualizacion.nota)}</p>
+                ) : null}
                 {visualizacion.totalFrecuencia > visualizacion.serie.length ? (
                   <p>
                     La presentación muestra {visualizacion.serie.length}
                     {' de '}
                     {visualizacion.totalFrecuencia}.
-                    La consolidación descarga la frecuencia completa.
+                    El consolidado descarga la frecuencia completa.
                   </p>
                 ) : null}
               </article>
@@ -506,9 +512,11 @@ export default function ReporteriaPagina({
 
           <section className="panel" aria-label="Casos sin atención">
             <h2>Casos activos sin atención en el año</h2>
-            <p>{resultado.casosSinAtencion.nota}</p>
+            <p className="ayuda">
+              Una actividad programada no cuenta como atención.
+            </p>
             {resultado.casosSinAtencion.estado === 'SIN_CASOS_ACTIVOS' ? (
-              <Vacio texto="Sin casos activos. No aplica." />
+              <Vacio texto="No aplica en este corte." />
             ) : null}
             {resultado.casosSinAtencion.total === 0
               && resultado.casosSinAtencion.estado === 'CON_DATOS' ? (
@@ -522,7 +530,7 @@ export default function ReporteriaPagina({
                   Se muestran {resultado.casosSinAtencion.muestra.length}
                   {' de '}
                   {resultado.casosSinAtencion.total}.
-                  La consolidación incluye el conjunto completo filtrado.
+                  El consolidado incluye el conjunto completo filtrado.
                 </caption>
                 <thead>
                   <tr>

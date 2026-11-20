@@ -70,9 +70,10 @@ describe('programación en pantalla', () => {
       return Consulta(actividades);
     });
     Pagina(solicitarApi);
-    expect(await pantalla.findByText('1 de 2 actividades.')).toBeInTheDocument();
+    expect(await pantalla.findByText('1 resultados')).toBeInTheDocument();
+    fireEvent.click(pantalla.getByRole('button', { name: 'Nueva actividad' }));
 
-    fireEvent.change(pantalla.getByLabelText('Fecha prevista'), {
+    fireEvent.change(pantalla.getByLabelText('Fecha'), {
       target: { value: '2026-12-26' }
     });
     fireEvent.change(pantalla.getByLabelText('Tipo'), { target: { value: '19' } });
@@ -91,6 +92,7 @@ describe('programación en pantalla', () => {
     expect(alta[2].method).toBeUndefined();
     expect(alta[2].body).toBeUndefined();
 
+    fireEvent.click(pantalla.getByRole('tab', { name: 'Lista' }));
     fireEvent.click(pantalla.getByRole('button', { name: 'Resolver' }));
     fireEvent.click(pantalla.getByRole('button', { name: 'Confirmar resolución' }));
     expect(await pantalla.findByText('La actividad conservó su historial.')).toBeInTheDocument();

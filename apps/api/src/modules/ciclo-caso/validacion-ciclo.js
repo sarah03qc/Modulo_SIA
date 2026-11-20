@@ -112,6 +112,8 @@ function LeerCoordinacion(valor) {
     profesional: LeerTextoOpcional(valor.profesional, 'profesional responsable', 200),
     fecha: LeerFecha(valor.fecha, 'fecha de coordinación'),
     motivo: LeerTexto(valor.motivo, 'motivo', 1000),
+    modalidadItemId: LeerEnteroOpcional(valor.modalidadItemId, 'modalidad'),
+    observaciones: LeerTextoOpcional(valor.observaciones, 'observaciones', 2000),
     estadoItemId: LeerEnteroOpcional(valor.estadoItemId, 'estado'),
     estadoTexto: LeerTextoOpcional(valor.estadoTexto, 'estado', 80),
     claveOperacion: LeerClave(valor.claveOperacion)
@@ -164,9 +166,36 @@ function LeerCasoDeRuta(valor) {
   return LeerCasoId(valor);
 }
 
+function LeerDocumento(valor, casoId) {
+  Objeto(valor, 'El documento no tiene el formato esperado.');
+  if (typeof valor.nombre !== 'string' || valor.nombre.trim().length === 0
+    || valor.nombre.length > 260) {
+    EntradaInvalida('El nombre del archivo no es válido.');
+  }
+  if (typeof valor.contenidoBase64 !== 'string' || valor.contenidoBase64.length < 4
+    || valor.contenidoBase64.length > 8 * 1024 * 1024) {
+    EntradaInvalida('El archivo no es válido.');
+  }
+  const tipo = valor.tipoTexto === undefined || valor.tipoTexto === null
+    || String(valor.tipoTexto).trim() === ''
+    ? 'Documento asociado'
+    : String(valor.tipoTexto).trim();
+  if (tipo.length > 120) {
+    EntradaInvalida('El tipo de documento no es válido.');
+  }
+  return {
+    casoId,
+    nombre: valor.nombre.trim(),
+    tipoTexto: tipo,
+    contenidoBase64: valor.contenidoBase64,
+    claveOperacion: LeerClave(valor.claveOperacion)
+  };
+}
+
 module.exports = {
   LeerCierre,
   LeerCasoDeRuta,
   LeerCoordinacion,
+  LeerDocumento,
   LeerReporte
 };

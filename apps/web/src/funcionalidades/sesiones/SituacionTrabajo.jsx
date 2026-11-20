@@ -3,6 +3,7 @@
  * Creación: 2026-11-14.
  * Modificación: 2026-11-16. Especificación por factor y versión de abordaje.
  * Modificación: 2026-11-17. Niveles, ámbitos y resumen de cada categoría.
+ * Modificación: 2026-11-19. La valoración guardada no tapa la decisión.
  * Valoración, decisión y apertura de una situación. HU-020 a HU-022.
  */
 import { useState } from 'react';
@@ -179,6 +180,8 @@ export default function SituacionTrabajo({
   const [justificacion, establecerJustificacion] = useState('');
   const [apertura, establecerApertura] = useState(APERTURA_VACIA);
   const [actualizarAbordaje, establecerActualizarAbordaje] = useState(false);
+  const [decisionRegistrada, establecerDecisionRegistrada] = useState(false);
+  const [casoAbierto, establecerCasoAbierto] = useState(false);
   const [error, establecerError] = useState('');
   const instrumento = catalogos && catalogos.instrumento;
 
@@ -247,6 +250,7 @@ export default function SituacionTrabajo({
           justificacion
         }
       });
+      establecerDecisionRegistrada(true);
       alInformar(resolucion === 'NO_REQUIERE_AI'
         ? 'La referencia quedó como No requiere A.I.'
         : 'La decisión quedó registrada. La apertura del caso es un paso aparte.');
@@ -270,35 +274,22 @@ export default function SituacionTrabajo({
           frecuenciaCodigo: apertura.frecuenciaCodigo
         }
       });
+      establecerCasoAbierto(true);
       alInformar(`Caso ${abierto.casoId} abierto. Consecutivo ${abierto.consecutivo}.`);
     } catch (fallo) {
       establecerError(fallo.message);
     }
   }
 
-  return (
-    <article>
-      <h3>{situacion.referenciaId ? `Referencia ${situacion.referenciaId}` : `Caso ${situacion.casoId}`}</h3>
-      {error ? <Aviso>{error}</Aviso> : null}
-      {instrumento && instrumento.disponibilidad !== 'DISPONIBLE'
-        ? <Aviso tipo="pendiente">{instrumento.mensaje}</Aviso>
-        : null}
-      {instrumento && instrumento.disponibilidad === 'DISPONIBLE'
-        && instrumento.cobertura && !instrumento.cobertura.completa ? (
-          <Aviso tipo="pendiente">
-            El instrumento vigente trae {instrumento.cobertura.categoriasPresentes}
-            {' '}de 9 categorías. No se agregan factores fuera de esa versión.
-          </Aviso>
-        ) : null}
-      {instrumento && instrumento.disponibilidad === 'DISPONIBLE'
-        ? (
-          <CategoriasValoracion
-            categorias={instrumento.categorias}
-            valoracion={valoracion}
-            alCambiar={CambiarCategoria}
-          />
-        )
-        : null}
+  const panelValoracion = (
+    <>
+      {instrumento && instrumento.disponibilidad === 'DISPONIBLE' ? (
+        <CategoriasValoracion
+          categorias={instrumento.categorias}
+          valoracion={valoracion}
+          alCambiar={CambiarCategoria}
+        />
+      ) : null}
       <Campo id={`riesgo-${situacion.situacionId}`} etiqueta="Nivel de riesgo">
         <select
           id={`riesgo-${situacion.situacionId}`}
@@ -330,17 +321,44 @@ export default function SituacionTrabajo({
         </select>
       </Campo>
       <div className="acciones">
-        <button type="button" className="secundario" onClick={ConsultarPrioridad}>Calcular prioridad</button>
+        <button type="button" className="secundario" onClick={ConsultarPrioridad}>
+          Calcular prioridad
+        </button>
         <button type="button" onClick={GuardarValoracion}>Registrar valoración</button>
       </div>
       {prioridad ? (
         <p>
           Prioridad calculada:
           {' '}
-          <strong className={ClasePrioridad(prioridad.prioridadCodigo)}>{prioridad.prioridadEtiqueta}</strong>
+          <strong className={ClasePrioridad(prioridad.prioridadCodigo)}>
+            {prioridad.prioridadEtiqueta}
+          </strong>
           . No es editable.
         </p>
       ) : null}
+    </>
+  );
+
+  return (
+    <article>
+      <h3>{situacion.referenciaId ? `Referencia ${situacion.referenciaId}` : `Caso ${situacion.casoId}`}</h3>
+      {error ? <Aviso>{error}</Aviso> : null}
+      {instrumento && instrumento.disponibilidad !== 'DISPONIBLE'
+        ? <Aviso tipo="pendiente">{instrumento.mensaje}</Aviso>
+        : null}
+      {instrumento && instrumento.disponibilidad === 'DISPONIBLE'
+        && instrumento.cobertura && !instrumento.cobertura.completa ? (
+          <Aviso tipo="pendiente">
+            El instrumento vigente trae {instrumento.cobertura.categoriasPresentes}
+            {' '}de 9 categorías. No se agregan factores fuera de esa versión.
+          </Aviso>
+        ) : null}
+      {valoracion.valoracionId ? (
+        <details className="registro-valoracion">
+          <summary>Factores registrados</summary>
+          {panelValoracion}
+        </details>
+      ) : panelValoracion}
       {situacion.casoId ? (
         <fieldset>
           <legend>Abordaje del caso activo</legend>
@@ -419,7 +437,7 @@ export default function SituacionTrabajo({
           ) : null}
         </fieldset>
       ) : null}
-      {situacion.referenciaId && valoracion.valoracionId ? (
+      {situacion.referenciaId && valoracion.valoracionId && !decisionRegistrada ? (
         <div>
           <Campo id={`decision-${situacion.situacionId}`} etiqueta="Decisión del equipo">
             <select
@@ -443,7 +461,8 @@ export default function SituacionTrabajo({
           <button type="button" onClick={GuardarResolucion}>Registrar decisión</button>
         </div>
       ) : null}
-      {situacion.referenciaId && resolucion === 'REQUIERE_AI' && valoracion.valoracionId ? (
+      {situacion.referenciaId && decisionRegistrada && !casoAbierto
+        && resolucion === 'REQUIERE_AI' && valoracion.valoracionId ? (
         <form onSubmit={AbrirCaso}>
           <h3>Abordaje inicial</h3>
           <Campo id={`propositos-${situacion.situacionId}`} etiqueta="Propósitos, uno por línea">

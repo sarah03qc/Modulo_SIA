@@ -1,10 +1,16 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-16.
+ * Modificación: 2026-11-18. Sexo Hombre/Mujer, cinco grupos de edad y nota de filtros.
  * HU-038, HU-039. RF-086 a RF-091, RF-125, RF-128, RF-129. RN-040.
  * Una sola definición para la consulta, las doce visualizaciones y la descarga.
  */
 'use strict';
+
+const {
+  SEXO_VISIBLE,
+  SEXO_OTRO_VALOR
+} = require('../../infrastructure/integrations/sidinacc-person-reader');
 
 const PRESENTACION_TOP = 10;
 const MUESTRA_CASOS = 20;
@@ -27,6 +33,44 @@ const MOTIVOS_CIERRE = Object.freeze([
   { codigo: 'TRASLADO', etiqueta: 'Traslado' },
   { codigo: 'OTRO', etiqueta: 'Otro' }
 ]);
+
+/*
+ * Solo Hombre y Mujer se filtran. Un código distinto se agrega aparte y no se
+ * confunde con el sexo ausente.
+ */
+const SEXOS_FILTRO = Object.freeze(SEXO_VISIBLE.map((item) => Object.freeze({
+  codigo: item.codigo,
+  etiqueta: item.etiqueta
+})));
+
+const SEXO_SIN_DATO = Object.freeze({ codigo: 'NO_DISPONIBLE', etiqueta: 'No disponible' });
+
+/*
+ * Grupos de reportería en años cumplidos: desde inclusive y hasta exclusive.
+ * Un hasta nulo no tiene límite superior.
+ */
+const GRUPOS_EDAD = Object.freeze([
+  Object.freeze({ codigo: 'EDAD_0_2', etiqueta: '0–2 años', desde: 0, hasta: 3 }),
+  Object.freeze({ codigo: 'EDAD_3_5', etiqueta: '3–5 años', desde: 3, hasta: 6 }),
+  Object.freeze({ codigo: 'EDAD_6_12', etiqueta: '6–12 años', desde: 6, hasta: 13 }),
+  Object.freeze({ codigo: 'EDAD_13_17', etiqueta: '13–17 años', desde: 13, hasta: 18 }),
+  Object.freeze({ codigo: 'EDAD_18_MAS', etiqueta: '18 años o más', desde: 18, hasta: null })
+]);
+
+const EDAD_SIN_DATO = Object.freeze({ codigo: 'NO_DISPONIBLE', etiqueta: 'No disponible' });
+
+/*
+ * Indicadores en los que cada filtro delimita el resultado.
+ * Se usa para una nota breve junto al indicador cuando un filtro activo no aplica.
+ */
+const ALCANCE_FILTROS = Object.freeze({
+  estado: { etiqueta: 'estado', aplicaA: [1, 2, 3, 4, 5] },
+  prioridad: { etiqueta: 'prioridad', aplicaA: [1, 2, 3, 4, 5] },
+  disciplinaId: { etiqueta: 'disciplina', aplicaA: [8] },
+  profesional: { etiqueta: 'profesional', aplicaA: [8] },
+  sexo: { etiqueta: 'sexo', aplicaA: [1, 2, 3, 4, 5, 11, 12] },
+  grupoEdad: { etiqueta: 'grupo de edad', aplicaA: [1, 2, 3, 4, 5, 11, 12] }
+});
 
 /*
  * RN-040 sigue provisional. El cálculo usa esta fórmula y no la ratifica.
@@ -59,9 +103,9 @@ const CATALOGO_VISUALIZACIONES = Object.freeze([
   {
     numero: 3,
     codigo: 'CASOS_EDAD',
-    titulo: 'Casos por edad actual',
+    titulo: 'Casos por grupo de edad',
     formato: 'DISTRIBUCION',
-    fecha: 'Edad cumplida en la fecha de consulta. No hay grupos etarios institucionales.'
+    fecha: 'Edad cumplida en la fecha de consulta, no a la apertura del caso.'
   },
   {
     numero: 4,
@@ -202,6 +246,53 @@ function EtiquetaEstado(codigo) {
   return encontrada ? encontrada.etiqueta : null;
 }
 
+function EtiquetaSexoFiltro(codigo) {
+  const encontrado = SEXOS_FILTRO.find((item) => item.codigo === codigo);
+  return encontrado ? encontrado.etiqueta : null;
+}
+
+function EtiquetaGrupoEdad(codigo) {
+  const encontrado = GRUPOS_EDAD.find((item) => item.codigo === codigo);
+  return encontrado ? encontrado.etiqueta : null;
+}
+
+/**
+ * Ubica una edad cumplida en su grupo de reportería.
+ *
+ * @param {number|null} edad Años cumplidos a la fecha de corte del indicador.
+ * @returns {string|null} Código del grupo, o null si la edad no está disponible.
+ */
+function ClasificarGrupoEdad(edad) {
+  if (!Number.isInteger(edad) || edad < 0) {
+    return null;
+  }
+  const grupo = GRUPOS_EDAD.find((item) => (
+    edad >= item.desde && (item.hasta === null || edad < item.hasta)
+  ));
+  return grupo ? grupo.codigo : null;
+}
+
+/**
+ * Filtros activos que no delimitan una visualización.
+ *
+ * @param {number} numero Visualización del catálogo.
+ * @param {object} filtros Filtros ya validados.
+ * @returns {string[]} Etiquetas breves de los filtros que no aplican.
+ */
+function FiltrosNoAplicados(numero, filtros) {
+  const activos = {
+    estado: filtros.estado && filtros.estado !== 'TODOS',
+    prioridad: Boolean(filtros.prioridad),
+    disciplinaId: Boolean(filtros.disciplinaId),
+    profesional: Boolean(filtros.profesional),
+    sexo: Boolean(filtros.sexo),
+    grupoEdad: Boolean(filtros.grupoEdad)
+  };
+  return Object.entries(ALCANCE_FILTROS)
+    .filter(([clave, alcance]) => activos[clave] && !alcance.aplicaA.includes(numero))
+    .map(([, alcance]) => alcance.etiqueta);
+}
+
 module.exports = {
   PRESENTACION_TOP,
   MUESTRA_CASOS,
@@ -210,11 +301,20 @@ module.exports = {
   PRIORIDADES,
   ESTADOS_CASO,
   MOTIVOS_CIERRE,
+  SEXOS_FILTRO,
+  SEXO_OTRO_VALOR,
+  SEXO_SIN_DATO,
+  GRUPOS_EDAD,
+  EDAD_SIN_DATO,
   TEXTO_COBERTURA,
   CATALOGO_VISUALIZACIONES,
   PorcentajeCobertura,
   ContarPalabras,
   TituloDinamico,
   EtiquetaPrioridad,
-  EtiquetaEstado
+  EtiquetaEstado,
+  EtiquetaSexoFiltro,
+  EtiquetaGrupoEdad,
+  ClasificarGrupoEdad,
+  FiltrosNoAplicados
 };

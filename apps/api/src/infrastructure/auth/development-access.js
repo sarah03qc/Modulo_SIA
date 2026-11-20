@@ -116,6 +116,13 @@ const DEVELOPMENT_PRINCIPALS = Object.freeze([
   CrearIdentidad('dev-oficina-perez-zeledon', [
     CrearConcesion({ role: ACCESS_LEVEL.LOCAL_OFFICE, regionId: 5, localOfficeId: 501 })
   ]),
+  // Establecimiento 6080404 pertenece a la Oficina Local 504, Región 5, en la réplica.
+  CrearIdentidad('dev-establecimiento-6080404', [
+    CrearConcesion({ role: ACCESS_LEVEL.ESTABLISHMENT, establishmentIds: [6080404] })
+  ]),
+  CrearIdentidad('dev-oficina-504', [
+    CrearConcesion({ role: ACCESS_LEVEL.LOCAL_OFFICE, regionId: 5, localOfficeId: 504 })
+  ]),
   CrearIdentidad('dev-region-central-sur', [
     CrearConcesion({ role: ACCESS_LEVEL.REGION, regionId: 1 })
   ]),

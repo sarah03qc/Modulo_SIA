@@ -5,7 +5,7 @@
  * HU-048. El período lo elige el equipo. No hay umbral inventado de atraso.
  */
 import { useState } from 'react';
-import { Aviso, Cargando, Campo, Vacio } from '../../componentes/interfaz';
+import { Aviso, Cargando, Campo, ResumenResultados, Vacio } from '../../componentes/interfaz';
 import { SolicitarApi } from '../../servicios/cliente-api';
 
 const TEXTOS = {
@@ -44,7 +44,10 @@ export default function SeguimientoPagina({
   return (
     <>
       <p className="contexto">Atención y seguimiento</p>
-      <h1>Casos activos sin atención en el período</h1>
+      <h1>Casos sin atención</h1>
+      <p className="introduccion">
+        Consulte los casos activos que no registran una atención en el año elegido.
+      </p>
       <form onSubmit={Consultar}>
         <Campo id="anio-seguimiento" etiqueta="Año a revisar">
           <input
@@ -64,9 +67,12 @@ export default function SeguimientoPagina({
         : null}
       {resultado && resultado.disponibilidad === 'DISPONIBLE' ? (
         <>
-          <p>
-            {resultado.devueltos} de {resultado.total} entre {resultado.desde} y {resultado.hasta}.
-          </p>
+          <ResumenResultados
+            filtrados={resultado.total}
+            pagina={resultado.pagina}
+            tamano={resultado.tamano}
+          />
+          <p className="ayuda">Período del {resultado.desde} al {resultado.hasta}.</p>
           {resultado.items.length === 0
             ? <Vacio texto="No hay casos activos sin atención en ese período." />
             : (

@@ -1,6 +1,7 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-16.
+ * Modificación: 2026-11-18. Lectura del caso activo seleccionado.
  * Rutas de atenciones. La capacidad se vuelve a exigir en el servicio.
  */
 'use strict';
@@ -13,7 +14,8 @@ const { CAPABILITY } = require('../../infrastructure/auth/capabilities');
 const { ExigirCapacidad } = require('../../infrastructure/auth/authorization-policy');
 const {
   LeerAtencionGrupal,
-  LeerAtencionIndividual
+  LeerAtencionIndividual,
+  LeerEntero
 } = require('./validacion-atenciones');
 
 function ExigirOficinaEnRuta(req, res, next) {
@@ -43,6 +45,15 @@ function CrearEnrutadorAtenciones(servicio) {
     ExigirOficinaEnRuta,
     EnvolverAsincrono(async (req, res) => {
       res.status(200).json(await servicio.ListarCatalogos(req.acceso));
+    })
+  );
+
+  router.get(
+    '/casos/:casoId',
+    ExigirOficinaEnRuta,
+    EnvolverAsincrono(async (req, res) => {
+      const casoId = LeerEntero(req.params.casoId, 'caso');
+      res.status(200).json(await servicio.ObtenerCasoActivo(req.acceso, casoId));
     })
   );
 

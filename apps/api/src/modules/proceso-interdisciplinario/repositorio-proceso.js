@@ -3,6 +3,7 @@
  * Creación: 2026-11-14.
  * Modificación: 2026-11-16. Versión de plan, expediente, seguimiento, ciclo
  * y consulta territorial de Región y Nacional.
+ * Modificación: 2026-11-19. Conteos de inicio por ámbito y distribución.
  * Persistencia de sesión, valoración, resolución y caso. HU-019 a HU-025 y HU-048.
  */
 'use strict';
@@ -1146,6 +1147,21 @@ ORDER BY p.numero_version
 `, { casoId: Parametro(sql.BigInt, casoId) });
     },
 
+    async ListarDocumentosCaso(casoId) {
+      return Consultar(`
+SELECT
+  documento_id,
+  nombre_original,
+  tipo_texto,
+  CONVERT(char(10), fecha_documento, 23) AS fecha_documento,
+  responsable_usuario,
+  tamano_bytes
+FROM dbo.doc_documento
+WHERE caso_id = @casoId
+ORDER BY fecha_documento, documento_id
+`, { casoId: Parametro(sql.BigInt, casoId) });
+    },
+
     async ContarDocumentosCaso(casoId) {
       const filas = await Consultar(`
 SELECT COUNT(*) AS total
@@ -1238,6 +1254,108 @@ WHERE oficina_local_id = @oficina
       return Number(filas[0].total);
     },
 
+    async ContarActividadesVencidasAmbito(ambito, fecha) {
+      const parametros = { fecha: Parametro(sql.Date, fecha) };
+      const clausulas = [
+        "prog.estado = N'PROGRAMADA'",
+        'prog.fecha_vigente < @fecha'
+      ];
+      AgregarAmbito('prog', ambito, parametros, clausulas);
+      const filas = await Consultar(`
+SELECT COUNT(*) AS total
+FROM dbo.prog_actividad AS prog
+WHERE ${clausulas.join(' AND ')}
+`, parametros);
+      return Number(filas[0].total);
+    },
+
+    async ContarSesionesDesde(oficinaLocalId, fecha) {
+      const filas = await Consultar(`
+SELECT COUNT(*) AS total
+FROM dbo.ses_sesion
+WHERE oficina_local_id = @oficina
+  AND fecha >= @fecha
+`, {
+        oficina: Parametro(sql.Int, oficinaLocalId),
+        fecha: Parametro(sql.Date, fecha)
+      });
+      return Number(filas[0].total);
+    },
+
+    async ListarAgendaHoy(oficinaLocalId, fecha) {
+      const sesiones = await Consultar(`
+SELECT
+  sesion_id,
+  CONVERT(char(5), hora_inicio, 108) AS hora_inicio,
+  lugar
+FROM dbo.ses_sesion
+WHERE oficina_local_id = @oficina
+  AND fecha = @fecha
+ORDER BY hora_inicio, sesion_id
+`, {
+        oficina: Parametro(sql.Int, oficinaLocalId),
+        fecha: Parametro(sql.Date, fecha)
+      });
+      const actividades = await Consultar(`
+SELECT actividad_id, titulo
+FROM dbo.prog_actividad
+WHERE oficina_local_id = @oficina
+  AND estado = N'PROGRAMADA'
+  AND fecha_vigente = @fecha
+ORDER BY actividad_id
+`, {
+        oficina: Parametro(sql.Int, oficinaLocalId),
+        fecha: Parametro(sql.Date, fecha)
+      });
+      return { sesiones, actividades };
+    },
+
+    async ListarDistribucion(ambito, metrica) {
+      const nacional = ambito.accessLevel === ACCESS_LEVEL.NATIONAL;
+      const columna = nacional ? 'region_id' : 'oficina_local_id';
+      if (metrica === 'casos') {
+        const parametros = {};
+        const clausulas = ["caso.estado = N'ACTIVO'"];
+        AgregarAmbito('caso', ambito, parametros, clausulas);
+        return Consultar(`
+SELECT caso.${columna} AS clave, COUNT(*) AS cantidad
+FROM dbo.caso_lista_establecimiento AS caso
+WHERE ${clausulas.join(' AND ')}
+GROUP BY caso.${columna}
+`, parametros);
+      }
+      if (metrica === 'referencias') {
+        const parametros = { estado: Parametro(sql.NVarChar(30), 'PENDIENTE_REVISION') };
+        const clausulas = ['ref.estado = @estado'];
+        AgregarAmbito('ref', ambito, parametros, clausulas);
+        return Consultar(`
+SELECT ref.${columna} AS clave, COUNT(*) AS cantidad
+FROM dbo.ref_referencia AS ref
+INNER JOIN dbo.ref_contexto AS contexto
+  ON contexto.referencia_id = ref.referencia_id
+INNER JOIN dbo.cat_item AS via
+  ON via.cat_item_id = ref.via_item_id
+ AND via.codigo_catalogo = ref.via_catalogo
+INNER JOIN dbo.cat_item AS origen
+  ON origen.cat_item_id = ref.origen_item_id
+ AND origen.codigo_catalogo = ref.origen_catalogo
+WHERE ${clausulas.join(' AND ')}
+GROUP BY ref.${columna}
+`, parametros);
+      }
+      const parametros = {};
+      const clausulas = [];
+      AgregarAmbito('caso', ambito, parametros, clausulas);
+      return Consultar(`
+SELECT caso.${columna} AS clave, COUNT(*) AS cantidad
+FROM dbo.ate_individual AS atencion
+INNER JOIN dbo.caso_ai AS caso
+  ON caso.caso_id = atencion.caso_id
+WHERE ${clausulas.join(' AND ')}
+GROUP BY caso.${columna}
+`, parametros);
+    },
+
     /**
      * Casos activos del ámbito sin atención efectiva dentro del período.
      * La programación no cuenta. La asistencia grupal nula o ausente tampoco.
@@ -1314,9 +1432,16 @@ SELECT
   profesional_responsable,
   digitador_usuario,
   motivo,
+  observaciones,
   CONVERT(char(10), fecha_coordinacion, 23) AS fecha_coordinacion,
-  estado_texto
-FROM dbo.doc_coordinacion
+  estado_texto,
+  (
+    SELECT TOP (1) i.etiqueta
+    FROM dbo.cat_item AS i
+    WHERE i.cat_item_id = c.modalidad_item_id
+      AND i.codigo_catalogo = c.modalidad_catalogo
+  ) AS modalidad_texto
+FROM dbo.doc_coordinacion AS c
 WHERE caso_id = @casoId
 ORDER BY fecha_coordinacion, coordinacion_id
 `, { casoId: Parametro(sql.BigInt, casoId) });

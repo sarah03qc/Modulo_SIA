@@ -8,7 +8,56 @@ const { ErrorInfraestructura } = require('../../common/errors');
   Personas sin familia, como madre, padre o encargado, no entran en la busqueda.
   No se usa CAF_PERSONA_DETALLE para la ubicacion.
   CU-02, CU-03. RF-008, RF-009, RF-011, RF-112, RF-113.
+  Modificación: 2026-11-18. Etiqueta visible de sexo derivada del código CAT_idSexo.
 */
+
+/*
+  Solo Hombre y Mujer tienen etiqueta visible. Otro código registrado no se convierte
+  en uno de ellos ni muestra la descripción técnica de la réplica.
+  NEEDS_VALIDATION: correspondencia de códigos con el catálogo institucional real.
+*/
+const SEXO_VISIBLE = Object.freeze([
+  Object.freeze({ codigo: 'HOMBRE', etiqueta: 'Hombre', codigoInstitucional: 1 }),
+  Object.freeze({ codigo: 'MUJER', etiqueta: 'Mujer', codigoInstitucional: 2 })
+]);
+
+const SEXO_OTRO_VALOR = Object.freeze({
+  codigo: 'OTRO_VALOR_REGISTRADO',
+  etiqueta: 'Otro valor registrado'
+});
+
+/**
+ * Clasifica el código CAT_idSexo de la persona.
+ *
+ * @param {number|string|null} codigoInstitucional Valor de CAF_PERSONA.CAT_idSexo.
+ * @returns {{codigo: string, etiqueta: string}|null} Null cuando no hay valor registrado.
+ */
+function ClasificarSexo(codigoInstitucional) {
+  if (codigoInstitucional === null || codigoInstitucional === undefined) {
+    return null;
+  }
+  const texto = String(codigoInstitucional).trim();
+  if (texto.length === 0) {
+    return null;
+  }
+  const encontrado = SEXO_VISIBLE.find((item) => (
+    String(item.codigoInstitucional) === texto
+  ));
+  const clase = encontrado || SEXO_OTRO_VALOR;
+  return { codigo: clase.codigo, etiqueta: clase.etiqueta };
+}
+
+/**
+ * Sustituye la descripción técnica por la etiqueta visible derivada del código.
+ */
+function NormalizarSexoFila(row) {
+  if (!row || typeof row !== 'object') {
+    return row;
+  }
+  const { sex_code: codigoSexo, ...resto } = row;
+  const clase = ClasificarSexo(codigoSexo);
+  return { ...resto, sex_name: clase ? clase.etiqueta : null };
+}
 
 /**
  * Une persona, familia del periodo, establecimiento, oficina y región.
@@ -31,9 +80,6 @@ INNER JOIN dbo.CAF_CAT_OFICINA_LOCAL AS office
 INNER JOIN dbo.CAF_CAT_REGION AS region
   ON region.CAT_idRegion = office.CAT_idRegion
  AND COALESCE(region.BIT_eliminado, 0) = 0
-LEFT JOIN dbo.CAF_CAT_SEXO AS sex
-  ON sex.CAT_idSexo = person.CAT_idSexo
- AND COALESCE(sex.BIT_eliminado, 0) = 0
 `;
 
 const IDENTITY_COLUMNS = `
@@ -42,7 +88,7 @@ const IDENTITY_COLUMNS = `
   person.PER_apellidoUno AS first_surname,
   person.PER_apellidoDos AS second_surname,
   CONVERT(char(10), person.PER_fechaNacimiento, 23) AS birth_date,
-  sex.SNB_descripcion AS sex_name,
+  person.CAT_idSexo AS sex_code,
   establishment.EST_idEstablecimiento AS establishment_id,
   establishment.EST_descripcion AS establishment_name,
   office.CAT_idOficinaLocal AS local_office_id,
@@ -499,12 +545,9 @@ function ConstruirSqlSexoYNacimiento(identificadores) {
     sql: `
 SELECT
   person.PER_idPersona AS person_id,
-  sex.SNB_descripcion AS sex_name,
+  person.CAT_idSexo AS sex_code,
   CONVERT(char(10), person.PER_fechaNacimiento, 23) AS birth_date
 FROM dbo.CAF_PERSONA AS person
-LEFT JOIN dbo.CAF_CAT_SEXO AS sex
-  ON sex.CAT_idSexo = person.CAT_idSexo
- AND COALESCE(sex.BIT_eliminado, 0) = 0
 WHERE COALESCE(person.BIT_eliminado, 0) = 0
   AND person.PER_idPersona IN (${nombres.join(', ')})
 `
@@ -530,7 +573,7 @@ function CrearLectorPersonasSidinacc(client) {
       }
       const page = ConstruirSqlPaginaPersonas(criteria);
       const items = await client.query(page.sql, page.parameters);
-      return { total, items };
+      return { total, items: items.map(NormalizarSexoFila) };
     },
 
     /**
@@ -539,7 +582,8 @@ function CrearLectorPersonasSidinacc(client) {
      */
     async BuscarPersonaEnAmbito(criteria) {
       const statement = ConstruirSqlFichaPersona(criteria);
-      return client.query(statement.sql, statement.parameters);
+      const rows = await client.query(statement.sql, statement.parameters);
+      return rows.map(NormalizarSexoFila);
     },
 
     /**
@@ -623,15 +667,17 @@ function CrearLectorPersonasSidinacc(client) {
       }
       const statement = ConstruirSqlSexoYNacimiento(identificadores);
       const rows = await client.query(statement.sql, statement.parameters);
-      return rows.map((row) => ({
-        personId: row.person_id === null || row.person_id === undefined
-          ? null
-          : String(row.person_id),
-        sexName: row.sex_name === null || row.sex_name === undefined
-          ? null
-          : String(row.sex_name).trim(),
-        birthDate: row.birth_date ? String(row.birth_date).slice(0, 10) : null
-      }));
+      return rows.map((row) => {
+        const clase = ClasificarSexo(row.sex_code);
+        return {
+          personId: row.person_id === null || row.person_id === undefined
+            ? null
+            : String(row.person_id),
+          sexCode: clase ? clase.codigo : null,
+          sexName: clase ? clase.etiqueta : null,
+          birthDate: row.birth_date ? String(row.birth_date).slice(0, 10) : null
+        };
+      });
     },
 
     async ListarEstablecimientos(scope) {
@@ -689,5 +735,8 @@ function EjemplosSentenciasInstitucionales() {
 module.exports = {
   CrearLectorPersonasSidinacc,
   EjemplosSentenciasInstitucionales,
-  ContienePatron
+  ContienePatron,
+  ClasificarSexo,
+  SEXO_VISIBLE,
+  SEXO_OTRO_VALOR
 };

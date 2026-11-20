@@ -14,6 +14,7 @@ const { Parametro } = require('../proceso-interdisciplinario/repositorio-proceso
 const ENTIDAD_COORDINACION = 'doc_coordinacion';
 const ENTIDAD_REPORTE = 'doc_reporte_caso';
 const ENTIDAD_CIERRE = 'caso_cierre';
+const ENTIDAD_DOCUMENTO = 'doc_documento';
 
 function ErrorDominio(codigo) {
   const error = new Error('La persistencia del ciclo no se completó.');
@@ -164,9 +165,21 @@ SELECT
   profesional_responsable,
   digitador_usuario,
   motivo,
+  observaciones,
   CONVERT(char(10), fecha_coordinacion, 23) AS fecha_coordinacion,
-  estado_texto
-FROM dbo.doc_coordinacion
+  estado_texto,
+  (
+    SELECT TOP (1) i.etiqueta
+    FROM dbo.cat_item AS i
+    WHERE i.cat_item_id = c.modalidad_item_id
+      AND i.codigo_catalogo = c.modalidad_catalogo
+  ) AS modalidad_texto,
+  CONVERT(char(19), (
+    SELECT MIN(e.ocurrido_en)
+    FROM dbo.doc_coordinacion_evento AS e
+    WHERE e.coordinacion_id = c.coordinacion_id
+  ), 120) AS registrada_en
+FROM dbo.doc_coordinacion AS c
 WHERE coordinacion_id = @id
 `, { id: Parametro(sql.BigInt, coordinacionId) });
     return filas[0] || null;
@@ -180,7 +193,10 @@ WHERE coordinacion_id = @id
       profesional: fila.profesional_responsable,
       digitador: fila.digitador_usuario,
       motivo: fila.motivo,
+      modalidad: fila.modalidad_texto || null,
+      observaciones: fila.observaciones || null,
       fecha: Fecha(fila.fecha_coordinacion),
+      registradaEn: fila.registrada_en || null,
       estado: fila.estado_texto
     };
   }
@@ -273,7 +289,8 @@ SELECT
   i.codigo_catalogo,
   i.codigo,
   i.etiqueta,
-  i.requiere_texto
+  i.requiere_texto,
+  i.ambito
 FROM dbo.cat_item AS i
 INNER JOIN dbo.cat_version AS v
   ON v.cat_version_id = i.cat_version_id
@@ -310,14 +327,16 @@ ORDER BY i.codigo_catalogo, i.orden, i.cat_item_id
         const insertadas = await transaccion.query(`
 INSERT INTO dbo.doc_coordinacion (
   caso_id, institucion_item_id, institucion_catalogo, institucion_texto,
-  profesional_responsable, digitador_usuario, motivo, fecha_coordinacion,
-  estado_item_id, estado_catalogo, estado_texto
+  profesional_responsable, digitador_usuario, motivo, observaciones,
+  fecha_coordinacion, estado_item_id, estado_catalogo, estado_texto,
+  modalidad_item_id, modalidad_catalogo
 )
 OUTPUT INSERTED.coordinacion_id
 VALUES (
   @casoId, @institucionId, @institucionCatalogo, @institucionTexto,
-  @profesional, @digitador, @motivo, @fecha,
-  @estadoId, @estadoCatalogo, @estadoTexto
+  @profesional, @digitador, @motivo, @observaciones, @fecha,
+  @estadoId, @estadoCatalogo, @estadoTexto,
+  @modalidadId, @modalidadCatalogo
 )
 `, {
           casoId: Parametro(sql.BigInt, caso.caso_id),
@@ -330,7 +349,13 @@ VALUES (
           profesional: Parametro(sql.NVarChar(200), registro.profesional),
           digitador: Parametro(sql.NVarChar(128), registro.usuario),
           motivo: Parametro(sql.NVarChar(1000), registro.motivo),
+          observaciones: Parametro(sql.NVarChar(2000), registro.observaciones || null),
           fecha: Parametro(sql.Date, registro.fecha),
+          modalidadId: Parametro(sql.BigInt, registro.modalidadItemId || null),
+          modalidadCatalogo: Parametro(
+            sql.NVarChar(40),
+            registro.modalidadItemId ? 'MODALIDAD_COORDINACION' : null
+          ),
           estadoId: Parametro(sql.BigInt, registro.estadoItemId),
           estadoCatalogo: Parametro(
             sql.NVarChar(40),
@@ -496,6 +521,76 @@ EXEC ops.cerrar_caso
           cierre: PresentarCierre(fila)
         };
       });
+    },
+
+    async RegistrarDocumento(registro) {
+      return EnTransaccion(async (transaccion) => {
+        const caso = await BloquearCaso(transaccion, registro);
+        ExigirActivo(caso, registro.fecha);
+        const previos = await transaccion.query(`
+SELECT documento_id
+FROM dbo.doc_documento
+WHERE caso_id = @casoId AND clave_almacen = @clave
+`, {
+          casoId: Parametro(sql.BigInt, caso.caso_id),
+          clave: Parametro(sql.NVarChar(200), registro.claveAlmacen)
+        });
+        if (previos.length > 0) {
+          throw ErrorDominio('DUPLICADO');
+        }
+        const insertadas = await transaccion.query(`
+INSERT INTO dbo.doc_documento (
+  caso_id, tipo_texto, fecha_documento, responsable_usuario,
+  nombre_original, clave_almacen, tamano_bytes, creado_en
+)
+OUTPUT INSERTED.documento_id
+VALUES (
+  @casoId, @tipo, @fecha, @responsable, @nombre, @clave, @tamano,
+  CAST(SYSUTCDATETIME() AS datetime2(0))
+)
+`, {
+          casoId: Parametro(sql.BigInt, caso.caso_id),
+          tipo: Parametro(sql.NVarChar(120), registro.tipoTexto),
+          fecha: Parametro(sql.Date, registro.fecha),
+          responsable: Parametro(sql.NVarChar(128), registro.usuario),
+          nombre: Parametro(sql.NVarChar(260), registro.nombreOriginal),
+          clave: Parametro(sql.NVarChar(200), registro.claveAlmacen),
+          tamano: Parametro(sql.BigInt, registro.tamano)
+        });
+        const documentoId = Number(insertadas[0].documento_id);
+        await Auditar(transaccion, registro, ENTIDAD_DOCUMENTO, documentoId, 'CREACION');
+        return {
+          documentoId,
+          nombre: registro.nombreOriginal,
+          tipo: registro.tipoTexto,
+          fecha: registro.fecha,
+          responsable: registro.usuario,
+          tamano: registro.tamano
+        };
+      });
+    },
+
+    async ObtenerDocumento(registro) {
+      const filas = await Consultar(`
+SELECT
+  documento.documento_id,
+  documento.nombre_original,
+  documento.clave_almacen,
+  documento.tamano_bytes
+FROM dbo.doc_documento AS documento
+INNER JOIN dbo.caso_ai AS caso
+  ON caso.caso_id = documento.caso_id
+WHERE documento.documento_id = @documentoId
+  AND documento.caso_id = @casoId
+  AND caso.oficina_local_id = @oficina
+  AND caso.region_id = @region
+`, {
+        documentoId: Parametro(sql.BigInt, registro.documentoId),
+        casoId: Parametro(sql.BigInt, registro.casoId),
+        oficina: Parametro(sql.Int, registro.oficinaLocalId),
+        region: Parametro(sql.Int, registro.regionId)
+      });
+      return filas[0] || null;
     }
   };
 }

@@ -73,7 +73,20 @@ function Respuesta() {
         }
         : {})
     )),
-    opciones: { profesionales: ['prof-1'], sexos: ['Femenino'], edades: [4] },
+    opciones: {
+      profesionales: ['prof-1'],
+      sexos: [
+        { codigo: 'HOMBRE', etiqueta: 'Hombre' },
+        { codigo: 'MUJER', etiqueta: 'Mujer' }
+      ],
+      gruposEdad: [
+        { codigo: 'EDAD_0_2', etiqueta: '0–2 años' },
+        { codigo: 'EDAD_3_5', etiqueta: '3–5 años' },
+        { codigo: 'EDAD_6_12', etiqueta: '6–12 años' },
+        { codigo: 'EDAD_13_17', etiqueta: '13–17 años' },
+        { codigo: 'EDAD_18_MAS', etiqueta: '18 años o más' }
+      ]
+    },
     disciplinas: [{ itemId: 3, etiqueta: 'Trabajo social' }],
     establecimientos: [{ id: 10, nombre: 'Centro norte' }],
     informeAnalitico: {
@@ -101,17 +114,17 @@ describe('pantalla de reportería', () => {
       />
     );
     expect(await pantalla.findByRole('heading', { name: /Título 12/ })).toBeTruthy();
-    expect(pantalla.getByText('Sin casos activos. No aplica.')).toBeTruthy();
-    expect(pantalla.getByText(/pendiente de ratificación con Alina/)).toBeTruthy();
+    expect(pantalla.getByText('No aplica en este corte.')).toBeTruthy();
+    expect(pantalla.getByText(/Cómo leer estos números/)).toBeTruthy();
     expect(pantalla.getAllByRole('heading', { name: /Título/ })).toHaveLength(12);
     fireEvent.click(pantalla.getByRole('button', { name: 'Generar reporte' }));
-    expect(pantalla.getByRole('dialog')).toHaveTextContent('HU-050');
+    expect(pantalla.getByRole('dialog')).toHaveTextContent('Este informe recoge su análisis');
     expect(solicitarApi).toHaveBeenCalledTimes(1);
     expect(solicitarApi.mock.calls[0][1]).not.toMatch(/oficinaLocalId/);
     fireEvent.click(pantalla.getByRole('button', { name: 'Cerrar' }));
-    fireEvent.click(pantalla.getByRole('button', { name: 'Descargar consolidación' }));
+    fireEvent.click(pantalla.getByRole('button', { name: 'Descargar consolidado' }));
     const descarga = await pantalla.findByRole('button', {
-      name: 'Descargar consolidación'
+      name: 'Descargar consolidado'
     });
     expect(descarga).toBeEnabled();
     expect(solicitarApi.mock.calls.some((llamada) => String(llamada[1]).includes('consolidacion'))).toBe(true);
@@ -169,9 +182,8 @@ describe('pantalla de reportería', () => {
       />
     );
     expect(await pantalla.findByRole('heading', { name: 'Reportería' })).toBeTruthy();
-    expect(pantalla.getByText(/consulta es regional y de solo lectura/)).toBeTruthy();
     expect(pantalla.queryByRole('button', { name: 'Generar reporte' })).toBeNull();
-    expect(pantalla.getByText(/asistente HU-050 sigue en Oficina Local/)).toBeTruthy();
+    expect(pantalla.getByText(/Esta consulta es de solo lectura/)).toBeTruthy();
     expect(solicitarApi.mock.calls.some((llamada) => (
       String(llamada[1]).startsWith('/api/reporteria/consulta?')
     ))).toBe(true);

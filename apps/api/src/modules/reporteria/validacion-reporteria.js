@@ -1,13 +1,19 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-16. Modificación: 2026-11-16.
+ * Modificación: 2026-11-18. Sexo Hombre/Mujer/Todos y grupo de edad cerrado.
  * HU-038. Oficina Local no acepta ámbito en la consulta.
  * HU-040 y HU-042 aceptan solo el estrechamiento de su nivel.
  */
 'use strict';
 
 const { ErrorValidacion } = require('../../common/errors');
-const { EtiquetaPrioridad, EtiquetaEstado } = require('./definiciones-analiticas');
+const {
+  EtiquetaPrioridad,
+  EtiquetaEstado,
+  EtiquetaSexoFiltro,
+  EtiquetaGrupoEdad
+} = require('./definiciones-analiticas');
 
 const CLAVES_PROHIBIDAS = [
   'oficinaLocalId',
@@ -106,9 +112,17 @@ function LeerFiltrosReporteria(consulta, anioPredeterminado, nivel) {
   if (profesional.length > 128) {
     throw new ErrorValidacion('El profesional indicado no es válido.');
   }
-  const sexo = Texto(origen.sexo);
-  if (sexo.length > 80) {
-    throw new ErrorValidacion('El sexo indicado no es válido.');
+  const sexoTexto = Texto(origen.sexo).toUpperCase();
+  const sexo = sexoTexto.length === 0 || sexoTexto === 'TODOS' ? null : sexoTexto;
+  if (sexo && !EtiquetaSexoFiltro(sexo)) {
+    throw new ErrorValidacion('El sexo debe ser Hombre, Mujer o Todos.');
+  }
+  if (Object.prototype.hasOwnProperty.call(origen, 'edad')) {
+    throw new ErrorValidacion('La edad se filtra por grupo de edad.');
+  }
+  const grupoTexto = Texto(origen.grupoEdad).toUpperCase();
+  if (grupoTexto.length > 0 && !EtiquetaGrupoEdad(grupoTexto)) {
+    throw new ErrorValidacion('El grupo de edad indicado no es válido.');
   }
   const filtros = {
     anio,
@@ -117,8 +131,8 @@ function LeerFiltrosReporteria(consulta, anioPredeterminado, nivel) {
     prioridad: prioridadTexto.length === 0 ? null : prioridadTexto,
     disciplinaId: EnteroOpcional(origen.disciplinaId, 'disciplina', 1, 2147483647),
     profesional: profesional.length === 0 ? null : profesional,
-    sexo: sexo.length === 0 ? null : sexo,
-    edad: EnteroOpcional(origen.edad, 'edad', 0, 120)
+    sexo,
+    grupoEdad: grupoTexto.length === 0 ? null : grupoTexto
   };
   if (nivel === 'REGION' || nivel === 'NACIONAL') {
     filtros.regionId = regionId;

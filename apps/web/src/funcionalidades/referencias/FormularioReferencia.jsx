@@ -3,6 +3,7 @@
  * Creación: 2026-11-14.
  * Modificación: 2026-11-18. Orden de motivos según el catálogo.
  * Modificación: 2026-11-17. Etapas, grupos de motivo y nombres de campo.
+ * Modificación: 2026-11-19. La confirmación de envío no deja el formulario activo.
  * HU-013 y HU-014. El envío exige revisión explícita. El consecutivo no se genera.
  */
 import { useEffect, useState } from 'react';
@@ -24,7 +25,7 @@ const VACIO = {
 const ETAPAS = [
   'Cliente/beneficiaria y trazabilidad',
   'Motivo',
-  'Información complementaria asociada al motivo de referencia',
+  'Información complementaria',
   'Revisar'
 ];
 
@@ -80,6 +81,7 @@ export default function FormularioReferencia({
   const [paso, establecerPaso] = useState(0);
   const [revision, establecerRevision] = useState(null);
   const [confirmado, establecerConfirmado] = useState(false);
+  const [enviada, establecerEnviada] = useState(false);
   const [borradores, establecerBorradores] = useState([]);
   const [borradorId, establecerBorradorId] = useState(null);
   const [mensaje, establecerMensaje] = useState('');
@@ -243,6 +245,7 @@ export default function FormularioReferencia({
       );
       establecerRevision(null);
       establecerConfirmado(false);
+      establecerEnviada(true);
     } catch (fallo) {
       establecerError(fallo.message);
     }
@@ -313,8 +316,36 @@ export default function FormularioReferencia({
     }
   }
 
+  function PrepararOtra() {
+    establecerFormulario(VACIO);
+    establecerPersona(null);
+    establecerCriterio('');
+    establecerCoincidencias(null);
+    establecerRevision(null);
+    establecerConfirmado(false);
+    establecerBorradorId(null);
+    establecerPaso(0);
+    establecerMensaje('');
+    establecerError('');
+    establecerOrigenCaptura('MANUAL');
+    establecerVersionPlantilla(null);
+    establecerEnviada(false);
+  }
+
   if (!catalogos && !error) {
     return <Cargando texto="Cargando el formulario." />;
+  }
+
+  if (enviada) {
+    return (
+      <>
+        <p className="contexto">Detección y referencia</p>
+        <h1>Nueva referencia</h1>
+        <Aviso tipo="ok">{mensaje}</Aviso>
+        <p>Puede volver a la bandeja o preparar otra referencia.</p>
+        <button type="button" onClick={PrepararOtra}>Preparar otra referencia</button>
+      </>
+    );
   }
 
   const sinClasificar = (catalogos?.motives || []).filter(

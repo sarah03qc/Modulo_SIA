@@ -199,6 +199,9 @@ INNER JOIN SIDINACC_LOCAL.dbo.CAF_CAT_OFICINA_LOCAL AS o
 INNER JOIN dbo.cat_codigo_region_referencia AS dr
     ON dr.region_id = CONVERT(int, o.CAT_idRegion)
 WHERE p.FAM_idFamilia IS NOT NULL
+  AND p.PER_fechaNacimiento IS NOT NULL
+  AND DATEADD(YEAR, 18, CONVERT(date, p.PER_fechaNacimiento))
+      > CONVERT(date, '20261105')
   AND p.PER_idPersona COLLATE Latin1_General_100_CI_AS LIKE N'SYN-[0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9]'
   AND (p.BIT_eliminado IS NULL OR p.BIT_eliminado = 0)
   AND o.CAT_idOficinaLocal BETWEEN 100 AND 999

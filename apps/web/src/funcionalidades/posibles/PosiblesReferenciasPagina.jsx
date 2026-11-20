@@ -5,7 +5,7 @@
  * HU-049 y CU-37. Sección independiente. No envía la referencia.
  */
 import { useEffect, useState } from 'react';
-import { Aviso, Cargando, Campo, Vacio } from '../../componentes/interfaz';
+import { Aviso, Cargando, Campo, ResumenResultados, Vacio } from '../../componentes/interfaz';
 import { SolicitarApi } from '../../servicios/cliente-api';
 
 const ESTADOS = [
@@ -114,9 +114,9 @@ export default function PosiblesReferenciasPagina({
     <>
       <p className="contexto">Detección y referencia</p>
       <h1>Posibles referencias</h1>
-      <p>
-        Una señal no abre un caso ni envía la referencia.
-        La confirmación sigue siendo humana.
+      <p className="introduccion">
+        Revise las situaciones detectadas que podrían necesitar atención interdisciplinaria.
+        Confirmar una sugerencia no envía la referencia ni abre un caso.
       </p>
       {lista && lista.modo === 'SINTETICO' ? (
         <Aviso tipo="pendiente">
@@ -231,7 +231,16 @@ export default function PosiblesReferenciasPagina({
           >
             Página anterior
           </button>
-          <p>{pagina} de {paginas}</p>
+          <ResumenResultados
+            filtrados={lista.total}
+            totalAmbito={lista.totalAmbito}
+            pagina={pagina}
+            tamano={lista.pageSize || 20}
+            hayFiltros={Boolean(
+              aplicados.texto.trim() || aplicados.fecha || aplicados.estado
+              || aplicados.criterio.trim() || aplicados.establecimientoId.trim()
+            )}
+          />
           <button
             type="button"
             className="secundario"

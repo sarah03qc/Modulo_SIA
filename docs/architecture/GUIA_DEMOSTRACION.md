@@ -1,6 +1,7 @@
 # Guía corta de demostración — versión de práctica
 
 Responsable: Sarah Priscilla Quesada Chaves. Fecha: 2026-11-16.
+Modificación: 2026-11-18. Contador de casos y expediente por categorías.
 
 Esta guía usa datos sintéticos ya cargados. No vuelve a sembrar las bases.
 No cierra ni traslada los casos reservados 1, 5, 1092, 1304, 1305, 1435,
@@ -17,7 +18,7 @@ Resultado esperado:
 
 - La navegación no muestra Pendientes, Sesiones, Atenciones, Programación
   ni Reportería.
-- Casos muestra 6 de 6, sin botón de expediente ni exportación.
+- Casos muestra «6 resultados», sin botón de expediente ni exportación.
 - El expediente del caso 10089 responde 403 en la API.
 - Crear un caso o consultar la reportería de Oficina Local responde 403.
 
@@ -36,7 +37,8 @@ Programación y Reportería.
 
 Resultado esperado, año 2026:
 
-- Casos: 40.
+- Casos: «40 resultados». Con un filtro, «N de 40 resultados».
+  El expediente se recorre por categorías; las acciones se abren al pedirlas.
 - Reportería: doce visualizaciones y cobertura 8 de 18, 44.4 %.
 - Personas únicas atendidas: 15. Atenciones: 17, de ellas 13 individuales
   y 4 grupales.

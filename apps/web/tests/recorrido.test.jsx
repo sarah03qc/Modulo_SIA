@@ -1,3 +1,6 @@
+/*
+ * Modificación: 2026-11-19. Comprueba el logotipo en la navegación.
+ */
 import { render, screen as pantalla } from '@testing-library/react';
 import eventoUsuario from '@testing-library/user-event';
 import Aplicacion from '../src/aplicacion/Aplicacion';
@@ -50,6 +53,9 @@ describe('recorrido por rol', () => {
     );
     await usuario.click(pantalla.getByRole('button', { name: 'Continuar' }));
     expect(await pantalla.findByRole('heading', { name: 'Inicio' })).toBeInTheDocument();
+    expect(pantalla.getByRole('img', {
+      name: 'Logotipo oficial de CEN-CINAI'
+    })).toBeInTheDocument();
     expect(pantalla.queryByRole('button', { name: 'Sesiones' })).not.toBeInTheDocument();
     expect(pantalla.getByRole('button', { name: 'Buscar persona' })).toBeInTheDocument();
 
@@ -60,7 +66,8 @@ describe('recorrido por rol', () => {
     );
     await usuario.click(pantalla.getByRole('button', { name: 'Continuar' }));
     expect(await pantalla.findByRole('button', { name: 'Sesiones' })).toBeInTheDocument();
-    expect(pantalla.getByRole('button', { name: 'Pendientes' })).toBeInTheDocument();
+    expect(pantalla.getByRole('button', { name: 'Referencias' })).toBeInTheDocument();
+    expect(pantalla.queryByRole('button', { name: 'Pendientes' })).not.toBeInTheDocument();
     expect((await pantalla.findAllByText('No disponible.')).length).toBeGreaterThan(0);
   });
 });

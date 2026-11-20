@@ -1,6 +1,7 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-16.
+ * Modificación: 2026-11-18. Texto de la estrategia «Otra» y lectura del caso.
  * HU-036 y HU-037. La fecha de atención se distingue de la de registro.
  */
 'use strict';
@@ -14,6 +15,7 @@ const ANIO_MINIMO = 2000;
 const ANIO_MAXIMO = 2100;
 const TEXTO_ACCION = 2000;
 const TEXTO_PROXIMA = 500;
+const TEXTO_ESTRATEGIA_OTRA = 300;
 const TEXTO_TEMA = 500;
 const TEXTO_LUGAR = 200;
 const TEXTO_USUARIO = 128;
@@ -114,6 +116,11 @@ function LeerAtencionIndividual(cuerpo) {
     fechaAtencion: LeerFecha(cuerpo.fechaAtencion, 'fecha de atención'),
     disciplinaId: LeerEntero(cuerpo.disciplinaId, 'disciplina'),
     estrategiaId: LeerEntero(cuerpo.estrategiaId, 'estrategia'),
+    estrategiaOtraTexto: LeerTextoOpcional(
+      cuerpo.estrategiaOtraTexto,
+      'especificación de la estrategia',
+      TEXTO_ESTRATEGIA_OTRA
+    ),
     acciones: LeerTexto(cuerpo.acciones, 'acciones', TEXTO_ACCION),
     recomendaciones: LeerTexto(cuerpo.recomendaciones, 'recomendaciones', TEXTO_ACCION),
     proximaAccion,
@@ -172,5 +179,6 @@ function LeerAtencionGrupal(cuerpo) {
 
 module.exports = {
   LeerAtencionIndividual,
-  LeerAtencionGrupal
+  LeerAtencionGrupal,
+  LeerEntero
 };

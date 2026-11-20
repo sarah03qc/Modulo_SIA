@@ -4,6 +4,7 @@
  * Modificación: 2026-11-16. Expediente, programación, reportería
  * y consulta de casos de Región y Nacional.
  * Modificación: 2026-11-17. Etiquetas de categoría y cobertura de nueve grupos.
+ * Modificación: 2026-11-19. Resumen de inicio para Región y Nacional.
  * HU-001, HU-002 y HU-018 a HU-025, HU-048. El equipo decide; RN-009 calcula la prioridad.
  */
 'use strict';
@@ -277,6 +278,31 @@ function ConstruirLineaConsulta(partes) {
     ...evento,
     clave: `${evento.tipo}-${indice}`
   }));
+}
+
+function PresentarDocumentos(resultado) {
+  if (resultado.disponibilidad !== 'DISPONIBLE') {
+    return {
+      disponibilidad: 'BLOQUEADO',
+      cantidad: null,
+      registros: [],
+      mensaje: 'La consulta de documentos no está disponible para la cuenta técnica actual.'
+    };
+  }
+  const registros = (resultado.datos || []).map((fila) => ({
+    documentoId: Number(fila.documento_id),
+    nombre: fila.nombre_original,
+    tipo: fila.tipo_texto || 'Documento asociado',
+    fecha: fila.fecha_documento,
+    responsable: fila.responsable_usuario,
+    tamano: Number(fila.tamano_bytes)
+  }));
+  return {
+    disponibilidad: 'DISPONIBLE',
+    cantidad: registros.length,
+    registros,
+    mensaje: registros.length === 0 ? 'Sin documentos registrados.' : null
+  };
 }
 
 function PresentarConteo(resultado, vacio, bloqueo) {
@@ -679,6 +705,164 @@ function CrearServicioProceso(dependencias) {
     }
   }
 
+  async function LeerActividadesVencidasAmbito(ambito) {
+    if (typeof repositorio.ContarActividadesVencidasAmbito !== 'function') {
+      return IndicadorNoDisponible(
+        'La programación operativa no está disponible en este contexto.'
+      );
+    }
+    try {
+      const cantidad = await repositorio.ContarActividadesVencidasAmbito(ambito, FechaHoy());
+      return { disponibilidad: 'DISPONIBLE', cantidad, motivo: null };
+    } catch (error) {
+      if (error && error.code === 'PERMISO') {
+        return {
+          disponibilidad: 'BLOQUEADO',
+          cantidad: null,
+          motivo: 'La programación no está disponible para la cuenta técnica actual.'
+        };
+      }
+      return TraducirPersistencia(error, {});
+    }
+  }
+
+  async function EtiquetaAmbito(acceso) {
+    try {
+      if (acceso.accessLevel === ACCESS_LEVEL.LOCAL_OFFICE) {
+        const fila = await adaptador.BuscarOficinaLocal(acceso.localOfficeId);
+        return fila && fila.name ? fila.name : null;
+      }
+      if (acceso.accessLevel === ACCESS_LEVEL.REGION) {
+        const fila = await adaptador.BuscarRegion(acceso.regionId);
+        return fila && fila.name ? fila.name : null;
+      }
+      if (acceso.accessLevel === ACCESS_LEVEL.NATIONAL) {
+        return 'Nivel nacional';
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  }
+
+  function CantidadDistribucion(filas, clave) {
+    const encontrada = filas.find((fila) => Number(fila.clave) === clave);
+    return encontrada ? Number(encontrada.cantidad) : 0;
+  }
+
+  async function LeerDistribucion(acceso, ambito) {
+    if (typeof repositorio.ListarDistribucion !== 'function') {
+      return {
+        disponibilidad: 'NO_DISPONIBLE',
+        filas: [],
+        motivo: 'La distribución territorial no está disponible en este contexto.'
+      };
+    }
+    try {
+      const [casos, referencias, atenciones] = await Promise.all([
+        repositorio.ListarDistribucion(ambito, 'casos'),
+        repositorio.ListarDistribucion(ambito, 'referencias'),
+        repositorio.ListarDistribucion(ambito, 'atenciones')
+      ]);
+      const nombres = new Map();
+      if (ambito.accessLevel === ACCESS_LEVEL.NATIONAL) {
+        const regiones = await adaptador.ListarRegiones({});
+        for (const region of regiones) {
+          nombres.set(region.regionId, region.name);
+        }
+      } else {
+        const oficinas = await adaptador.ListarOficinasLocales({ regionId: acceso.regionId });
+        for (const oficina of oficinas) {
+          nombres.set(oficina.localOfficeId, oficina.name);
+        }
+      }
+      const claves = new Set(nombres.keys());
+      for (const lista of [casos, referencias, atenciones]) {
+        for (const fila of lista) {
+          claves.add(Number(fila.clave));
+        }
+      }
+      const filas = [...claves]
+        .filter((clave) => Number.isInteger(clave) && clave > 0)
+        .map((clave) => ({
+          id: clave,
+          nombre: nombres.get(clave) || null,
+          casosActivos: CantidadDistribucion(casos, clave),
+          referenciasPendientes: CantidadDistribucion(referencias, clave),
+          atencionesIndividuales: CantidadDistribucion(atenciones, clave)
+        }))
+        .sort((a, b) => (
+          b.casosActivos - a.casosActivos
+          || String(a.nombre || '').localeCompare(String(b.nombre || ''), 'es')
+        ));
+      return { disponibilidad: 'DISPONIBLE', filas, motivo: null };
+    } catch (error) {
+      if (error && error.code === 'PERMISO') {
+        return {
+          disponibilidad: 'BLOQUEADO',
+          filas: [],
+          motivo: 'La distribución territorial no está disponible para la cuenta técnica actual.'
+        };
+      }
+      return {
+        disponibilidad: 'NO_DISPONIBLE',
+        filas: [],
+        motivo: 'No fue posible consultar la distribución territorial.'
+      };
+    }
+  }
+
+  async function LeerAgendaHoy(oficinaLocalId) {
+    if (typeof repositorio.ListarAgendaHoy !== 'function') {
+      return {
+        disponibilidad: 'NO_DISPONIBLE',
+        items: [],
+        motivo: 'La agenda del día no está disponible en este contexto.'
+      };
+    }
+    try {
+      const agenda = await repositorio.ListarAgendaHoy(oficinaLocalId, FechaHoy());
+      const sesiones = (agenda.sesiones || []).map((fila) => ({
+        id: `sesion-${fila.sesion_id}`,
+        hora: fila.hora_inicio,
+        tipo: 'Sesión interdisciplinaria',
+        titulo: fila.lugar || 'Sin lugar registrado',
+        destino: 'sesion',
+        sesionId: Number(fila.sesion_id)
+      }));
+      const actividades = (agenda.actividades || []).map((fila) => ({
+        id: `actividad-${fila.actividad_id}`,
+        hora: null,
+        tipo: 'Actividad programada',
+        titulo: fila.titulo,
+        destino: 'programacion',
+        actividadId: Number(fila.actividad_id)
+      }));
+      const items = [...sesiones, ...actividades].sort((a, b) => {
+        if (a.hora && b.hora) {
+          return a.hora.localeCompare(b.hora);
+        }
+        if (a.hora) {
+          return -1;
+        }
+        if (b.hora) {
+          return 1;
+        }
+        return a.titulo.localeCompare(b.titulo, 'es');
+      });
+      return { disponibilidad: 'DISPONIBLE', items, motivo: null };
+    } catch (error) {
+      if (error && error.code === 'PERMISO') {
+        return {
+          disponibilidad: 'BLOQUEADO',
+          items: [],
+          motivo: 'La agenda del día no está disponible para la cuenta técnica actual.'
+        };
+      }
+      return TraducirPersistencia(error, {});
+    }
+  }
+
   async function PrepararAbordaje(solicitud) {
     const catalogo = await repositorio.ListarCatalogo(['ESTRATEGIA', 'DISCIPLINA', 'FRECUENCIA']);
     const estrategias = PresentarCatalogo(catalogo, 'ESTRATEGIA');
@@ -774,6 +958,10 @@ function CrearServicioProceso(dependencias) {
           && nivel === ACCESS_LEVEL.LOCAL_OFFICE,
         puedeRegistrarCoordinacion: TieneCapacidad(acceso, CAPABILITY.COORDINATION_WRITE)
           && nivel === ACCESS_LEVEL.LOCAL_OFFICE,
+        puedeAdjuntarDocumento: TieneCapacidad(acceso, CAPABILITY.DOCUMENT_WRITE)
+          && nivel === ACCESS_LEVEL.LOCAL_OFFICE,
+        puedeExportarExpediente: TieneCapacidad(acceso, CAPABILITY.CASE_READ)
+          && nivel === ACCESS_LEVEL.LOCAL_OFFICE,
         puedeGenerarReporte: TieneCapacidad(acceso, CAPABILITY.CASE_REPORT_WRITE)
           && nivel === ACCESS_LEVEL.LOCAL_OFFICE,
         puedeCerrarCaso: TieneCapacidad(acceso, CAPABILITY.CASE_CLOSE)
@@ -797,25 +985,20 @@ function CrearServicioProceso(dependencias) {
 
     async ObtenerResumen(acceso) {
       const contexto = this.ObtenerContexto(acceso);
-      if (contexto.nivel !== ACCESS_LEVEL.ESTABLISHMENT && contexto.nivel !== ACCESS_LEVEL.LOCAL_OFFICE) {
+      const nivel = contexto.nivel;
+      const permitido = nivel === ACCESS_LEVEL.ESTABLISHMENT
+        || nivel === ACCESS_LEVEL.LOCAL_OFFICE
+        || nivel === ACCESS_LEVEL.REGION
+        || nivel === ACCESS_LEVEL.NATIONAL;
+      if (!permitido) {
         return {
-          nivel: contexto.nivel,
-          indicadores: {
-            posiblesReferencias: IndicadorNoDisponible(
-              'La detección de posibles referencias no forma parte de este lote.'
-            ),
-            actividadesVencidas: IndicadorNoDisponible(
-              'La programación operativa no forma parte de este lote.'
-            ),
-            proximasAcciones: IndicadorNoDisponible(
-              'El seguimiento de atenciones no forma parte de este lote.'
-            )
-          },
-          mensaje: 'Los indicadores de inicio regional y nacional no forman parte '
-            + 'de este lote. La consulta de casos está en Casos.'
+          nivel,
+          mensaje: 'El ámbito de la sesión no tiene un resumen de inicio.'
         };
       }
       const ambito = await Ambito(acceso, null);
+      const operativo = nivel === ACCESS_LEVEL.ESTABLISHMENT
+        || nivel === ACCESS_LEVEL.LOCAL_OFFICE;
       const referencias = await Reintentar(
         () => repositorio.ContarReferencias(ambito, null),
         {}
@@ -841,24 +1024,54 @@ function CrearServicioProceso(dependencias) {
         }
       }
       const resumen = {
-        nivel: contexto.nivel,
+        nivel,
+        etiquetaAmbito: await EtiquetaAmbito(acceso),
         referencias: { disponibilidad: 'DISPONIBLE', cantidad: referencias },
         referenciasPendientes: { disponibilidad: 'DISPONIBLE', cantidad: pendientes },
         casosActivos: casos,
-        posiblesReferencias: await LeerPosibles(ambito),
-        atencionesRegistradas: await LeerIndicadorAtenciones(ambito),
-        proximasAcciones: await LeerProximasAcciones(ambito),
-        actividadesVencidas: contexto.nivel === ACCESS_LEVEL.LOCAL_OFFICE
-          ? await LeerActividadesVencidas(ambito.localOfficeId)
-          : IndicadorNoDisponible(
-            'La programación se consulta en el ámbito de Oficina Local.'
-          )
+        atencionesRegistradas: await LeerIndicadorAtenciones(ambito)
       };
-      if (contexto.nivel === ACCESS_LEVEL.LOCAL_OFFICE) {
+      if (nivel === ACCESS_LEVEL.ESTABLISHMENT) {
+        const admitidas = await Reintentar(
+          () => repositorio.ContarReferencias(ambito, 'ADMITIDA_AI'),
+          {}
+        );
+        const noRequiere = await Reintentar(
+          () => repositorio.ContarReferencias(ambito, 'NO_REQUIERE_AI'),
+          {}
+        );
+        resumen.referenciasConResultado = {
+          disponibilidad: 'DISPONIBLE',
+          cantidad: admitidas + noRequiere
+        };
+      }
+      if (operativo) {
+        resumen.posiblesReferencias = await LeerPosibles(ambito);
+        resumen.proximasAcciones = await LeerProximasAcciones(ambito);
+      }
+      if (nivel === ACCESS_LEVEL.LOCAL_OFFICE) {
+        resumen.actividadesVencidas = await LeerActividadesVencidas(ambito.localOfficeId);
+      } else if (nivel === ACCESS_LEVEL.REGION || nivel === ACCESS_LEVEL.NATIONAL) {
+        resumen.actividadesVencidas = await LeerActividadesVencidasAmbito(ambito);
+        resumen.distribucion = await LeerDistribucion(acceso, ambito);
+      } else {
+        resumen.actividadesVencidas = IndicadorNoDisponible(
+          'La programación se consulta en el ámbito de Oficina Local.'
+        );
+      }
+      if (nivel === ACCESS_LEVEL.LOCAL_OFFICE) {
         try {
-          const sesiones = await repositorio.ListarProximasSesiones(ambito.localOfficeId, FechaHoy());
+          const sesiones = await repositorio.ListarProximasSesiones(
+            ambito.localOfficeId,
+            FechaHoy()
+          );
+          let cantidad = sesiones.length;
+          if (typeof repositorio.ContarSesionesDesde === 'function') {
+            cantidad = await repositorio.ContarSesionesDesde(ambito.localOfficeId, FechaHoy());
+          }
           resumen.proximasSesiones = {
             disponibilidad: 'DISPONIBLE',
+            cantidad,
             items: sesiones.map((fila) => ({
               sesionId: Number(fila.sesion_id),
               fecha: fila.fecha,
@@ -866,10 +1079,12 @@ function CrearServicioProceso(dependencias) {
               lugar: fila.lugar
             }))
           };
+          resumen.agendaHoy = await LeerAgendaHoy(ambito.localOfficeId);
         } catch (error) {
           if (error && error.code === 'PERMISO') {
             resumen.proximasSesiones = {
               disponibilidad: 'BLOQUEADO',
+              cantidad: null,
               items: null,
               motivo: 'La consulta de sesiones no está disponible para la cuenta técnica actual.'
             };
@@ -1189,6 +1404,9 @@ function CrearServicioProceso(dependencias) {
         personas = await IdentificacionesPorNombre(ambito, consulta.nombre);
       }
       const pagina = await repositorio.ListarCasos({ ...consulta, ambito, personas });
+      const conteoAmbito = typeof repositorio.ContarCasos === 'function'
+        ? await repositorio.ContarCasos(await Ambito(acceso, null))
+        : { total: pagina.total };
       const nombres = await Nombres(ambito, pagina.filas.map((fila) => fila.per_id_persona));
       return {
         consulta: {
@@ -1203,6 +1421,7 @@ function CrearServicioProceso(dependencias) {
           localOfficeId: consulta.localOfficeId || null
         },
         total: pagina.total,
+        totalAmbito: conteoAmbito.total,
         devueltos: pagina.filas.length,
         detallePermitido: contexto.puedeVerDetalleCaso,
         consultaPermitida: contexto.puedeVerDetalleConsulta,
@@ -1312,7 +1531,7 @@ function CrearServicioProceso(dependencias) {
       const individuales = await LeerOpcional(() => repositorio.ListarAtencionesIndividuales(casoId));
       const grupales = await LeerOpcional(() => repositorio.ListarParticipacionesGrupales(casoId));
       const planes = await LeerOpcional(() => repositorio.ListarPlanesCaso(casoId));
-      const documentos = await LeerOpcional(() => repositorio.ContarDocumentosCaso(casoId));
+      const documentos = await LeerOpcional(() => repositorio.ListarDocumentosCaso(casoId));
       const coordinaciones = await LeerOpcional(() => repositorio.ListarCoordinacionesCaso(casoId));
       const reportes = await LeerOpcional(() => repositorio.ListarReportesCaso(casoId));
       const cierre = await LeerOpcional(() => repositorio.ObtenerCierreCaso(casoId));
@@ -1376,6 +1595,8 @@ function CrearServicioProceso(dependencias) {
           profesional: fila.profesional_responsable,
           digitador: fila.digitador_usuario,
           motivo: fila.motivo,
+          modalidad: fila.modalidad_texto || null,
+          observaciones: fila.observaciones || null,
           fecha: fila.fecha_coordinacion,
           estado: fila.estado_texto
         }))
@@ -1468,11 +1689,7 @@ function CrearServicioProceso(dependencias) {
             : 'La asistencia grupal no está disponible para la cuenta técnica actual.'
         },
         consultaPlanes,
-        documentos: PresentarConteo(
-          documentos,
-          'Sin documentos registrados.',
-          'La consulta de documentos no está disponible para la cuenta técnica actual.'
-        ),
+        documentos: PresentarDocumentos(documentos),
         coordinaciones: {
           disponibilidad: coordinaciones.disponibilidad,
           cantidad: coordinaciones.disponibilidad === 'DISPONIBLE'

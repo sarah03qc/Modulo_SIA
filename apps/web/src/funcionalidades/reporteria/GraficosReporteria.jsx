@@ -18,33 +18,6 @@ const COLOR_PRIORIDAD = {
   Bajo: '#196244'
 };
 
-const LECTURA = {
-  CASOS_ESTABLECIMIENTO:
-    'Cantidad de casos por establecimiento en el corte. No es una serie temporal.',
-  CASOS_SEXO:
-    'Composición del corte según el sexo registrado. Las partes no se superponen.',
-  CASOS_EDAD:
-    'Distribución por edad cumplida. El orden de las edades se conserva.',
-  CASOS_PRIORIDAD:
-    'Casos según la prioridad vigente. Se conserva el orden Alto, Moderado y Bajo.',
-  CASOS_ESTADO:
-    'Composición entre casos activos y cerrados en el corte actual.',
-  MOTIVOS_CANCELACION:
-    'Frecuencia de motivos de cancelación. La tabla conserva el valor exacto.',
-  MOTIVOS_REFERENCIA:
-    'Motivos más frecuentes. Una referencia puede aportar más de un motivo.',
-  ATENCIONES_TIPO:
-    'Atenciones realizadas por tipo. No incluye programación ni cancelación.',
-  MOTIVOS_CIERRE:
-    'Composición de los cierres. Traslado no se suma al cierre satisfactorio.',
-  PALABRAS_OTRO:
-    'Frecuencia de palabras en explicaciones de motivo Otro. No interpreta el cierre.',
-  COBERTURA_PORCENTAJE:
-    'Porcentaje N / D del año. Si no hay casos activos, no se muestra un cero.',
-  COBERTURA_CANTIDAD:
-    'Personas del numerador N. No es el total de atenciones ni de personas atendidas.'
-};
-
 function Formatear(valor) {
   if (typeof valor !== 'number' || Number.isNaN(valor)) {
     return '';
@@ -228,7 +201,7 @@ function Kpi({ visualizacion }) {
             {Formatear(visualizacion.numerador)}
             {' de '}
             {Formatear(visualizacion.denominador)}
-            {' personas del denominador'}
+            {' personas con caso activo'}
           </span>
         </p>
         <span className="kpi-pista" aria-hidden="true">
@@ -240,7 +213,7 @@ function Kpi({ visualizacion }) {
   return (
     <p className="kpi-cifra kpi-cantidad">
       {Formatear(visualizacion.numerador)}
-      <span className="kpi-detalle">Personas únicas del numerador N</span>
+      <span className="kpi-detalle">Personas con caso activo y al menos una atención</span>
     </p>
   );
 }
@@ -267,13 +240,14 @@ function GraficoSerie({ visualizacion, presentacion }) {
 
 export default function GraficoReporteria({ visualizacion }) {
   if (visualizacion.estado !== 'CON_DATOS') {
-    return <Vacio texto={visualizacion.mensaje || 'Información no disponible.'} />;
+    const mensaje = visualizacion.mensaje && visualizacion.mensaje.includes('Sin casos activos')
+      ? 'No aplica en este corte.'
+      : (visualizacion.mensaje || 'Información no disponible.');
+    return <Vacio texto={mensaje} />;
   }
   const presentacion = Presentacion(visualizacion);
-  const lectura = LECTURA[visualizacion.codigo];
   return (
     <div>
-      {lectura ? <p className="lectura-visual">{lectura}</p> : null}
       {presentacion === 'kpi' ? <Kpi visualizacion={visualizacion} /> : null}
       {presentacion === 'barras-horizontales'
         || presentacion === 'barras-verticales'

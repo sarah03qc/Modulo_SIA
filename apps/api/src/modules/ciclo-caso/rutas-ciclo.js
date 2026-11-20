@@ -16,6 +16,7 @@ const {
   LeerCasoDeRuta,
   LeerCierre,
   LeerCoordinacion,
+  LeerDocumento,
   LeerReporte
 } = require('./validacion-ciclo');
 
@@ -85,6 +86,50 @@ function CrearEnrutadorCiclo(servicio) {
         LeerReporte(req.body)
       );
       res.status(resultado.repetida ? 200 : 201).json(resultado);
+    })
+  );
+
+  router.post(
+    '/casos/:casoId/documentos',
+    ExigirOficina(CAPABILITY.DOCUMENT_WRITE),
+    express.json({ limit: '8mb' }),
+    EnvolverAsincrono(async (req, res) => {
+      const casoId = LeerCasoDeRuta(req.params.casoId);
+      const resultado = await servicio.RegistrarDocumento(
+        req.acceso,
+        LeerDocumento(req.body, casoId)
+      );
+      res.status(201).json(resultado);
+    })
+  );
+
+  router.get(
+    '/casos/:casoId/documentos/:documentoId',
+    ExigirOficina(CAPABILITY.DOCUMENT_READ),
+    EnvolverAsincrono(async (req, res) => {
+      const archivo = await servicio.DescargarDocumento(
+        req.acceso,
+        LeerCasoDeRuta(req.params.casoId),
+        LeerCasoDeRuta(req.params.documentoId)
+      );
+      const nombre = String(archivo.nombre).replace(/[^A-Za-z0-9._-]/g, '_');
+      res.setHeader('Content-Type', archivo.tipo);
+      res.setHeader('Content-Disposition', `attachment; filename="${nombre}"`);
+      res.status(200).send(archivo.contenido);
+    })
+  );
+
+  router.get(
+    '/casos/:casoId/exportacion',
+    ExigirOficina(CAPABILITY.CASE_READ),
+    EnvolverAsincrono(async (req, res) => {
+      const archivo = await servicio.ExportarExpediente(
+        req.acceso,
+        LeerCasoDeRuta(req.params.casoId)
+      );
+      res.setHeader('Content-Type', archivo.tipo);
+      res.setHeader('Content-Disposition', `attachment; filename="${archivo.nombre}"`);
+      res.status(200).send(archivo.contenido);
     })
   );
 
