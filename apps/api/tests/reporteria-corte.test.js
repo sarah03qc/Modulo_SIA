@@ -363,4 +363,131 @@ describe('definiciones analíticas de reportería', () => {
     expect(textos).toContain("'=1+1");
     expect(corte.visualizaciones).toHaveLength(12);
   });
+
+  test('el nivel nacional agrupa casos por región y no por establecimiento', () => {
+    const corte = EnsamblarCorte(Hechos({
+      casos: [
+        Caso(1, 'a', { regionId: 1, oficinaLocalId: 10, establecimientoId: 100 }),
+        Caso(2, 'b', { regionId: 1, oficinaLocalId: 11, establecimientoId: 101 }),
+        Caso(3, 'c', { regionId: 2, oficinaLocalId: 20, establecimientoId: 200 })
+      ]
+    }), Filtros({
+      oficinaLocalId: null,
+      regionId: null,
+      nivelAmbito: 'NACIONAL',
+      catalogoTerritorial: {
+        regiones: new Map([[1, 'Central'], [2, 'Brunca']]),
+        oficinas: new Map()
+      }
+    }), new Map(), new Map());
+    const serie = Visualizacion(corte, 1);
+    expect(serie.titulo.startsWith('Casos por región')).toBe(true);
+    expect(serie.agrupacion).toBe('REGION');
+    expect(serie.serie.map((fila) => fila.etiqueta)).toEqual(['Central', 'Brunca']);
+    expect(serie.serie[0].cantidad).toBe(2);
+    expect(serie.serie[0].porcentaje).toBe(66.7);
+    expect(serie.serie[0].tipoPorcentaje).toBe('TOTAL');
+  });
+
+  test('la región agrupa por Oficina Local y la oficina por establecimiento', () => {
+    const regional = EnsamblarCorte(Hechos({
+      casos: [
+        Caso(1, 'a', { regionId: 1, oficinaLocalId: 10 }),
+        Caso(2, 'b', { regionId: 1, oficinaLocalId: 11 })
+      ]
+    }), Filtros({
+      oficinaLocalId: null,
+      regionId: 1,
+      nivelAmbito: 'REGION',
+      catalogoTerritorial: {
+        regiones: new Map(),
+        oficinas: new Map([[10, 'Hatillo'], [11, 'Alajuelita']])
+      }
+    }), new Map(), new Map());
+    expect(Visualizacion(regional, 1).agrupacion).toBe('OFICINA_LOCAL');
+    expect(Visualizacion(regional, 1).serie.map((fila) => fila.etiqueta).sort()).toEqual([
+      'Alajuelita', 'Hatillo'
+    ]);
+    const local = EnsamblarCorte(Hechos({
+      casos: [Caso(1, 'a', { establecimientoId: 10 })]
+    }), Filtros(), new Map(), new Map([[10, 'Centro norte']]));
+    expect(Visualizacion(local, 1).agrupacion).toBe('ESTABLECIMIENTO');
+    expect(Visualizacion(local, 1).serie[0].etiqueta).toBe('Centro norte');
+  });
+
+  test('un solo establecimiento se muestra como cantidad y no como una barra', () => {
+    const corte = EnsamblarCorte(Hechos({
+      casos: [
+        Caso(1, 'a', { estado: 'ACTIVO' }),
+        Caso(2, 'b', { estado: 'CERRADO' })
+      ]
+    }), Filtros({ establecimientoId: 10 }), new Map(), new Map([[10, 'Centro norte']]));
+    const vista = Visualizacion(corte, 1);
+    expect(vista.formato).toBe('KPI_CANTIDAD');
+    expect(vista.numerador).toBe(2);
+    expect(vista.activos).toBe(1);
+    expect(vista.serie).toEqual([]);
+  });
+
+  test('los porcentajes usan el denominador real y no el máximo de la serie', () => {
+    const corte = EnsamblarCorte(Hechos({
+      referencias: [
+        { referenciaId: 1, establecimientoId: 10, estado: 'ADMITIDA_AI' },
+        { referenciaId: 2, establecimientoId: 10, estado: 'PENDIENTE_REVISION' }
+      ],
+      motivosReferencia: [
+        { referenciaId: 1, etiqueta: 'Salud' },
+        { referenciaId: 1, etiqueta: 'Desarrollo' },
+        { referenciaId: 2, etiqueta: 'Salud' }
+      ],
+      cancelaciones: [],
+      cierres: [{
+        casoId: 1,
+        establecimientoId: 10,
+        codigo: 'OTRO',
+        etiqueta: 'Otro',
+        requiereTexto: true,
+        explicacion: 'texto de cierre'
+      }]
+    }), Filtros(), new Map(), new Map());
+    const motivos = Visualizacion(corte, 7).frecuenciaCompleta;
+    const salud = motivos.find((fila) => fila.etiqueta === 'Salud');
+    expect(salud.cantidad).toBe(2);
+    expect(salud.denominador).toBe(2);
+    expect(salud.porcentaje).toBe(100);
+    expect(salud.tipoPorcentaje).toBe('REFERENCIAS');
+    const desarrollo = motivos.find((fila) => fila.etiqueta === 'Desarrollo');
+    expect(desarrollo.porcentaje).toBe(50);
+    expect(Visualizacion(corte, 6).serie).toEqual([]);
+    const palabras = Visualizacion(corte, 10);
+    expect(palabras.serie.every((fila) => fila.porcentaje == null)).toBe(true);
+  });
+
+  test('sin actividades canceladas no inventa un porcentaje', () => {
+    const corte = EnsamblarCorte(Hechos({
+      cancelaciones: [{
+        actividadId: 4,
+        establecimientoId: 10,
+        motivo: 'Lluvia'
+      }, {
+        actividadId: 4,
+        establecimientoId: 10,
+        motivo: 'Lluvia'
+      }, {
+        actividadId: 5,
+        establecimientoId: 10,
+        motivo: ''
+      }]
+    }), Filtros(), new Map(), new Map());
+    const serie = Visualizacion(corte, 6).frecuenciaCompleta;
+    const lluvia = serie.find((fila) => fila.etiqueta === 'Lluvia');
+    const sinMotivo = serie.find((fila) => fila.etiqueta === 'Sin motivo registrado');
+    expect(lluvia.cantidad).toBe(1);
+    expect(lluvia.denominador).toBe(2);
+    expect(lluvia.porcentaje).toBe(50);
+    expect(sinMotivo.porcentaje).toBe(50);
+    const vacio = EnsamblarCorte(Hechos(), Filtros(), new Map(), new Map());
+    expect(Visualizacion(vacio, 6).serie).toEqual([]);
+    expect(Visualizacion(vacio, 1).titulo.includes('corte')).toBe(false);
+  });
 });

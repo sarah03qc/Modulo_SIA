@@ -2,7 +2,7 @@
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-16.
  * Modificación: 2026-11-18. Título Reportería y contexto analítico.
- * Modificación: 2026-11-18. Lenguaje visible y notas de lectura.
+ * Modificación: 2026-11-20. Ámbitos, fecha local y detalle bajo demanda.
  * HU-038, HU-039 y HU-040 a HU-043.
  * La pantalla no recalcula indicadores ni elige el ámbito de la sesión.
  */
@@ -32,6 +32,26 @@ function EsSuperior(contexto) {
   return nivel === 'REGION' || nivel === 'NACIONAL';
 }
 
+function RutaBase(nivel) {
+  if (nivel === 'NACIONAL' || nivel === 'REGION') {
+    return '/api/reporteria/consulta';
+  }
+  if (nivel === 'ESTABLECIMIENTO') {
+    return '/api/reporteria/establecimiento';
+  }
+  return '/api/reporteria/oficina';
+}
+
+function RutaInforme(nivel) {
+  if (nivel === 'NACIONAL' || nivel === 'REGION') {
+    return '/api/reporteria/consulta/informe';
+  }
+  if (nivel === 'ESTABLECIMIENTO') {
+    return '/api/reporteria/establecimiento/informe';
+  }
+  return '/api/reporteria/oficina/informe';
+}
+
 function NotaLegible(nota) {
   if (!nota) {
     return '';
@@ -43,7 +63,16 @@ function NotaLegible(nota) {
   if (nota.includes('RN-040') || nota.includes('ratificación')) {
     return '';
   }
-  return nota;
+  const sinCorte = 'Corte de la consulta. El año no convierte el estado '
+    + 'actual en un estado histórico.';
+  const sinReplica = 'Corte de la consulta. El sexo sale de la réplica '
+    + 'institucional, sin nombre.';
+  return nota
+    .replace(sinCorte, '')
+    .replace(sinReplica, '')
+    .replace(/[^.]*réplica institucional[^.]*\.?/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function Consulta(filtros, nivel) {
@@ -87,7 +116,14 @@ export default function ReporteriaPagina({
 }) {
   const superior = EsSuperior(contexto);
   const nivel = contexto && contexto.nivel;
-  const rutaBase = superior ? '/api/reporteria/consulta' : '/api/reporteria/oficina';
+  const establecimiento = nivel === 'ESTABLECIMIENTO';
+  const rutaBase = RutaBase(nivel);
+  const puedeInforme = Boolean(
+    contexto && (
+      contexto.puedeGenerarInforme
+      || (contexto.puedeGenerarInforme !== false && !superior && !establecimiento)
+    )
+  );
   const [filtros, establecerFiltros] = useState(FILTROS_INICIALES);
   const [territorio, establecerTerritorio] = useState(null);
   const [resultado, establecerResultado] = useState(null);
@@ -236,12 +272,16 @@ export default function ReporteriaPagina({
           <p className="contexto">Indicadores</p>
           <h1>Reportería</h1>
           <p className="introduccion">
-            Consulte los indicadores del período y revise el corte con los filtros.
-            {superior ? ' Esta consulta es de solo lectura.' : ''}
+            {establecimiento
+              ? 'Indicadores de las referencias de su establecimiento.'
+              : 'Indicadores del ámbito autorizado.'}
+            {resultado && resultado.fechaConsultaVisible
+              ? ` Consultado el ${resultado.fechaConsultaVisible}.`
+              : ''}
           </p>
         </div>
         <div className="acciones-reporteria">
-          {superior ? null : (
+          {puedeInforme ? (
             <button
               type="button"
               onClick={() => establecerInformeAbierto(true)}
@@ -249,7 +289,7 @@ export default function ReporteriaPagina({
             >
               Generar reporte
             </button>
-          )}
+          ) : null}
           {contexto && contexto.puedeDescargarConsolidacion ? (
             <button
               type="button"
@@ -306,6 +346,7 @@ export default function ReporteriaPagina({
             </select>
           </Campo>
         ) : null}
+        {establecimiento && establecimientos.length < 2 ? null : (
         <Campo id="establecimiento-reporteria" etiqueta="Establecimiento">
           <select
             id="establecimiento-reporteria"
@@ -314,17 +355,22 @@ export default function ReporteriaPagina({
             onChange={(evento) => Cambiar('establecimientoId', evento.target.value)}
           >
             <option value="">
-              {superior
-                ? (filtros.localOfficeId
-                  ? 'Toda la oficina seleccionada'
-                  : 'Seleccione primero una Oficina Local')
-                : 'Toda la Oficina Local'}
+              {establecimiento
+                ? 'Todos los establecimientos autorizados'
+                : (superior
+                  ? (filtros.localOfficeId
+                    ? 'Toda la oficina seleccionada'
+                    : 'Seleccione primero una Oficina Local')
+                  : 'Toda la Oficina Local')}
             </option>
             {establecimientos.map((item) => (
               <option key={item.id} value={item.id}>{item.nombre}</option>
             ))}
           </select>
         </Campo>
+        )}
+        {establecimiento ? null : (
+        <>
         <Campo id="estado-reporteria" etiqueta="Estado del caso">
           <select
             id="estado-reporteria"
@@ -406,6 +452,8 @@ export default function ReporteriaPagina({
             ))}
           </select>
         </Campo>
+        </>
+        )}
         <button
           type="button"
           className="secundario"
@@ -431,6 +479,7 @@ export default function ReporteriaPagina({
 
       {resultado ? (
         <>
+          {resultado.modo === 'ESTABLECIMIENTO' ? null : (
           <section className="panel" aria-label="Indicadores complementarios">
             <h2>Indicadores complementarios</h2>
             <dl className="cifras">
@@ -479,6 +528,7 @@ export default function ReporteriaPagina({
               </p>
             </details>
           </section>
+          )}
 
           <div className="rejilla-reporteria">
             {resultado.visualizaciones.map((visualizacion) => (
@@ -493,23 +543,35 @@ export default function ReporteriaPagina({
                 <h2>
                   {visualizacion.numero}. {visualizacion.titulo}
                 </h2>
-                <p>{visualizacion.fechaAplicada}</p>
-                <GraficoReporteria visualizacion={visualizacion} />
-                {NotaLegible(visualizacion.nota) ? (
-                  <p className="ayuda">{NotaLegible(visualizacion.nota)}</p>
+                {visualizacion.periodoEtiqueta ? (
+                  <p className="periodo-visual">{visualizacion.periodoEtiqueta}</p>
                 ) : null}
-                {visualizacion.totalFrecuencia > visualizacion.serie.length ? (
-                  <p>
-                    La presentación muestra {visualizacion.serie.length}
-                    {' de '}
-                    {visualizacion.totalFrecuencia}.
-                    El consolidado descarga la frecuencia completa.
-                  </p>
+                {visualizacion.advertencia ? (
+                  <p className="ayuda">{visualizacion.advertencia}</p>
+                ) : null}
+                <GraficoReporteria
+                  visualizacion={visualizacion}
+                  alDescender={(agrupacion, identificador) => {
+                    if (agrupacion === 'REGION') {
+                      Cambiar('regionId', identificador);
+                    } else if (agrupacion === 'OFICINA_LOCAL') {
+                      Cambiar('localOfficeId', identificador);
+                    } else if (agrupacion === 'ESTABLECIMIENTO') {
+                      Cambiar('establecimientoId', identificador);
+                    }
+                  }}
+                />
+                {NotaLegible(visualizacion.notaMetodologica) ? (
+                  <details className="ayuda-metodologica">
+                    <summary>Información</summary>
+                    <p>{NotaLegible(visualizacion.notaMetodologica)}</p>
+                  </details>
                 ) : null}
               </article>
             ))}
           </div>
 
+          {resultado.modo === 'ESTABLECIMIENTO' ? null : (
           <section className="panel" aria-label="Casos sin atención">
             <h2>Casos activos sin atención en el año</h2>
             <p className="ayuda">
@@ -553,6 +615,7 @@ export default function ReporteriaPagina({
               </table>
             ) : null}
           </section>
+          )}
         </>
       ) : null}
 
@@ -563,6 +626,7 @@ export default function ReporteriaPagina({
         direccionApi={direccionApi}
         identidad={identidad}
         solicitarApi={solicitarApi}
+        rutaInforme={RutaInforme(nivel)}
         alCerrar={() => establecerInformeAbierto(false)}
       />
     </section>

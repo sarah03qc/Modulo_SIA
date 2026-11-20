@@ -17,11 +17,24 @@ const { ACCESS_LEVEL } = require('../../infrastructure/auth/institutional-roles'
 const { AnioCalendarioLocal } = require('../../common/fecha-local');
 const { LeerFiltrosReporteria } = require('./validacion-reporteria');
 
-function EnviarInforme(res, archivo) {
+function NombreInforme(nivel) {
+  if (nivel === ACCESS_LEVEL.NATIONAL) {
+    return 'informe-analitico-nacional.html';
+  }
+  if (nivel === ACCESS_LEVEL.REGION) {
+    return 'informe-analitico-region.html';
+  }
+  if (nivel === ACCESS_LEVEL.ESTABLISHMENT) {
+    return 'informe-analitico-establecimiento.html';
+  }
+  return 'informe-analitico-oficina-local.html';
+}
+
+function EnviarInforme(res, archivo, nivel) {
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader(
     'Content-Disposition',
-    'attachment; filename="informe-analitico-oficina-local.html"'
+    `attachment; filename="${NombreInforme(nivel)}"`
   );
   res.setHeader('X-Persistencia-Informe', archivo.persistencia);
   if (archivo.informeId) {
@@ -56,6 +69,22 @@ function Filtros(req) {
 
 function FiltrosAmbito(req) {
   return LeerFiltrosReporteria(req.query, AnioCalendarioLocal(), req.acceso.accessLevel);
+}
+
+function ExigirEstablecimiento(capacidad) {
+  return function Exigir(req, res, next) {
+    try {
+      ExigirCapacidad(req.acceso, capacidad);
+      if (!req.acceso || req.acceso.accessLevel !== ACCESS_LEVEL.ESTABLISHMENT) {
+        throw new ErrorProhibido(
+          'La reportería de Establecimiento no está permitida para este ámbito.'
+        );
+      }
+      next();
+    } catch (error) {
+      DescartarCuerpoNoProcesado(req, () => next(error));
+    }
+  };
 }
 
 function ExigirConsulta(capacidad) {
@@ -106,7 +135,7 @@ function CrearEnrutadorReporteria(servicio) {
     json,
     EnvolverAsincrono(async (req, res) => {
       const archivo = await servicio.GenerarInforme(req.acceso, Filtros(req), req.body);
-      EnviarInforme(res, archivo);
+      EnviarInforme(res, archivo, req.acceso.accessLevel);
     })
   );
 
@@ -118,7 +147,32 @@ function CrearEnrutadorReporteria(servicio) {
         req.acceso,
         req.params.informeId
       );
-      EnviarInforme(res, archivo);
+      EnviarInforme(res, archivo, req.acceso.accessLevel);
+    })
+  );
+
+  router.get(
+    '/establecimiento',
+    ExigirEstablecimiento(CAPABILITY.REPORTING_READ),
+    EnvolverAsincrono(async (req, res) => {
+      res.status(200).json(await servicio.ConsultarEstablecimiento(
+        req.acceso,
+        FiltrosAmbito(req)
+      ));
+    })
+  );
+
+  router.post(
+    '/establecimiento/informe',
+    ExigirEstablecimiento(CAPABILITY.REPORTING_EXPORT),
+    json,
+    EnvolverAsincrono(async (req, res) => {
+      const archivo = await servicio.GenerarInforme(
+        req.acceso,
+        FiltrosAmbito(req),
+        req.body
+      );
+      EnviarInforme(res, archivo, req.acceso.accessLevel);
     })
   );
 
@@ -144,6 +198,20 @@ function CrearEnrutadorReporteria(servicio) {
     ExigirConsulta(CAPABILITY.REPORTING_READ),
     EnvolverAsincrono(async (req, res) => {
       res.status(200).json(await servicio.ConsultarAmbito(req.acceso, FiltrosAmbito(req)));
+    })
+  );
+
+  router.post(
+    '/consulta/informe',
+    ExigirConsulta(CAPABILITY.REPORTING_EXPORT),
+    json,
+    EnvolverAsincrono(async (req, res) => {
+      const archivo = await servicio.GenerarInforme(
+        req.acceso,
+        FiltrosAmbito(req),
+        req.body
+      );
+      EnviarInforme(res, archivo, req.acceso.accessLevel);
     })
   );
 

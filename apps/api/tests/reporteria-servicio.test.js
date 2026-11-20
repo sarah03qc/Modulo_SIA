@@ -175,7 +175,8 @@ describe('reportería Regional y Nacional', () => {
       establecimientoId: null
     }));
     expect(respuesta.visualizaciones).toHaveLength(12);
-    expect(respuesta.informeAnalitico.disponible).toBe(false);
+    expect(respuesta.informeAnalitico.disponible).toBe(true);
+    expect(respuesta.fechaConsultaVisible).toMatch(/^\d{2}\/\d{2}\/\d{4}$/);
     expect(respuesta.identificacion.unidad).toBe('Región');
     consultar.mockClear();
     await expect(servicio.ConsultarAmbito(
@@ -213,6 +214,36 @@ describe('reportería Regional y Nacional', () => {
     await expect(servicio.ConsultarAmbito(AccesoEstablecimiento(), Filtros()))
       .rejects.toMatchObject({ status: 403 });
     await expect(servicio.ConsultarAmbito(AccesoOficina(), Filtros()))
+      .rejects.toMatchObject({ status: 403 });
+  });
+
+  test('el establecimiento consulta sus referencias y no el corte de casos', async () => {
+    const { servicio, consultar } = Servicio(HechosVacios());
+    const respuesta = await servicio.ConsultarEstablecimiento(
+      AccesoEstablecimiento(),
+      Filtros()
+    );
+    expect(consultar).toHaveBeenCalledWith(expect.objectContaining({
+      establecimientosAutorizados: [1100102],
+      oficinaLocalId: null,
+      regionId: null
+    }));
+    expect(respuesta.modo).toBe('ESTABLECIMIENTO');
+    expect(respuesta.visualizaciones.map((vista) => vista.codigo)).toEqual([
+      'REF_ENVIADAS',
+      'REF_PENDIENTES',
+      'REF_ADMITIDAS',
+      'REF_NO_REQUIERE',
+      'POSIBLES',
+      'MOTIVOS_REFERENCIA',
+      'REF_EVOLUCION'
+    ]);
+    expect(respuesta.informeAnalitico.disponible).toBe(true);
+    await expect(servicio.ConsultarEstablecimiento(
+      AccesoEstablecimiento(),
+      Filtros({ establecimientoId: 5010104 })
+    )).rejects.toMatchObject({ status: 403 });
+    await expect(servicio.ConsultarOficina(AccesoEstablecimiento(), Filtros()))
       .rejects.toMatchObject({ status: 403 });
   });
 });

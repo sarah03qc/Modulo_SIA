@@ -2,7 +2,8 @@
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-16.
  * Modificación: 2026-11-18. Sexo por código, cinco grupos de edad y nota de filtros.
- * Modificación: 2026-11-19. Sexo y edad reciben los filtros del corte.
+ * Modificación: 2026-11-20. Agregación territorial, porcentajes y ámbito
+ * de establecimiento. El período queda en la etiqueta, no en cada título.
  * El grupo etario se muestra con su etiqueta. No se usa una edad que ya no llega.
  * HU-038 y HU-039. El mismo ensamblado alimenta la API, la pantalla y la descarga.
  * No convierte un dato desconocido en cero. Un cero solo sale de un conteo realizado.
@@ -24,6 +25,8 @@ const {
   TEXTO_COBERTURA,
   CATALOGO_VISUALIZACIONES,
   PorcentajeCobertura,
+  PorcentajeCategoria,
+  ReferenciaTemporal,
   ContarPalabras,
   TituloDinamico,
   EtiquetaPrioridad,
@@ -182,8 +185,8 @@ function NombreEstablecimiento(identificador, nombres) {
   return `Establecimiento ${identificador}`;
 }
 
-function ComplementosCaso(filtros, nombres, fechaConsulta) {
-  const partes = [`corte ${fechaConsulta}`];
+function ComplementosCaso(filtros, nombres) {
+  const partes = [];
   if (filtros.estado !== 'TODOS') {
     partes.push(`estado ${EtiquetaEstado(filtros.estado)}`);
   }
@@ -207,8 +210,8 @@ function ComplementosPersona(filtros) {
   return partes;
 }
 
-function ComplementosAtencion(filtros, nombres, anio) {
-  const partes = [`año ${anio}`];
+function ComplementosAtencion(filtros, nombres) {
+  const partes = [];
   if (filtros.establecimientoId) {
     partes.push(NombreEstablecimiento(filtros.establecimientoId, nombres));
   }
@@ -287,16 +290,152 @@ function Opciones(hechos) {
   };
 }
 
-function DistribucionEstablecimiento(casos, nombres) {
+function FechaVisible(iso) {
+  if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) {
+    return '';
+  }
+  const [anio, mes, dia] = iso.split('-');
+  return `${dia}/${mes}/${anio}`;
+}
+
+function ConPorcentaje(serie, denominador, tipo) {
+  return serie.map((fila) => ({
+    ...fila,
+    denominador: denominador > 0 ? denominador : null,
+    porcentaje: PorcentajeCategoria(fila.cantidad, denominador),
+    tipoPorcentaje: denominador > 0 ? tipo : null
+  }));
+}
+
+function Excluyente(contenido) {
+  if (!contenido || !Array.isArray(contenido.serie)) {
+    return contenido;
+  }
+  const total = contenido.serie.reduce((suma, fila) => suma + fila.cantidad, 0);
+  return {
+    ...contenido,
+    serie: ConPorcentaje(contenido.serie, total, 'TOTAL')
+  };
+}
+
+/**
+ * Elige el grano territorial sin cambiar el conteo de casos.
+ * Oficina y región de la sesión prevalecen sobre un filtro más amplio.
+ *
+ * @param {object} filtros Filtros y nivel ya autorizados.
+ * @returns {string} REGION, OFICINA_LOCAL, ESTABLECIMIENTO o PROPIO.
+ */
+function NivelAgrupacion(filtros) {
+  if (filtros.nivelAmbito === 'ESTABLECIMIENTO' || filtros.establecimientoId) {
+    return 'PROPIO';
+  }
+  if (filtros.nivelAmbito === 'OFICINA_LOCAL' || filtros.oficinaLocalId) {
+    return 'ESTABLECIMIENTO';
+  }
+  if (filtros.nivelAmbito === 'REGION' || filtros.regionId) {
+    return 'OFICINA_LOCAL';
+  }
+  return 'REGION';
+}
+
+function NombreCatalogo(mapa, identificador, respaldo) {
+  if (identificador === null || identificador === undefined) {
+    return respaldo;
+  }
+  const nombre = mapa && mapa.get(identificador);
+  return nombre || `${respaldo} ${identificador}`;
+}
+
+function DistribucionTerritorial(casos, filtros, nombres) {
+  const nivel = NivelAgrupacion(filtros);
+  if (nivel === 'PROPIO') {
+    return { nivel, serie: [] };
+  }
+  const catalogo = filtros.catalogoTerritorial || {};
   const serie = new Map();
   for (const caso of casos) {
-    Contar(
-      serie,
-      String(caso.establecimientoId),
-      NombreEstablecimiento(caso.establecimientoId, nombres)
-    );
+    if (nivel === 'REGION') {
+      const id = caso.regionId;
+      Contar(
+        serie,
+        id == null ? 'SIN_REGION' : String(id),
+        NombreCatalogo(catalogo.regiones, id, 'Sin región')
+      );
+    } else if (nivel === 'OFICINA_LOCAL') {
+      const id = caso.oficinaLocalId;
+      Contar(
+        serie,
+        id == null ? 'SIN_OFICINA' : String(id),
+        NombreCatalogo(catalogo.oficinas, id, 'Sin Oficina Local')
+      );
+    } else {
+      Contar(
+        serie,
+        String(caso.establecimientoId),
+        NombreEstablecimiento(caso.establecimientoId, nombres)
+      );
+    }
   }
-  return OrdenarSerie(serie);
+  const ordenada = OrdenarSerie(serie);
+  const total = ordenada.reduce((suma, fila) => suma + fila.cantidad, 0);
+  return {
+    nivel,
+    serie: ConPorcentaje(ordenada, total, 'TOTAL').map((fila) => ({
+      ...fila,
+      identificador: fila.clave
+    }))
+  };
+}
+
+function VisualizacionTerritorial(casos, filtros, nombres, complementos) {
+  const definicion = Definicion(1);
+  const territorial = DistribucionTerritorial(casos, filtros, nombres);
+  const titulos = {
+    REGION: 'Casos por región',
+    OFICINA_LOCAL: 'Casos por Oficina Local',
+    ESTABLECIMIENTO: 'Casos por establecimiento',
+    PROPIO: 'Casos del establecimiento'
+  };
+  const titulo = TituloDinamico(titulos[territorial.nivel], complementos);
+  if (casos.length === 0) {
+    return {
+      ...Visualizacion(
+        definicion,
+        titulo,
+        'SIN_INFORMACION',
+        'No hay casos en este corte.',
+        [],
+        null,
+        complementos
+      ),
+      agrupacion: territorial.nivel
+    };
+  }
+  if (territorial.nivel === 'PROPIO') {
+    const activos = casos.filter((caso) => caso.estado === 'ACTIVO').length;
+    return {
+      ...Visualizacion(definicion, titulo, 'CON_DATOS', null, [], null, complementos),
+      formato: 'KPI_CANTIDAD',
+      numerador: casos.length,
+      activos,
+      agrupacion: 'PROPIO',
+      detalleKpi: filtros.estado === 'ACTIVO'
+        ? 'Casos activos del establecimiento'
+        : `Casos del filtro. Activos: ${activos}.`
+    };
+  }
+  return {
+    ...Visualizacion(
+      definicion,
+      titulo,
+      'CON_DATOS',
+      null,
+      territorial.serie,
+      null,
+      complementos
+    ),
+    agrupacion: territorial.nivel
+  };
 }
 
 /**
@@ -422,14 +561,24 @@ function ResumenReferencias(referencias) {
 
 function MotivosReferencia(hechos, referencias) {
   const identificadores = new Set(referencias.map((fila) => fila.referenciaId));
-  const serie = new Map();
+  const porEtiqueta = new Map();
   for (const motivo of hechos.motivosReferencia) {
     if (!identificadores.has(motivo.referenciaId)) {
       continue;
     }
-    Contar(serie, motivo.etiqueta, motivo.etiqueta);
+    const referenciasMotivo = porEtiqueta.get(motivo.etiqueta) || new Set();
+    referenciasMotivo.add(motivo.referenciaId);
+    porEtiqueta.set(motivo.etiqueta, referenciasMotivo);
   }
-  return OrdenarSerie(serie);
+  const serie = [...porEtiqueta.entries()].map(([etiqueta, ids]) => ({
+    clave: etiqueta,
+    etiqueta,
+    cantidad: ids.size
+  }));
+  serie.sort((a, b) => (
+    b.cantidad - a.cantidad || a.etiqueta.localeCompare(b.etiqueta, 'es')
+  ));
+  return ConPorcentaje(serie, referencias.length, 'REFERENCIAS');
 }
 
 function Cancelaciones(hechos, filtros) {
@@ -445,13 +594,10 @@ function Cancelaciones(hechos, filtros) {
     vistas.add(fila.actividadId);
     const etiqueta = fila.motivo && fila.motivo.trim().length > 0
       ? fila.motivo.trim()
-      : null;
-    if (!etiqueta) {
-      continue;
-    }
+      : 'Sin motivo registrado';
     Contar(serie, etiqueta, etiqueta);
   }
-  return OrdenarSerie(serie);
+  return ConPorcentaje(OrdenarSerie(serie), vistas.size, 'CANCELACIONES');
 }
 
 function Cierres(hechos, filtros) {
@@ -710,47 +856,53 @@ function EnsamblarCorte(hechos, filtros, demografia, nombres) {
     });
   }
   sinAtencion.sort((a, b) => a.casoId - b.casoId);
-  const partesCaso = ComplementosCaso(filtros, nombres, filtros.fechaConsulta);
-  const partesAtencion = ComplementosAtencion(filtros, nombres, filtros.anio);
-  const partesCierre = [`año ${filtros.anio}`];
+  const partesCaso = ComplementosCaso(filtros, nombres);
+  const partesAtencion = ComplementosAtencion(filtros, nombres);
+  const partesCierre = [];
   if (filtros.establecimientoId) {
     partesCierre.push(NombreEstablecimiento(filtros.establecimientoId, nombres));
   }
   const visualizaciones = [
-    VisualizacionCasos(1, casos, () => ({
-      estado: 'CON_DATOS',
-      serie: DistribucionEstablecimiento(casos, nombres),
-      mensaje: null
-    }), partesCaso),
+    VisualizacionTerritorial(casos, filtros, nombres, partesCaso),
     VisualizacionPersona(2, casos, demografiaDisponible, () => (
-      DistribucionSexo(casos, mapa, filtros)
+      Excluyente(DistribucionSexo(casos, mapa, filtros))
     ), partesCaso),
     VisualizacionPersona(3, casos, demografiaDisponible, () => (
-      DistribucionEdad(casos, mapa, filtros)
+      Excluyente(DistribucionEdad(casos, mapa, filtros))
     ), partesCaso),
-    VisualizacionCasos(4, casos, () => ({
+    VisualizacionCasos(4, casos, () => Excluyente({
       estado: 'CON_DATOS',
       serie: DistribucionPrioridad(casos, filtros),
       mensaje: null
     }), partesCaso),
-    VisualizacionCasos(5, casos, () => ({
+    VisualizacionCasos(5, casos, () => Excluyente({
       estado: 'CON_DATOS',
       serie: DistribucionEstado(casos, filtros),
       mensaje: null
     }), partesCaso),
-    VisualizacionFrecuencia(6, canceladas, `año ${filtros.anio}`, (
+    VisualizacionFrecuencia(6, canceladas, '', (
       'La tabla muestra los principales. La descarga incluye la frecuencia completa.'
     )),
-    VisualizacionFrecuencia(7, motivos, `año ${filtros.anio}`, (
-      'Cada motivo se cuenta por aparición. La suma puede superar el total de referencias '
-      + `y no es una partición de ${referencias.length} referencias.`
+    VisualizacionFrecuencia(7, motivos, '', (
+      'El porcentaje usa las referencias distintas del período como denominador. '
+      + 'Una referencia puede tener varios motivos, así que los porcentajes '
+      + 'pueden sumar más de 100.'
     )),
     VisualizacionTipos(tipos, individualesFueraDeTipo, partesAtencion),
     VisualizacionCierres(cierres, partesCierre),
     VisualizacionPalabras(palabras, partesCierre),
     VisualizacionCobertura(11, cobertura, partesCobertura(filtros, nombres)),
     VisualizacionCobertura(12, cobertura, partesCobertura(filtros, nombres))
-  ];
+  ].map((vista) => AjustarPresentacion(vista, filtros));
+  const tiposAjustados = visualizaciones.find((vista) => vista.numero === 8);
+  if (tiposAjustados && tiposAjustados.serie.length > 0) {
+    const totalTipos = tiposAjustados.serie.reduce((suma, fila) => suma + fila.cantidad, 0);
+    tiposAjustados.serie = ConPorcentaje(tiposAjustados.serie, totalTipos, 'TOTAL');
+  }
+  const cierresVista = visualizaciones.find((vista) => vista.numero === 9);
+  if (cierresVista && cierresVista.serie.length > 0) {
+    cierresVista.serie = ConPorcentaje(cierresVista.serie, cierres.length, 'TOTAL');
+  }
   return {
     fechaConsulta: filtros.fechaConsulta,
     anio: filtros.anio,
@@ -786,7 +938,7 @@ function EnsamblarCorte(hechos, filtros, demografia, nombres) {
 }
 
 function partesCobertura(filtros, nombres) {
-  const partes = [`año ${filtros.anio}`, 'casos activos actuales'];
+  const partes = [];
   if (filtros.establecimientoId) {
     partes.push(NombreEstablecimiento(filtros.establecimientoId, nombres));
   }
@@ -822,7 +974,7 @@ function VisualizacionPersona(numero, casos, disponible, construir, complementos
       definicion,
       TituloDinamico(definicion.titulo, complementos),
       'NO_DISPONIBLE',
-      'La réplica institucional no permitió leer sexo o edad. No se sustituye por cero.',
+      'No fue posible leer sexo o edad. No se sustituye por cero.',
       [],
       null,
       complementos
@@ -958,7 +1110,230 @@ function VisualizacionCobertura(numero, cobertura, complementos) {
   };
 }
 
+function AjustarPresentacion(vista, filtros) {
+  const definicion = Definicion(vista.numero);
+  const vigente = ReferenciaTemporal(vista.numero) === 'ESTADO_VIGENTE';
+  const notaLarga = [definicion ? definicion.fecha : '', vista.nota]
+    .filter((parte) => parte)
+    .join(' ');
+  let advertencia = null;
+  if (vista.numero === 9 && vista.estado === 'CON_DATOS') {
+    advertencia = 'Traslado no se suma a cierre satisfactorio.';
+  }
+  if (vista.numero === 8 && notaLarga.includes('sin tipo institucional')) {
+    advertencia = 'Hay atenciones individuales sin tipo institucional. '
+      + 'No entran en este gráfico.';
+  }
+  if (vista.numero === 11 || vista.numero === 12) {
+    advertencia = 'El año limita la atención. Activo es el estado actual.';
+  }
+  return {
+    ...vista,
+    nota: notaLarga,
+    notaMetodologica: notaLarga,
+    advertencia,
+    periodoEtiqueta: vigente
+      ? `Estado al ${FechaVisible(filtros.fechaConsulta)}`
+      : `Período: ${filtros.anio}`
+  };
+}
+
+const ETIQUETAS_MES = [
+  'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+  'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
+];
+
+function KpiCantidadSimple(numero, codigo, titulo, cantidad, anio, detalle) {
+  return {
+    numero,
+    codigo,
+    titulo,
+    formato: 'KPI_CANTIDAD',
+    periodoEtiqueta: `Período: ${anio}`,
+    estado: 'CON_DATOS',
+    mensaje: null,
+    serie: [],
+    nota: null,
+    notaMetodologica: detalle,
+    advertencia: null,
+    filtrosAplicados: [`año ${anio}`],
+    numerador: cantidad,
+    detalleKpi: detalle,
+    autorizada: true
+  };
+}
+
+function EvolucionReferencias(referencias, anio) {
+  const meses = ETIQUETAS_MES.map((etiqueta, indice) => ({
+    clave: `${anio}-${String(indice + 1).padStart(2, '0')}`,
+    etiqueta,
+    cantidad: 0
+  }));
+  let conFecha = 0;
+  for (const fila of referencias) {
+    const fecha = fila.fecha ? String(fila.fecha) : '';
+    if (!fecha.startsWith(`${anio}-`)) {
+      continue;
+    }
+    const mes = Number(fecha.slice(5, 7));
+    if (mes >= 1 && mes <= 12) {
+      meses[mes - 1].cantidad += 1;
+      conFecha += 1;
+    }
+  }
+  if (conFecha === 0) {
+    return [];
+  }
+  const total = meses.reduce((suma, fila) => suma + fila.cantidad, 0);
+  return ConPorcentaje(meses, total, 'TOTAL');
+}
+
+function VistaVacia(numero, codigo, titulo, estado, mensaje, anio) {
+  return {
+    numero,
+    codigo,
+    titulo,
+    formato: numero === 5 ? 'KPI_CANTIDAD' : 'BARRAS',
+    periodoEtiqueta: `Período: ${anio}`,
+    estado,
+    mensaje,
+    serie: [],
+    nota: null,
+    notaMetodologica: null,
+    advertencia: null,
+    filtrosAplicados: [`año ${anio}`],
+    numerador: null,
+    autorizada: estado !== 'NO_DISPONIBLE'
+  };
+}
+
+/**
+ * Indicadores de referencia del propio establecimiento.
+ * No incluye casos ni atenciones de otros ámbitos.
+ *
+ * @param {object} hechos Hechos ya limitados a los establecimientos autorizados.
+ * @param {object} filtros Año y fecha de consulta.
+ * @param {Map} nombres Nombres de establecimiento.
+ * @param {number|null} posibles Pendientes, o null si la consulta no está disponible.
+ * @returns {object} Corte reducido.
+ */
+function EnsamblarCorteEstablecimiento(hechos, filtros, nombres, posibles) {
+  const referencias = ReferenciasDelCorte(hechos, filtros);
+  const resumen = ResumenReferencias(referencias);
+  const pendientes = referencias.filter((fila) => (
+    fila.estado === 'PENDIENTE_REVISION'
+  )).length;
+  const motivos = MotivosReferencia(hechos, referencias);
+  const evolucion = EvolucionReferencias(referencias, filtros.anio);
+  const anio = filtros.anio;
+  const visualizaciones = [
+    KpiCantidadSimple(
+      1, 'REF_ENVIADAS', 'Referencias enviadas', resumen.enviadas, anio,
+      'Referencias con fecha de referencia en el año.'
+    ),
+    KpiCantidadSimple(
+      2, 'REF_PENDIENTES', 'Referencias pendientes de revisión', pendientes, anio,
+      'Pendientes de revisión entre las referencias del año.'
+    ),
+    KpiCantidadSimple(
+      3, 'REF_ADMITIDAS', 'Referencias admitidas', resumen.admitidas, anio,
+      'Resultado Admitida a A.I. No se suma a las enviadas.'
+    ),
+    KpiCantidadSimple(
+      4, 'REF_NO_REQUIERE', 'Referencias con resultado No requiere A.I.',
+      resumen.noRequiere, anio, 'Resultado No requiere A.I. No abre un caso.'
+    ),
+    posibles == null
+      ? VistaVacia(
+        5, 'POSIBLES', 'Posibles referencias del establecimiento',
+        'NO_DISPONIBLE',
+        'Las posibles referencias no están disponibles en esta consulta.',
+        anio
+      )
+      : KpiCantidadSimple(
+        5, 'POSIBLES', 'Posibles referencias pendientes', posibles, anio,
+        'Sugerencias pendientes. No son referencias enviadas.'
+      ),
+    motivos.length === 0
+      ? VistaVacia(
+        6, 'MOTIVOS_REFERENCIA', 'Motivos de referencia',
+        'SIN_INFORMACION', 'No hay motivos de referencia en el año seleccionado.',
+        anio
+      )
+      : {
+        numero: 6,
+        codigo: 'MOTIVOS_REFERENCIA',
+        titulo: 'Motivos de referencia',
+        formato: 'BARRAS',
+        periodoEtiqueta: `Período: ${anio}`,
+        estado: 'CON_DATOS',
+        mensaje: null,
+        serie: motivos.slice(0, PRESENTACION_TOP),
+        frecuenciaCompleta: motivos,
+        nota: null,
+        notaMetodologica: 'El porcentaje usa las referencias distintas del año. '
+          + 'Una referencia puede tener varios motivos.',
+        advertencia: null,
+        filtrosAplicados: [`año ${anio}`],
+        autorizada: true
+      },
+    evolucion.length === 0
+      ? VistaVacia(
+        7, 'REF_EVOLUCION', 'Referencias por mes',
+        'SIN_INFORMACION',
+        'No hay fechas de referencia para mostrar la evolución.',
+        anio
+      )
+      : {
+        numero: 7,
+        codigo: 'REF_EVOLUCION',
+        titulo: 'Referencias por mes',
+        formato: 'DISTRIBUCION',
+        periodoEtiqueta: `Período: ${anio}`,
+        estado: 'CON_DATOS',
+        mensaje: null,
+        serie: evolucion,
+        nota: null,
+        notaMetodologica: 'Mes de la fecha de referencia.',
+        advertencia: null,
+        filtrosAplicados: [`año ${anio}`],
+        autorizada: true
+      }
+  ];
+  return {
+    modo: 'ESTABLECIMIENTO',
+    fechaConsulta: filtros.fechaConsulta,
+    anio: filtros.anio,
+    etiquetaAmbito: 'Establecimiento',
+    oficinaLocalId: null,
+    regionId: null,
+    filtrosActivos: FiltrosActivos(filtros, nombres),
+    alcanceFiltros: [],
+    cobertura: {
+      texto: '',
+      estado: 'NO_APLICA',
+      numerador: null,
+      denominador: null,
+      porcentaje: null,
+      mensaje: null
+    },
+    referencias: resumen,
+    personasUnicas: null,
+    totalAtenciones: null,
+    atencionesIndividuales: null,
+    atencionesGrupales: null,
+    casosSinAtencion: { total: 0, muestra: [], estado: 'NO_APLICA' },
+    visualizaciones,
+    opciones: { profesionales: [], sexos: [], gruposEdad: [] },
+    catalogoDisciplinas: [],
+    establecimientos: [...nombres.entries()]
+      .map(([id, nombre]) => ({ id, nombre }))
+      .sort((a, b) => String(a.nombre).localeCompare(String(b.nombre), 'es'))
+  };
+}
+
 module.exports = {
   EnsamblarCorte,
+  EnsamblarCorteEstablecimiento,
   EnsamblarDemografia
 };

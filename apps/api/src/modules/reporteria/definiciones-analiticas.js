@@ -1,7 +1,8 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-16.
- * Modificación: 2026-11-18. Sexo Hombre/Mujer, cinco grupos de edad y nota de filtros.
+ * Modificación: 2026-11-20. Porcentaje de categoría y referencia temporal.
+ * Las notas de pantalla no mencionan la réplica ni el corte técnico.
  * HU-038, HU-039. RF-086 a RF-091, RF-125, RF-128, RF-129. RN-040.
  * Una sola definición para la consulta, las doce visualizaciones y la descarga.
  */
@@ -76,8 +77,7 @@ const ALCANCE_FILTROS = Object.freeze({
  * RN-040 sigue provisional. El cálculo usa esta fórmula y no la ratifica.
  * D es el corte actual de casos activos. El año solo limita la atención de N.
  */
-const TEXTO_COBERTURA = 'Definición operativa provisional de RN-040 y RF-129, '
-  + 'pendiente de ratificación con Alina. '
+const TEXTO_COBERTURA = 'Definición operativa provisional de RN-040 y RF-129. '
   + 'D son las personas únicas con caso activo actualmente en el ámbito. '
   + 'N son las personas de ese mismo D con al menos una atención efectiva '
   + 'en el año, vinculada a su caso activo actual. '
@@ -91,14 +91,14 @@ const CATALOGO_VISUALIZACIONES = Object.freeze([
     codigo: 'CASOS_ESTABLECIMIENTO',
     titulo: 'Casos por establecimiento',
     formato: 'BARRAS',
-    fecha: 'Corte de la consulta. El año no convierte el estado actual en un estado histórico.'
+    fecha: ''
   },
   {
     numero: 2,
     codigo: 'CASOS_SEXO',
     titulo: 'Casos por sexo',
     formato: 'DISTRIBUCION',
-    fecha: 'Corte de la consulta. El sexo sale de la réplica institucional, sin nombre.'
+    fecha: ''
   },
   {
     numero: 3,
@@ -197,6 +197,36 @@ function PorcentajeCobertura(numerador, denominador) {
     return null;
   }
   return Math.round((numerador / denominador) * 1000) / 10;
+}
+
+/**
+ * Porcentaje de una categoría sobre un denominador real.
+ * Un denominador cero no produce un porcentaje.
+ *
+ * @param {number} cantidad Casos o menciones de la categoría.
+ * @param {number} denominador Universo válido de la métrica.
+ * @returns {number|null} Un decimal, o null si no aplica.
+ */
+function PorcentajeCategoria(cantidad, denominador) {
+  return PorcentajeCobertura(cantidad, denominador);
+}
+
+const REFERENCIA_TEMPORAL = Object.freeze({
+  1: 'ESTADO_VIGENTE',
+  2: 'ESTADO_VIGENTE',
+  3: 'ESTADO_VIGENTE',
+  4: 'ESTADO_VIGENTE',
+  5: 'ESTADO_VIGENTE'
+});
+
+/**
+ * Indica si la visualización describe el estado vigente o un período.
+ *
+ * @param {number} numero Visualización del catálogo.
+ * @returns {string} ESTADO_VIGENTE o PERIODO.
+ */
+function ReferenciaTemporal(numero) {
+  return REFERENCIA_TEMPORAL[numero] || 'PERIODO';
 }
 
 /**
@@ -309,6 +339,8 @@ module.exports = {
   TEXTO_COBERTURA,
   CATALOGO_VISUALIZACIONES,
   PorcentajeCobertura,
+  PorcentajeCategoria,
+  ReferenciaTemporal,
   ContarPalabras,
   TituloDinamico,
   EtiquetaPrioridad,

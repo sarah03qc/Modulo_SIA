@@ -1,6 +1,7 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-18.
+ * Modificación: 2026-11-20. Selección de una categoría del gráfico.
  * Integración modular de ECharts. La tabla equivalente vive fuera del gráfico.
  */
 import { useEffect, useRef } from 'react';
@@ -22,7 +23,12 @@ registrarECharts([
   SVGRenderer
 ]);
 
-export function GraficoECharts({ descripcion, opciones, altura = '16rem' }) {
+export function GraficoECharts({
+  descripcion,
+  opciones,
+  altura = '16rem',
+  alElegir = null
+}) {
   const contenedor = useRef(null);
   const instancia = useRef(null);
 
@@ -68,10 +74,18 @@ export function GraficoECharts({ descripcion, opciones, altura = '16rem' }) {
         textStyle: { fontFamily: 'Arial, Helvetica, sans-serif' },
         tooltip: { ...opciones.tooltip, renderMode: 'richText' }
       }, { notMerge: true });
+      instancia.current.off('click');
+      if (alElegir) {
+        instancia.current.on('click', (evento) => {
+          if (evento && evento.name) {
+            alElegir(evento.name);
+          }
+        });
+      }
     } catch {
       /* El gráfico no se dibuja si el entorno no admite SVG. */
     }
-  }, [opciones]);
+  }, [alElegir, opciones]);
 
   return (
     <div role="img" aria-label={descripcion}>

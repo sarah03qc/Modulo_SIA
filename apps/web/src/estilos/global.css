@@ -864,24 +864,104 @@ td button {
   border-radius: inherit;
 }
 
-.tabla-frecuencia .cantidad {
+.tabla-frecuencia .cantidad,
+.tabla-frecuencia .porcentaje {
   text-align: end;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
+.tabla-frecuencia .porcentaje {
+  min-width: 6.5rem;
+}
+
 .barra-pista {
   display: block;
-  height: 0.55rem;
-  background: #e7e1ea;
+  width: 100%;
+  min-width: 6rem;
+  height: 0.7rem;
+  background: #e4dbe3;
   border-radius: 999px;
   overflow: hidden;
 }
 
-.barra-valor {
+.relleno-frecuencia {
   display: block;
   height: 100%;
-  background: var(--acento);
+  min-width: 0;
+  background: #663366;
+  border-radius: inherit;
+}
+
+.periodo-visual,
+.nota-grafico {
+  margin: 0.15rem 0 0.6rem;
+  color: var(--texto-suave);
+  font-size: 0.92rem;
+}
+
+.detalle-datos,
+.detalle-territorial,
+.paginacion-datos,
+.busqueda-datos {
+  margin-top: 0.75rem;
+}
+
+.detalle-territorial ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.8rem;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.enlace-detalle {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #663366;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.panel-datos {
+  margin-top: 0.6rem;
+  max-width: 42rem;
+}
+
+.tabla-frecuencia {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tabla-frecuencia th,
+.tabla-frecuencia td {
+  padding: 0.35rem 0.4rem;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.paginacion-datos {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.busqueda-datos {
+  display: grid;
+  gap: 0.25rem;
+  max-width: 16rem;
+}
+
+.ayuda-metodologica {
+  margin-top: 0.6rem;
+}
+
+.rejilla-reporteria .visualizacion h2 {
+  font-size: 1.15rem;
+  margin-bottom: 0.2rem;
 }
 
 .grafico-analitico {

@@ -1,7 +1,7 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-16. Modificación: 2026-11-16.
- * Modificación: 2026-11-18. Grupo de edad y nota breve de filtros por indicador.
+ * Modificación: 2026-11-20. Informe por ámbito y reportería de establecimiento.
  * HU-038, HU-039 y HU-040 a HU-043. CU-29, CU-30, CU-31 y CU-32.
  * RN-040 permanece provisional. El ámbito sale de la sesión y solo se estrecha.
  */
@@ -25,7 +25,11 @@ const {
   ZONA_HORARIA_OPERATIVA
 } = require('../../common/fecha-local');
 const { TEXTO_COBERTURA, LIMITE_PERSONAS_DEMOGRAFICAS } = require('./definiciones-analiticas');
-const { EnsamblarCorte, EnsamblarDemografia } = require('./ensamblar-corte');
+const {
+  EnsamblarCorte,
+  EnsamblarCorteEstablecimiento,
+  EnsamblarDemografia
+} = require('./ensamblar-corte');
 const { CrearDocumentoInforme } = require('./documento-informe');
 const { CrearLibroConsolidacion } = require('./exportacion-consolidacion');
 const { HuellaCorte } = require('./huella-corte');
@@ -39,8 +43,27 @@ const MENSAJE_INFORME = 'El asistente genera el informe analítico de HU-050 y C
   + 'No descarga la consolidación tabular de Oficina Local ni el reporte individual del caso. '
   + 'El formato institucional definitivo sigue pendiente de confirmación.';
 
-const MENSAJE_INFORME_SUPERIOR = 'El asistente HU-050 permanece en Oficina Local. '
-  + 'Regional y Nacional consultan y descargan el mismo corte, sin otra conservación histórica.';
+function FechaVisible(iso) {
+  if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(String(iso))) {
+    return '';
+  }
+  const [anio, mes, dia] = String(iso).split('-');
+  return `${dia}/${mes}/${anio}`;
+}
+
+function AgrupacionVisible(acceso, filtros) {
+  const nivel = acceso && acceso.accessLevel;
+  if (nivel === ACCESS_LEVEL.ESTABLISHMENT || filtros.establecimientoId) {
+    return 'PROPIO';
+  }
+  if (nivel === ACCESS_LEVEL.LOCAL_OFFICE || filtros.localOfficeId) {
+    return 'ESTABLECIMIENTO';
+  }
+  if (nivel === ACCESS_LEVEL.REGION || filtros.regionId) {
+    return 'OFICINA_LOCAL';
+  }
+  return 'REGION';
+}
 
 function FechaHoy() {
   return FechaCalendarioLocal();
@@ -70,6 +93,8 @@ function ParaCliente(corte, acceso, opciones) {
   const informeOficina = !opciones || opciones.informeDisponible !== false;
   return {
     fechaConsulta: corte.fechaConsulta,
+    fechaConsultaVisible: FechaVisible(corte.fechaConsulta),
+    modo: corte.modo || 'OPERATIVO',
     anio: corte.anio,
     filtrosActivos: corte.filtrosActivos,
     cobertura: corte.cobertura,
@@ -101,7 +126,14 @@ function ParaCliente(corte, acceso, opciones) {
       estado: item.estado,
       mensaje: item.mensaje,
       serie: item.serie,
+      serieCompleta: item.frecuenciaCompleta || item.serie,
       nota: item.nota,
+      notaMetodologica: item.notaMetodologica || item.nota,
+      advertencia: item.advertencia || null,
+      periodoEtiqueta: item.periodoEtiqueta || null,
+      agrupacion: item.agrupacion || null,
+      detalleKpi: item.detalleKpi || null,
+      activos: item.activos,
       filtrosAplicados: item.filtrosAplicados,
       filtrosNoAplicados: item.filtrosNoAplicados || [],
       totalFrecuencia: Array.isArray(item.frecuenciaCompleta)
@@ -137,7 +169,7 @@ function ParaCliente(corte, acceso, opciones) {
       disponible: false,
       estado: 'PENDIENTE',
       formatoProvisional: null,
-      mensaje: MENSAJE_INFORME_SUPERIOR,
+      mensaje: 'El informe no está habilitado para esta consulta.',
       instruccionSeleccion: null,
       instruccionAnalisis: null
     }
@@ -155,7 +187,7 @@ function FiltrosTexto(visualizacion) {
   return filtros.length > 0 ? filtros.join('; ') : 'Ninguno adicional.';
 }
 
-function ArmarModelo(acceso, respuesta, pedido, filtros, instante) {
+function ArmarModelo(acceso, respuesta, pedido, filtros, instante, opciones) {
   const etiquetasFiltro = (respuesta.filtrosActivos || [])
     .map((filtro) => filtro.etiqueta)
     .join('; ');
@@ -168,11 +200,14 @@ function ArmarModelo(acceso, respuesta, pedido, filtros, instante) {
     titulo: pedido.titulo,
     responsable: acceso.principalId,
     rol: acceso.accessLevel,
-    unidad: 'Oficina Local',
-    ambito: 'OFICINA_LOCAL',
-    regionId: acceso.regionId,
-    oficinaLocalId: acceso.localOfficeId,
-    establecimientoId: filtros.establecimientoId,
+    unidad: opciones && opciones.unidad ? opciones.unidad : 'Oficina Local',
+    ambito: opciones && opciones.ambito ? opciones.ambito : 'OFICINA_LOCAL',
+    regionId: acceso.regionId || filtros.regionId || null,
+    oficinaLocalId: acceso.localOfficeId || filtros.localOfficeId || null,
+    establecimientoId: filtros.establecimientoId
+      || (Array.isArray(acceso.establishmentIds) && acceso.establishmentIds.length === 1
+        ? acceso.establishmentIds[0]
+        : null),
     anio: respuesta.anio,
     fechaHoraLocal,
     fechaCalendario: respuesta.fechaConsulta,
@@ -367,7 +402,38 @@ function CrearServicioReporteria(dependencias) {
     }
   }
 
-  async function Preparar(acceso, filtros, ambito) {
+  async function CatalogoTerritorial(filtros) {
+    const regiones = new Map();
+    const oficinas = new Map();
+    const agrupacion = AgrupacionVisible(
+      { accessLevel: filtros.nivelAmbito },
+      filtros
+    );
+    try {
+      if (agrupacion === 'REGION' && typeof adaptador.ListarRegiones === 'function') {
+        const lista = await adaptador.ListarRegiones({});
+        for (const fila of lista || []) {
+          regiones.set(fila.regionId, fila.name);
+        }
+      }
+      if (
+        agrupacion === 'OFICINA_LOCAL'
+        && typeof adaptador.ListarOficinasLocales === 'function'
+      ) {
+        const lista = await adaptador.ListarOficinasLocales(
+          filtros.regionId ? { regionId: filtros.regionId } : {}
+        );
+        for (const fila of lista || []) {
+          oficinas.set(fila.localOfficeId, fila.name);
+        }
+      }
+    } catch {
+      return { regiones, oficinas };
+    }
+    return { regiones, oficinas };
+  }
+
+  async function Preparar(acceso, filtros, ambito, extra = {}) {
     const oficinaLocalId = ambito ? ambito.localOfficeId : acceso.localOfficeId;
     const regionId = ambito ? ambito.regionId : acceso.regionId;
     if (!ambito) {
@@ -381,6 +447,7 @@ function CrearServicioReporteria(dependencias) {
         oficinaLocalId,
         regionId,
         establecimientoId: filtros.establecimientoId,
+        establecimientosAutorizados: extra.establecimientosAutorizados,
         inicio: rango.inicio,
         fin: rango.fin
       });
@@ -401,18 +468,26 @@ function CrearServicioReporteria(dependencias) {
     const demografia = await Demografia(hechos, fechaConsulta);
     if (!demografia && (filtros.sexo || filtros.grupoEdad)) {
       throw new ErrorInfraestructura(
-        'No fue posible aplicar sexo o grupo de edad porque la réplica institucional '
-          + 'no está disponible.'
+        'No fue posible aplicar sexo o grupo de edad en este momento.'
       );
     }
     const nombres = ambito
       ? await NombresAmbito(ambito, hechos)
       : await Nombres(acceso);
+    const nivelAmbito = acceso.accessLevel;
+    const catalogoTerritorial = await CatalogoTerritorial({
+      ...filtros,
+      oficinaLocalId,
+      regionId,
+      nivelAmbito
+    });
     const corte = EnsamblarCorte(hechos, {
       ...filtros,
       fechaConsulta,
       oficinaLocalId,
       regionId,
+      nivelAmbito,
+      catalogoTerritorial,
       etiquetaAmbito: ambito ? ambito.etiquetaAmbito : undefined,
       etiquetaOficina: ambito ? ambito.etiquetaOficina : undefined,
       etiquetaRegion: ambito ? ambito.etiquetaRegion : undefined,
@@ -459,12 +534,190 @@ function CrearServicioReporteria(dependencias) {
 
   function OpcionesCliente(acceso) {
     if (acceso.accessLevel === ACCESS_LEVEL.REGION) {
-      return { unidad: 'Región', informeDisponible: false };
+      return { unidad: 'Región', informeDisponible: true, ambito: 'REGION' };
     }
     if (acceso.accessLevel === ACCESS_LEVEL.NATIONAL) {
-      return { unidad: 'Nacional', informeDisponible: false };
+      return { unidad: 'Nacional', informeDisponible: true, ambito: 'NACIONAL' };
+    }
+    if (acceso.accessLevel === ACCESS_LEVEL.ESTABLISHMENT) {
+      return {
+        unidad: 'Establecimiento',
+        informeDisponible: true,
+        ambito: 'ESTABLECIMIENTO'
+      };
+    }
+    return {
+      unidad: 'Oficina Local',
+      informeDisponible: true,
+      ambito: 'OFICINA_LOCAL'
+    };
+  }
+
+  function ExigirEstablecimiento(acceso, capacidad) {
+    ExigirCapacidad(acceso, capacidad);
+    if (
+      !acceso
+      || acceso.accessLevel !== ACCESS_LEVEL.ESTABLISHMENT
+      || !acceso.scopeConfirmed
+    ) {
+      throw new ErrorProhibido(
+        'La reportería de Establecimiento no está permitida para la sesión.'
+      );
+    }
+    if (!Array.isArray(acceso.establishmentIds) || acceso.establishmentIds.length === 0) {
+      throw new ErrorProhibido('El ámbito autorizado no está disponible.');
+    }
+  }
+
+  function IdentificadorEstablecimiento(acceso, filtros) {
+    if (filtros.establecimientoId) {
+      return filtros.establecimientoId;
+    }
+    if (Array.isArray(acceso.establishmentIds) && acceso.establishmentIds.length === 1) {
+      return acceso.establishmentIds[0];
     }
     return null;
+  }
+
+  async function PrepararEstablecimiento(acceso, filtros) {
+    const autorizados = filtros.establecimientoId
+      ? [filtros.establecimientoId]
+      : acceso.establishmentIds.slice();
+    if (
+      filtros.establecimientoId
+      && !acceso.establishmentIds.includes(filtros.establecimientoId)
+    ) {
+      throw new ErrorProhibido('El filtro territorial está fuera del ámbito autorizado.');
+    }
+    const fechaConsulta = FechaHoy();
+    const rango = RangoAnio(filtros.anio);
+    let hechos;
+    try {
+      hechos = await repositorio.ConsultarHechos({
+        oficinaLocalId: null,
+        regionId: null,
+        establecimientoId: null,
+        establecimientosAutorizados: autorizados,
+        inicio: rango.inicio,
+        fin: rango.fin
+      });
+    } catch (error) {
+      if (error && error.expose === true) {
+        throw error;
+      }
+      throw new ErrorInfraestructura('La consulta analítica no pudo completarse.');
+    }
+    const nombres = new Map();
+    try {
+      if (typeof adaptador.ListarEstablecimientos === 'function') {
+        const filas = await adaptador.ListarEstablecimientos({
+          establishmentIds: autorizados
+        });
+        for (const fila of filas || []) {
+          if (autorizados.includes(fila.establishmentId)) {
+            nombres.set(fila.establishmentId, fila.name);
+          }
+        }
+      }
+    } catch {
+      /* Un nombre ausente no amplía el ámbito. */
+    }
+    let posibles = null;
+    if (typeof repositorio.ContarPosiblesPendientes === 'function') {
+      try {
+        posibles = await repositorio.ContarPosiblesPendientes(autorizados);
+      } catch {
+        posibles = null;
+      }
+    }
+    return EnsamblarCorteEstablecimiento(hechos, {
+      ...filtros,
+      fechaConsulta,
+      nivelAmbito: ACCESS_LEVEL.ESTABLISHMENT
+    }, nombres, posibles);
+  }
+
+  async function BuscarPrevio(acceso, filtros, clave, opciones, buscarOficina) {
+    if (buscarOficina) {
+      return buscarOficina();
+    }
+    if (typeof repositorio.BuscarInformePorAmbito !== 'function') {
+      return null;
+    }
+    return repositorio.BuscarInformePorAmbito({
+      claveOperacion: clave,
+      ambito: opciones.ambito,
+      oficinaLocalId: acceso.localOfficeId || null,
+      regionId: acceso.regionId || filtros.regionId || null,
+      establecimientoId: IdentificadorEstablecimiento(acceso, filtros)
+    });
+  }
+
+  async function PersistirInforme(acceso, filtros, cuerpo, corte, opciones, buscarOficina) {
+    const instante = new Date();
+    const clave = AfirmarClaveInforme(cuerpo);
+    let previo = null;
+    try {
+      previo = await BuscarPrevio(acceso, filtros, clave, opciones, buscarOficina);
+    } catch (error) {
+      if (!PersistenciaPendiente(error)) {
+        throw new ErrorInfraestructura('No fue posible comprobar el informe ya emitido.');
+      }
+    }
+    if (previo) {
+      return Archivo(previo, {
+        persistido: true,
+        informeId: previo.informeId,
+        reintento: true
+      });
+    }
+    const respuesta = RespuestaCliente(corte, acceso, opciones);
+    const pedido = LeerPedidoInforme(cuerpo, respuesta.visualizaciones);
+    if (pedido.huellaCorte !== respuesta.huellaCorte) {
+      throw new ErrorConflicto(
+        'El corte analítico cambió. Vuelva a consultar antes de generar el informe.'
+      );
+    }
+    const modelo = ArmarModelo(acceso, respuesta, pedido, filtros, instante, opciones);
+    if (modelo.filtrosResumen.length > 2000) {
+      throw new ErrorValidacion('Los filtros del informe exceden la longitud permitida.');
+    }
+    let informeId = null;
+    let persistencia = 'PENDIENTE_PERMISO';
+    if (typeof repositorio.GuardarInforme === 'function') {
+      try {
+        informeId = await repositorio.GuardarInforme(modelo);
+        persistencia = 'REGISTRADO';
+      } catch (error) {
+        if (error && error.code === 'DUPLICADO') {
+          const existente = await BuscarPrevio(
+            acceso,
+            filtros,
+            pedido.claveOperacion,
+            opciones,
+            buscarOficina
+          );
+          if (existente) {
+            return Archivo(existente, {
+              persistido: true,
+              informeId: existente.informeId,
+              reintento: true
+            });
+          }
+        }
+        if (!PersistenciaPendiente(error)) {
+          throw new ErrorInfraestructura('No fue posible conservar el informe.');
+        }
+        persistencia = error.code === 'AUSENTE' ? 'PENDIENTE_TABLA' : 'PENDIENTE_PERMISO';
+      }
+    } else {
+      persistencia = 'PENDIENTE_TABLA';
+    }
+    return Archivo(modelo, {
+      persistido: persistencia === 'REGISTRADO',
+      persistencia,
+      informeId
+    });
   }
 
   return {
@@ -522,72 +775,49 @@ function CrearServicioReporteria(dependencias) {
       return CrearLibroConsolidacion(corte);
     },
 
+    async ConsultarEstablecimiento(acceso, filtros) {
+      ExigirEstablecimiento(acceso, CAPABILITY.REPORTING_READ);
+      const corte = await PrepararEstablecimiento(acceso, filtros);
+      return RespuestaCliente(corte, acceso, OpcionesCliente(acceso));
+    },
+
     async GenerarInforme(acceso, filtros, cuerpo) {
-      ExigirOficina(acceso, CAPABILITY.REPORTING_EXPORT);
-      const instante = new Date();
-      let previo = null;
-      const clave = AfirmarClaveInforme(cuerpo);
-      if (typeof repositorio.BuscarInformePorClave === 'function') {
-        try {
-          previo = await repositorio.BuscarInformePorClave(acceso.localOfficeId, clave);
-        } catch (error) {
-          if (!PersistenciaPendiente(error)) {
-            throw new ErrorInfraestructura('No fue posible comprobar el informe ya emitido.');
+      ExigirCapacidad(acceso, CAPABILITY.REPORTING_EXPORT);
+      const nivel = acceso && acceso.accessLevel;
+      if (nivel === ACCESS_LEVEL.LOCAL_OFFICE) {
+        ExigirOficina(acceso, CAPABILITY.REPORTING_EXPORT);
+        const corte = await Preparar(acceso, filtros);
+        return PersistirInforme(
+          acceso,
+          filtros,
+          cuerpo,
+          corte,
+          OpcionesCliente(acceso),
+          async () => {
+            if (typeof repositorio.BuscarInformePorClave !== 'function') {
+              return null;
+            }
+            return repositorio.BuscarInformePorClave(
+              acceso.localOfficeId,
+              AfirmarClaveInforme(cuerpo)
+            );
           }
-        }
-      }
-      if (previo) {
-        return Archivo(previo, {
-          persistido: true,
-          informeId: previo.informeId,
-          reintento: true
-        });
-      }
-      const corte = await Preparar(acceso, filtros);
-      const respuesta = RespuestaCliente(corte, acceso);
-      const pedido = LeerPedidoInforme(cuerpo, respuesta.visualizaciones);
-      if (pedido.huellaCorte !== respuesta.huellaCorte) {
-        throw new ErrorConflicto(
-          'El corte analítico cambió. Vuelva a consultar antes de generar el informe.'
         );
       }
-      const modelo = ArmarModelo(acceso, respuesta, pedido, filtros, instante);
-      if (modelo.filtrosResumen.length > 2000) {
-        throw new ErrorValidacion('Los filtros del informe exceden la longitud permitida.');
+      if (nivel === ACCESS_LEVEL.REGION || nivel === ACCESS_LEVEL.NATIONAL) {
+        ExigirConsulta(acceso, CAPABILITY.REPORTING_EXPORT);
+        const ambito = await ResolverCorte(acceso, filtros);
+        const corte = await Preparar(acceso, filtros, ambito);
+        return PersistirInforme(acceso, filtros, cuerpo, corte, OpcionesCliente(acceso));
       }
-      let informeId = null;
-      let persistencia = 'PENDIENTE_PERMISO';
-      if (typeof repositorio.GuardarInforme === 'function') {
-        try {
-          informeId = await repositorio.GuardarInforme(modelo);
-          persistencia = 'REGISTRADO';
-        } catch (error) {
-          if (error && error.code === 'DUPLICADO') {
-            const existente = await repositorio.BuscarInformePorClave(
-              acceso.localOfficeId,
-              pedido.claveOperacion
-            );
-            if (existente) {
-              return Archivo(existente, {
-                persistido: true,
-                informeId: existente.informeId,
-                reintento: true
-              });
-            }
-          }
-          if (!PersistenciaPendiente(error)) {
-            throw new ErrorInfraestructura('No fue posible conservar el informe.');
-          }
-          persistencia = error.code === 'AUSENTE' ? 'PENDIENTE_TABLA' : 'PENDIENTE_PERMISO';
-        }
-      } else {
-        persistencia = 'PENDIENTE_TABLA';
+      if (nivel === ACCESS_LEVEL.ESTABLISHMENT) {
+        ExigirEstablecimiento(acceso, CAPABILITY.REPORTING_EXPORT);
+        const corte = await PrepararEstablecimiento(acceso, filtros);
+        return PersistirInforme(acceso, filtros, cuerpo, corte, OpcionesCliente(acceso));
       }
-      return Archivo(modelo, {
-        persistido: persistencia === 'REGISTRADO',
-        persistencia,
-        informeId
-      });
+      throw new ErrorProhibido(
+        'La reportería de este ámbito no está permitida para la sesión.'
+      );
     }
   };
 }

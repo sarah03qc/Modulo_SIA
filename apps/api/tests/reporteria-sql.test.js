@@ -149,7 +149,8 @@ SELECT
     expect(respuesta.totalAtenciones).toBe(Number(fila.individuales) + Number(fila.grupales));
     expect(respuesta.personasUnicas).toBe(Number(fila.personas));
     expect(respuesta.referencias.enviadas).toBe(Number(fila.referencias));
-    expect(respuesta.cobertura.texto).toMatch(/Alina/);
+    expect(respuesta.cobertura.texto).toMatch(/provisional/);
+    expect(respuesta.cobertura.texto).not.toMatch(/Alina/);
     const ajena = await bases.sia.query(`
 SELECT TOP (1) establecimiento_id AS id
 FROM dbo.caso_ai

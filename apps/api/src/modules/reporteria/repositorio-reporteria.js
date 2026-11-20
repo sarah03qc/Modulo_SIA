@@ -230,6 +230,31 @@ function CrearRepositorioReporteria(cliente) {
   }
 
   /**
+   * Limita el hecho al establecimiento pedido o a la lista autorizada.
+   * Una lista vacía no abre el universo completo.
+   *
+   * @param {string} alias Tabla del hecho.
+   * @param {object} registro Ámbito efectivo.
+   * @param {object} parametros Parámetros de la consulta.
+   * @returns {string} Predicado parametrizado.
+   */
+  function FiltroEstablecimiento(alias, registro, parametros) {
+    const ids = registro.establecimientosAutorizados;
+    if (Array.isArray(ids)) {
+      if (ids.length === 0) {
+        return '1 = 0';
+      }
+      const nombres = ids.map((id, indice) => {
+        const nombre = `autEst${indice}`;
+        parametros[nombre] = Parametro(sql.Int, id);
+        return `@${nombre}`;
+      });
+      return `${alias}.establecimiento_id IN (${nombres.join(', ')})`;
+    }
+    return `(@establecimiento IS NULL OR ${alias}.establecimiento_id = @establecimiento)`;
+  }
+
+  /**
    * La grupal no tiene region_id. Con oficina, el predicado queda igual que antes.
    * Sin oficina y con región, la oficina se comprueba por un caso de esa región.
    *
@@ -263,7 +288,7 @@ function CrearRepositorioReporteria(cliente) {
       const parametros = Parametros(registro);
       const filtroCaso = `
   AND ${ClausulaIgualdad('caso', registro, true)}
-  AND (@establecimiento IS NULL OR caso.establecimiento_id = @establecimiento)`;
+  AND ${FiltroEstablecimiento('caso', registro, parametros)}`;
       const filtroReferencia = ClausulaIgualdad('referencia', registro, true);
       const filtroActividad = ClausulaIgualdad('actividad', registro, true);
       const filtroGrupal = ClausulaGrupal(registro);
@@ -272,6 +297,8 @@ SELECT
   caso.caso_id,
   caso.per_id_persona,
   caso.establecimiento_id,
+  caso.region_id,
+  caso.oficina_local_id,
   caso.estado,
   valoracion.prioridad_codigo
 FROM dbo.caso_ai AS caso
@@ -285,15 +312,13 @@ SELECT
   referencia.referencia_id,
   referencia.per_id_persona,
   referencia.establecimiento_id,
+  CONVERT(char(10), referencia.fecha_referencia, 23) AS fecha_referencia,
   referencia.estado
 FROM dbo.ref_referencia AS referencia
 WHERE ${filtroReferencia}
   AND referencia.fecha_referencia >= @inicio
   AND referencia.fecha_referencia < @fin
-  AND (
-    @establecimiento IS NULL
-    OR referencia.establecimiento_id = @establecimiento
-  )
+  AND ${FiltroEstablecimiento('referencia', registro, parametros)}
 `, parametros);
       const motivos = await Consultar(`
 SELECT
@@ -308,10 +333,7 @@ INNER JOIN dbo.cat_item AS item
 WHERE ${filtroReferencia}
   AND referencia.fecha_referencia >= @inicio
   AND referencia.fecha_referencia < @fin
-  AND (
-    @establecimiento IS NULL
-    OR referencia.establecimiento_id = @establecimiento
-  )
+  AND ${FiltroEstablecimiento('referencia', registro, parametros)}
 `, parametros);
       const individuales = await Consultar(`
 SELECT
@@ -342,10 +364,7 @@ LEFT JOIN dbo.cat_item AS item
 WHERE ${filtroGrupal}
   AND grupal.fecha_atencion >= @inicio
   AND grupal.fecha_atencion < @fin
-  AND (
-    @establecimiento IS NULL
-    OR grupal.establecimiento_id = @establecimiento
-  )
+  AND ${FiltroEstablecimiento('grupal', registro, parametros)}
 `, parametros);
       const disciplinasGrupales = await Consultar(`
 SELECT
@@ -357,10 +376,7 @@ INNER JOIN dbo.ate_grupal AS grupal
 WHERE ${filtroGrupal}
   AND grupal.fecha_atencion >= @inicio
   AND grupal.fecha_atencion < @fin
-  AND (
-    @establecimiento IS NULL
-    OR grupal.establecimiento_id = @establecimiento
-  )
+  AND ${FiltroEstablecimiento('grupal', registro, parametros)}
 `, parametros);
       const profesionalesGrupales = await Consultar(`
 SELECT
@@ -372,10 +388,7 @@ INNER JOIN dbo.ate_grupal AS grupal
 WHERE ${filtroGrupal}
   AND grupal.fecha_atencion >= @inicio
   AND grupal.fecha_atencion < @fin
-  AND (
-    @establecimiento IS NULL
-    OR grupal.establecimiento_id = @establecimiento
-  )
+  AND ${FiltroEstablecimiento('grupal', registro, parametros)}
 `, parametros);
       const participantes = await Consultar(`
 SELECT
@@ -389,10 +402,7 @@ INNER JOIN dbo.ate_grupal AS grupal
 WHERE ${filtroGrupal}
   AND grupal.fecha_atencion >= @inicio
   AND grupal.fecha_atencion < @fin
-  AND (
-    @establecimiento IS NULL
-    OR grupal.establecimiento_id = @establecimiento
-  )
+  AND ${FiltroEstablecimiento('grupal', registro, parametros)}
 `, parametros);
       const cancelaciones = await Consultar(`
 SELECT
@@ -407,10 +417,7 @@ WHERE ${filtroActividad}
   AND actividad.estado = N'CANCELADA'
   AND cambio.ocurrido_en >= @inicio
   AND cambio.ocurrido_en < @fin
-  AND (
-    @establecimiento IS NULL
-    OR actividad.establecimiento_id = @establecimiento
-  )
+  AND ${FiltroEstablecimiento('actividad', registro, parametros)}
 `, parametros);
       const cierres = await Consultar(`
 SELECT
@@ -471,6 +478,8 @@ WHERE item.activo = 1
           casoId: Entero(fila.caso_id),
           personaId: Texto(fila.per_id_persona),
           establecimientoId: Entero(fila.establecimiento_id),
+          regionId: Entero(fila.region_id),
+          oficinaLocalId: Entero(fila.oficina_local_id),
           estado: fila.estado,
           prioridad: fila.prioridad_codigo
         })),
@@ -478,6 +487,7 @@ WHERE item.activo = 1
           referenciaId: Entero(fila.referencia_id),
           personaId: Texto(fila.per_id_persona),
           establecimientoId: Entero(fila.establecimiento_id),
+          fecha: Fecha(fila.fecha_referencia),
           estado: fila.estado
         })),
         motivosReferencia: motivos.map((fila) => ({
@@ -550,7 +560,9 @@ WHERE item.activo = 1
 
     BuscarInformePorClave,
     BuscarInformePorId,
-    GuardarInforme
+    BuscarInformePorAmbito,
+    GuardarInforme,
+    ContarPosiblesPendientes
   };
 
   function ErrorInforme(codigo) {
@@ -623,6 +635,65 @@ ORDER BY visualizacion.orden, agregado.orden
     return ReconstruirInforme(informe, vistas, agregados);
   }
 
+  async function ContarPosiblesPendientes(identificadores) {
+    if (!Array.isArray(identificadores) || identificadores.length === 0) {
+      return 0;
+    }
+    const parametros = {};
+    const nombres = identificadores.map((id, indice) => {
+      const nombre = `posibleEst${indice}`;
+      parametros[nombre] = Parametro(sql.Int, id);
+      return `@${nombre}`;
+    });
+    const filas = await Consultar(`
+SELECT COUNT(*) AS total
+FROM dbo.ref_posible AS sug
+WHERE sug.estado = N'PENDIENTE'
+  AND sug.establecimiento_id IN (${nombres.join(', ')})
+`, parametros);
+    return Entero(filas[0] && filas[0].total) || 0;
+  }
+
+  async function BuscarInformePorAmbito(criterio) {
+    if (!cliente || typeof cliente.query !== 'function') {
+      throw ErrorInforme('AUSENTE');
+    }
+    try {
+      const informes = await cliente.query(`
+SELECT TOP (1)
+${ColumnasInforme()}
+FROM dbo.inf_informe AS informe
+WHERE informe.clave_archivo = @clave
+  AND informe.ambito_nivel = @ambito
+  AND (
+    (@oficina IS NULL AND informe.oficina_local_id IS NULL)
+    OR informe.oficina_local_id = @oficina
+  )
+  AND (
+    (@region IS NULL AND informe.region_id IS NULL)
+    OR informe.region_id = @region
+  )
+  AND (
+    (@establecimiento IS NULL AND informe.establecimiento_id IS NULL)
+    OR informe.establecimiento_id = @establecimiento
+  )
+ORDER BY informe.informe_id
+`, {
+        clave: Parametro(sql.NVarChar(80), criterio.claveOperacion),
+        ambito: Parametro(sql.NVarChar(40), criterio.ambito),
+        oficina: Parametro(sql.Int, criterio.oficinaLocalId),
+        region: Parametro(sql.Int, criterio.regionId),
+        establecimiento: Parametro(sql.Int, criterio.establecimientoId)
+      });
+      if (!informes || informes.length === 0) {
+        return null;
+      }
+      return CargarDetalle(informes[0]);
+    } catch (error) {
+      throw TraducirInforme(error);
+    }
+  }
+
   async function BuscarInformePorClave(oficinaLocalId, claveOperacion) {
     if (!cliente || typeof cliente.query !== 'function') {
       throw ErrorInforme('AUSENTE');
@@ -688,7 +759,7 @@ INSERT INTO dbo.inf_informe (
 )
 OUTPUT INSERTED.informe_id
 VALUES (
-  @titulo, @responsable, @rol, N'OFICINA_LOCAL',
+  @titulo, @responsable, @rol, @ambito,
   @region, @oficina, @establecimiento,
   @anio, @filtros, SYSUTCDATETIME(), SYSUTCDATETIME(), @clave
 )
@@ -696,6 +767,7 @@ VALUES (
           titulo: Parametro(sql.NVarChar(300), modelo.titulo),
           responsable: Parametro(sql.NVarChar(128), modelo.responsable),
           rol: Parametro(sql.NVarChar(40), modelo.rol),
+          ambito: Parametro(sql.NVarChar(40), modelo.ambito || 'OFICINA_LOCAL'),
           region: Parametro(sql.Int, modelo.regionId),
           oficina: Parametro(sql.Int, modelo.oficinaLocalId),
           establecimiento: Parametro(sql.Int, modelo.establecimientoId),

@@ -158,7 +158,7 @@ Nivel Nacional
 
 ## 5.1 Establecimiento
 
-El profesional, ASC2 y ASC3 comparten las mismas capacidades autorizadas de Atención Interdisciplinaria para este nivel. La nomenclatura institucional es ASC2 / ASC3; se mantienen capacidades equivalentes autorizadas junto al profesional, sin variantes funcionales o visuales innecesarias. Rótulo visual definitivo pendiente de confirmación. Esta autorización operativa no concede acceso general a Reportería: visualizaciones y KPI permitidos para Establecimiento quedan pendientes de validación. Cualquier eventual acceso solo abarcará sus establecimientos autorizados, sin unidades superiores.
+El profesional, ASC2 y ASC3 comparten las mismas capacidades autorizadas de Atención Interdisciplinaria para este nivel. La nomenclatura institucional es ASC2 / ASC3; se mantienen capacidades equivalentes autorizadas junto al profesional, sin variantes funcionales o visuales innecesarias. Rótulo visual definitivo pendiente de confirmación. Desde el 2026-11-20 el Establecimiento consulta una reportería limitada a sus establecimientos autorizados: referencias enviadas, pendientes de revisión, admitidas, con resultado No requiere A.I., posibles referencias pendientes cuando la fuente está disponible, motivos de referencia y evolución por mes de la fecha de referencia. Puede generar el informe de ese mismo universo. No consulta el catálogo de doce visualizaciones de casos ni atenciones de otros establecimientos o de la Oficina Local.
 
 Puede:
 
@@ -3490,6 +3490,19 @@ El catálogo principal contiene exactamente estas doce visualizaciones, con los 
 - Nacional puede consolidar el país, una Región, una Oficina Local o un establecimiento.
 - La consolidación utiliza los filtros vigentes y puede descargarse en formato compatible con Excel.
 - No se requiere un proceso manual de remisión entre niveles para obtener estos cortes. Explorar información interactivamente y generar un informe analítico formal son actividades independientes. Las consolidaciones y su descarga tabular vigente se conservan; el informe guiado se especifica en HU-050, RF-130/RF-131 y CU-38, sin confundirse con HU-030/CU-22 ni imponer su formato final.
+
+## 15.5 Presentación y desagregación — decisión del 2026-11-20
+
+La definición de cada indicador de 15.3 no cambia al cambiar el gráfico. Cambia el grano territorial y la forma de leerlo.
+
+- Nacional, sin región elegida: la visualización 1 muestra casos por región. Al elegir una región, el mismo indicador se desagrega por Oficina Local. Al elegir una Oficina Local, por establecimiento.
+- Regional: la vista principal es por Oficina Local y el detalle, por establecimiento de esa región.
+- Oficina Local: casos por establecimiento de esa oficina.
+- Un solo establecimiento: cantidad de casos del filtro, no una barra única. El estado vigente no se presenta como histórico del año.
+- La fecha de consulta es el día local del servidor al ejecutar la consulta (`America/Costa_Rica`). Se muestra una vez como «Consultado el dd/MM/yyyy». Los indicadores 1 a 5 indican «Estado al dd/MM/yyyy». Los que usan el año indican «Período: aaaa».
+- «% del total» solo se calcula cuando las categorías parten un universo excluyente. Los motivos de referencia usan «% de referencias» sobre las referencias distintas del período; pueden sumar más de 100. Las cancelaciones usan el total de actividades canceladas. Las palabras frecuentes no llevan porcentaje.
+- La tabla de valores exactos se abre con «Ver datos». El gráfico territorial no descarga los casos al navegador para agruparlos.
+- Generar reporte está disponible en Establecimiento, Oficina Local, Regional y Nacional, solo con la capacidad de exportación y el ámbito de la sesión. El análisis sigue siendo humano. El Establecimiento selecciona entre sus indicadores de referencia, no entre las doce visualizaciones de casos.
 
   **Generar reporte — informe analítico formal.** La parte superior de Reportería presenta un botón visible Generar reporte, que inicia un asistente guiado emergente, modal o equivalente.
 

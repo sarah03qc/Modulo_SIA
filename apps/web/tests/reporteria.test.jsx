@@ -15,7 +15,13 @@ function Visualizacion(numero, codigo, formato, extra = {}) {
     fechaAplicada: 'Fecha de prueba',
     estado: 'CON_DATOS',
     mensaje: null,
-    serie: [{ clave: 'A', etiqueta: 'Grupo A', cantidad: 2 }],
+    serie: [{
+      clave: 'A',
+      etiqueta: 'Grupo A',
+      cantidad: 2,
+      porcentaje: 50,
+      tipoPorcentaje: 'TOTAL'
+    }],
     nota: numero === 7 ? 'Los motivos no son excluyentes.' : null,
     filtrosAplicados: [],
     totalFrecuencia: 1,
@@ -117,6 +123,12 @@ describe('pantalla de reportería', () => {
     expect(pantalla.getByText('No aplica en este corte.')).toBeTruthy();
     expect(pantalla.getByText(/Cómo leer estos números/)).toBeTruthy();
     expect(pantalla.getAllByRole('heading', { name: /Título/ })).toHaveLength(12);
+    expect(pantalla.queryByRole('columnheader', { name: 'Proporción' })).toBeNull();
+    fireEvent.click(pantalla.getAllByRole('button', { name: 'Ver datos' })[0]);
+    expect(pantalla.getAllByRole('columnheader', { name: 'Cantidad' }).length).toBeGreaterThan(0);
+    expect(pantalla.getByRole('columnheader', { name: '% del total' })).toBeTruthy();
+    expect(pantalla.getByRole('cell', { name: '2' }).textContent).toBe('2');
+    expect(pantalla.getByRole('cell', { name: /50[,.]0 %/ }).textContent).toMatch(/^50[,.]0 %$/);
     fireEvent.click(pantalla.getByRole('button', { name: 'Generar reporte' }));
     expect(pantalla.getByRole('dialog')).toHaveTextContent('Este informe recoge su análisis');
     expect(solicitarApi).toHaveBeenCalledTimes(1);
@@ -183,7 +195,7 @@ describe('pantalla de reportería', () => {
     );
     expect(await pantalla.findByRole('heading', { name: 'Reportería' })).toBeTruthy();
     expect(pantalla.queryByRole('button', { name: 'Generar reporte' })).toBeNull();
-    expect(pantalla.getByText(/Esta consulta es de solo lectura/)).toBeTruthy();
+    expect(pantalla.getByText(/Indicadores del ámbito autorizado/)).toBeTruthy();
     expect(solicitarApi.mock.calls.some((llamada) => (
       String(llamada[1]).startsWith('/api/reporteria/consulta?')
     ))).toBe(true);

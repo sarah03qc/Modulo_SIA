@@ -971,7 +971,8 @@ function CrearServicioProceso(dependencias) {
         puedeGestionarProgramacion: TieneCapacidad(acceso, CAPABILITY.SCHEDULING_MANAGE)
           && nivel === ACCESS_LEVEL.LOCAL_OFFICE,
         puedeConsultarReporteria: TieneCapacidad(acceso, CAPABILITY.REPORTING_READ)
-          && (nivel === ACCESS_LEVEL.LOCAL_OFFICE
+          && (nivel === ACCESS_LEVEL.ESTABLISHMENT
+            || nivel === ACCESS_LEVEL.LOCAL_OFFICE
             || nivel === ACCESS_LEVEL.REGION
             || nivel === ACCESS_LEVEL.NATIONAL),
         puedeDescargarConsolidacion: TieneCapacidad(acceso, CAPABILITY.REPORTING_EXPORT)
@@ -979,7 +980,10 @@ function CrearServicioProceso(dependencias) {
             || nivel === ACCESS_LEVEL.REGION
             || nivel === ACCESS_LEVEL.NATIONAL),
         puedeGenerarInforme: TieneCapacidad(acceso, CAPABILITY.REPORTING_EXPORT)
-          && nivel === ACCESS_LEVEL.LOCAL_OFFICE
+          && (nivel === ACCESS_LEVEL.ESTABLISHMENT
+            || nivel === ACCESS_LEVEL.LOCAL_OFFICE
+            || nivel === ACCESS_LEVEL.REGION
+            || nivel === ACCESS_LEVEL.NATIONAL)
       };
     },
 

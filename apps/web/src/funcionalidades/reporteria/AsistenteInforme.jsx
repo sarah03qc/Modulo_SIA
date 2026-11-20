@@ -1,6 +1,7 @@
 /*
  * Autora y responsable del proyecto: Sarah Priscilla Quesada Chaves.
  * Creación: 2026-11-16.
+ * Modificación: 2026-11-20. La ruta del informe sigue el ámbito.
  * HU-050 y CU-38. El análisis lo escribe el profesional.
  * No recalcula indicadores ni descarga la consolidación de HU-039.
  */
@@ -46,6 +47,7 @@ export default function AsistenteInforme({
   direccionApi,
   identidad,
   solicitarApi,
+  rutaInforme = '/api/reporteria/oficina/informe',
   alCerrar
 }) {
   const corteRef = useRef('');
@@ -198,7 +200,7 @@ export default function AsistenteInforme({
     try {
       const archivo = await solicitarApi(
         direccionApi,
-        `/api/reporteria/oficina/informe?${consulta}`,
+        `${rutaInforme}?${consulta}`,
         {
           identidad,
           metodo: 'POST',

@@ -106,7 +106,8 @@ describe('catálogo de capacidades', () => {
     expect(TieneCapacidad(region, CAPABILITY.REFERRAL_CREATE)).toBe(false);
     expect(TieneCapacidad(region, CAPABILITY.REFERRAL_READ)).toBe(false);
     expect(TieneCapacidad(national, CAPABILITY.REFERRAL_PRINT)).toBe(false);
-    expect(TieneCapacidad(establishment, CAPABILITY.REPORTING_READ)).toBe(false);
+    expect(TieneCapacidad(establishment, CAPABILITY.REPORTING_READ)).toBe(true);
+    expect(TieneCapacidad(establishment, CAPABILITY.REPORTING_EXPORT)).toBe(true);
     expect(TieneCapacidad(establishment, CAPABILITY.CASE_READ)).toBe(false);
     expect(TieneCapacidad(establishment, CAPABILITY.ASSESSMENT_READ)).toBe(false);
     expect(TieneCapacidad(establishment, CAPABILITY.SESSION_MANAGE)).toBe(false);
@@ -145,7 +146,7 @@ describe('adaptador y contrato SIDINACC', () => {
     const registered = BuscarPrincipalDesarrollo('dev-establecimiento-unico');
     const acceso = AdaptarIdentidadInstitucional({
       ...registered,
-      capabilities: [CAPABILITY.REPORTING_READ, CAPABILITY.PERSON_SEARCH],
+      capabilities: [CAPABILITY.CATALOG_MANAGE, CAPABILITY.PERSON_SEARCH],
       roles: ['NACIONAL'],
       accessLevel: 'NACIONAL',
       establishmentIds: [1190108]
@@ -153,7 +154,8 @@ describe('adaptador y contrato SIDINACC', () => {
     expect(acceso.accessLevel).toBe('ESTABLECIMIENTO');
     expect(acceso.roles).toEqual(['ESTABLECIMIENTO']);
     expect(acceso.establishmentIds).toEqual([1100102]);
-    expect(acceso.capabilities).not.toContain(CAPABILITY.REPORTING_READ);
+    expect(acceso.capabilities).toContain(CAPABILITY.REPORTING_READ);
+    expect(acceso.capabilities).not.toContain(CAPABILITY.CATALOG_MANAGE);
   });
 
   test('un payload con fuente SIDINACC no concede rol ni ámbito', () => {
@@ -350,7 +352,8 @@ describe('aplicación HTTP de permisos', () => {
       expect.any(Object)
     );
     const acceso = service.BuscarPersonas.mock.calls[0][0];
-    expect(acceso.capabilities).not.toContain(CAPABILITY.REPORTING_READ);
+    expect(acceso.capabilities).toContain(CAPABILITY.REPORTING_READ);
+    expect(acceso.capabilities).not.toContain(CAPABILITY.CASE_READ);
     expect(acceso.capabilities).toContain(CAPABILITY.PERSON_SEARCH);
   });
 
